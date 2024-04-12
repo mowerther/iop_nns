@@ -5,47 +5,63 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-# Define constants
+### Define constants
 pred_path = Path("iop_model_predictions/")
 save_path = Path("results/")
 variables = ["aCDOM_443", "aCDOM_675", "aNAP_443", "aNAP_675", "aph_443", "aph_675"]
 
-# Load data
-mdn_wd = pd.read_csv(pred_path/"mdn_wd_preds.csv")
-mdn_ood = pd.read_csv(pred_path/"mdn_ood_preds.csv")
 
-dc_wd = pd.read_csv(pred_path/"bnn_dropconnect_wd_preds.csv")
-dc_ood = pd.read_csv(pred_path/"bnn_dropconnect_ood_preds.csv")
-
-mcd_wd = pd.read_csv(pred_path/"bnn_mcd_wd_preds.csv")
-mcd_ood = pd.read_csv(pred_path/"bnn_mcd_ood_preds.csv")
-
-ens_wd = pd.read_csv(pred_path/"ensemble_wd_preds.csv")
-ens_ood = pd.read_csv(pred_path/"ensemble_ood_preds.csv")
-
-rnn_wd = pd.read_csv(pred_path/"rnn_wd_preds.csv")
-rnn_ood = pd.read_csv(pred_path/"rnn_ood_preds.csv")
-
-
-def calculate_percentage_from_category(df: pd.DataFrame, category1: str, category2: str, *,
-                                       columns_of_interest: Iterable[str]=variables) -> pd.DataFrame:
+### Functions for loading and processing dataframes
+def filter_df(df: pd.DataFrame, category: str, *, suffix: str="") -> pd.DataFrame:
     """
-    Filters two categories from the main dataframe, resets their indexes,
-    selects the specific columns, and calculates the percentage of category1 over category2 for those columns.
+    Reorganise a single dataframe to have Instance as its index, only contain data columns, and (optionally) have a suffix added to all columns.
+    """
+    df_filtered = df.loc[df["Category"] == category]
+    return df_filtered.set_index("Instance") \
+                      .drop(columns=["Category"]) \
+                      .add_suffix(suffix)
+
+
+def reorganise_df(df: pd.DataFrame, *, reference: str="pred_scaled_for_unc") -> pd.DataFrame:
+    """
+    Reorganise an input dataframe to have a single index with columns per category.
+    """
+    # Filter dataframes by category
+    df_reference = filter_df(df, reference, suffix="_ref")
+    df_true = filter_df(df, "y_true", suffix="_true")
+    df_pred = filter_df(df, "y_pred", suffix="_pred")
+    df_std = filter_df(df, "pred_std", suffix="_pred_std")
+    df_unc_total = filter_df(df, "total_unc", suffix="_unc_total")
+    df_unc_aleatoric = filter_df(df, "ale_unc", suffix="_unc_aleatoric")
+    df_unc_epistemic = filter_df(df, "epi_unc", suffix="_unc_epistemic")
+
+    # Join everything back into a single dataframe
+    return df_reference.join(df_true).join(df_pred).join(df_std).join(df_unc_total).join(df_unc_aleatoric).join(df_unc_epistemic)
+
+
+def read_data(filename: Path | str) -> pd.DataFrame:
+    """
+    Read data from a dataframe and process it.
+    """
+    df = pd.read_csv(filename)
+    df = reorganise_df(df)
+    return df
+
+
+### Further processing
+def calculate_percentage_from_category(df: pd.DataFrame, *, columns_of_interest: Iterable[str]=variables) -> pd.DataFrame:
+    """
+    Calculates the percentage uncertainty (total, aleatoric, epistemic) relative to the scaled prediction.
 
     Parameters:
     - df: the main dataframe containing all data.
-    - category1: the category for the numerator.
-    - category2: the category for the denominator.
-    - columns_of_interest: the IOPs to perform the operation on
+    Optional:
+    - reference: the category for the denominator (default: "pred_scaled_for_unc")
+    - columns_of_interest: the IOPs to perform the operation on (default: `variables`)
 
     Returns:
     - A dataframe with the calculated percentages for the specified columns.
     """
-    # Filter dataframes by category and reset indexes
-    df_cat_reset_1 = df[df["Category"] == category1].reset_index(drop=True)
-    df_cat_reset_2 = df[df["Category"] == category2].reset_index(drop=True)
-
     # Perform the operation on the specified columns
     result = (df_cat_reset_1[columns_of_interest] / df_cat_reset_2[columns_of_interest]) * 100
 
@@ -53,6 +69,25 @@ def calculate_percentage_from_category(df: pd.DataFrame, category1: str, categor
     result = np.abs(result)
 
     return result
+
+
+# Load data
+mdn_wd = read_data(pred_path/"mdn_wd_preds.csv")
+mdn_ood = read_data(pred_path/"mdn_ood_preds.csv")
+
+dc_wd = read_data(pred_path/"bnn_dropconnect_wd_preds.csv")
+dc_ood = read_data(pred_path/"bnn_dropconnect_ood_preds.csv")
+
+mcd_wd = read_data(pred_path/"bnn_mcd_wd_preds.csv")
+mcd_ood = read_data(pred_path/"bnn_mcd_ood_preds.csv")
+
+ens_wd = read_data(pred_path/"ensemble_wd_preds.csv")
+ens_ood = read_data(pred_path/"ensemble_ood_preds.csv")
+
+rnn_wd = read_data(pred_path/"rnn_wd_preds.csv")
+rnn_ood = read_data(pred_path/"rnn_ood_preds.csv")
+
+raise Exception
 
 # Use the updated function to calculate percentages directly from the main dataframe
 percent_total_uncertainty = calculate_percentage_from_category(rnn_ood, "total_unc", "pred_scaled_for_unc")
