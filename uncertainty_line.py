@@ -9,7 +9,6 @@ from matplotlib import pyplot as plt
 pred_path = Path("iop_model_predictions/")
 save_path = Path("results/")
 variables = ["aCDOM_443", "aCDOM_675", "aNAP_443", "aNAP_675", "aph_443", "aph_675"]
-reference_column = "pred_scaled_for_unc"
 
 
 ### Functions for loading and processing dataframes
@@ -35,36 +34,42 @@ def reorganise_df(df: pd.DataFrame) -> pd.DataFrame:
     return df_combined
 
 
-def read_data(filename: Path | str) -> pd.DataFrame:
-    """
-    Read data from a dataframe and process it.
-    """
-    df = pd.read_csv(filename)
-    df = reorganise_df(df)
-    return df
-
-
-### Further processing
-def calculate_percentage_uncertainty(df: pd.DataFrame, *, reference_suffix: str="_ref", columns_of_interest: Iterable[str]=variables) -> pd.DataFrame:
+def calculate_percentage_uncertainty(df: pd.DataFrame, *,
+                                     reference_key: str="pred_scaled_for_unc", uncertainty_keys: Iterable[str]=("total_unc", "ale_unc", "epi_unc")) -> pd.DataFrame:
     """
     Calculates the percentage uncertainty (total, aleatoric, epistemic) relative to the scaled prediction.
 
     Parameters:
     - df: the main dataframe containing all data.
     Optional:
-    - reference_suffix: the suffix for the denominator (default: "_ref")
-    - columns_of_interest: the IOPs to perform the operation on (default: `variables`)
+    - reference_key: the index for the denominator (default: "pred_scaled_for_unc")
+    - uncertainty_keys: the indices for the numerators (default: "total_unc, "ale_unc", "epi_unc")
 
     Returns:
     - A dataframe with the calculated percentages for the specified columns.
     """
-    # Perform the operation on the specified columns
-    result = (df_cat_reset_1[columns_of_interest] / df_cat_reset_2[columns_of_interest]) * 100
+    # Define helper functions
+    to_percentage = lambda data, key: np.abs(df.loc[key] / df.loc[reference_key]) * 100
+    update_key = lambda key: key + "_pct"
 
-    # Use absolute value to account for negative values
-    result = np.abs(result)
+    # Perform the operation on the specified keys
+    result = {update_key(key): to_percentage(df, key) for key in uncertainty_keys}
+    result = pd.concat(result)
 
     return result
+
+
+def read_data(filename: Path | str) -> pd.DataFrame:
+    """
+    Read data from a dataframe and process it.
+    """
+    df = pd.read_csv(filename)
+    df = reorganise_df(df)
+
+    df_percent = calculate_percentage_uncertainty(df)
+    df = pd.concat([df, df_percent])
+
+    return df
 
 
 # Load data
@@ -84,21 +89,6 @@ rnn_wd = read_data(pred_path/"rnn_wd_preds.csv")
 rnn_ood = read_data(pred_path/"rnn_ood_preds.csv")
 
 raise Exception
-
-# Use the updated function to calculate percentages directly from the main dataframe
-percent_total_uncertainty = calculate_percentage_from_category(rnn_ood, "total_unc", "pred_scaled_for_unc")
-
-percent_aleatoric_uncertainty = calculate_percentage_from_category(rnn_ood, "ale_unc", "pred_scaled_for_unc")
-
-percent_epistemic_uncertainty = calculate_percentage_from_category(rnn_ood, "epi_unc", "pred_scaled_for_unc")
-
-# Other categories
-pred_scaled = rnn_ood[rnn_ood["Category"] == "pred_scaled_for_unc"]
-
-y_true = rnn_ood[rnn_ood["Category"] == "y_true"]
-y_pred = rnn_ood[rnn_ood["Category"] == "y_pred"]
-
-std_pred = rnn_ood[rnn_ood["Category"] == "pred_std"].reset_index(drop=True)
 
 # Calculate log-binned statistics
 statistics = ["mean", "std"]
