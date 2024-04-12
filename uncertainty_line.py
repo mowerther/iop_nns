@@ -8,8 +8,9 @@ from matplotlib import pyplot as plt
 ### Define constants
 pred_path = Path("iop_model_predictions/")
 save_path = Path("results/")
-variables = ["aCDOM_443", "aCDOM_675", "aNAP_443", "aNAP_675", "aph_443", "aph_675"]
-
+variables = ("aCDOM_443", "aCDOM_675", "aNAP_443", "aNAP_675", "aph_443", "aph_675")
+uncertainty_labels = ("Total", "Aleatoric", "Epistemic")
+colors = ("black", "blue", "orange")
 
 ### Functions for loading and processing dataframes
 def filter_df(df: pd.DataFrame, category: str) -> pd.DataFrame:
@@ -88,12 +89,8 @@ ens_ood = read_data(pred_path/"ensemble_ood_preds.csv")
 rnn_wd = read_data(pred_path/"rnn_wd_preds.csv")
 rnn_ood = read_data(pred_path/"rnn_ood_preds.csv")
 
-# Calculate log-binned statistics
-statistics = ["mean", "std"]
-col = "aph_675"
-# y_log = np.log10(y_true[col])
-# vmin, vmax = y_log.min(), y_log.max()
 
+### Calculate log-binned statistics
 def log_binned_statistics(x: pd.Series, y: pd.Series, *,
                           vmin: float=1e-4, vmax: float=40, binwidth: float=0.2, n: int=100) -> pd.DataFrame:
     """
@@ -152,12 +149,17 @@ def log_binned_statistics_combined(df: pd.DataFrame, *,
     return binned
 
 
-def plot_log_binned_statistics(binned: pd.DataFrame, *, ax: Optional[plt.Axes]=None) -> None:
+def plot_log_binned_statistics(binned: pd.DataFrame, variable: str, *,
+                               ax: Optional[plt.Axes]=None,
+                               uncertainty_keys: Iterable[str]=("total_unc_pct", "ale_unc_pct", "epi_unc_pct")) -> None:
     """
-    Given a DataFrame containing log-binned statistics, plot the total/aleatoric/epistemic uncertainties.
+    Given a DataFrame containing log-binned statistics, plot the total/aleatoric/epistemic uncertainties for one variable.
     Plots a line for the mean uncertainty and a shaded area for the standard deviation.
     If no ax is provided, a new figure is created.
     """
+    # Set up keys
+    mean, std = f"{variable}_mean", f"{variable}_std"
+
     # Set up a new figure if desired
     NEW_FIGURE = (ax is None)
     if NEW_FIGURE:
@@ -165,26 +167,34 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *, ax: Optional[plt.Axes]=N
     else:
         fig = ax.figure
 
-binned = log_binned_statistics_combined(mdn_wd)
+    # Loop over uncertainty types and plot each
+    for unc, label, color in zip(uncertainty_keys, uncertainty_labels, colors):
+        df = binned.loc[unc]
+        df.plot.line(ax=ax, y=mean, color=color, label=label)
+        ax.fill_between(df.index, df[mean] - df[std], df[mean] + df[std], color=color, alpha=0.1)
+
+    # Labels
+    ax.set_xlabel(variable)
+    ax.grid(True, ls="--")
+
+
+# mdn_wd, mdn_ood, dc_wd, dc_ood, mcd_wd, mcd_ood, ens_wd, ens_ood, rnn_wd, rnn_ood
+binned = log_binned_statistics_combined(rnn_wd)
 
 # Plot
-fig, ax = plt.subplots(1, 1, sharex=True, sharey=True)
+fig, axs = plt.subplots(nrows=1, ncols=len(variables), sharex=True, figsize=(15, 5), layout="constrained")
 
-# Plot means
-binned.plot("centre", "mean", ax=ax, color="black", label="Total")
-binned.plot("centre", "mean_aleatoric", ax=ax, color="blue", label="Aleatoric")
-binned.plot("centre", "mean_epistemic", ax=ax, color="orange", label="Epistemic")
+for ax, var in zip(axs, variables):
+    plot_log_binned_statistics(binned, var, ax=ax)
 
-# Plot stds
-ax.fill_between(binned["centre"], binned["mean"] - binned["std"], binned["mean"] + binned["std"], color="black", alpha=0.2)
-ax.fill_between(binned["centre"], binned["mean_aleatoric"] - binned["std_aleatoric"], binned["mean_aleatoric"] + binned["std_aleatoric"], color="blue", alpha=0.2)
-ax.fill_between(binned["centre"], binned["mean_epistemic"] - binned["std_epistemic"], binned["mean_epistemic"] + binned["std_epistemic"], color="orange", alpha=0.2)
+# Settings
+axs[0].set_xscale("log")
+for ax in axs:
+    ax.set_ylim(ymin=0)
 
-ax.set_xscale("log")
-ax.set_ylim(ymin=0)
-ax.set_xlabel(f"in situ {col}")
-ax.set_ylabel(f"average uncertainty {col}")
-ax.grid(True)
+fig.suptitle("")
+fig.supxlabel("In situ value", fontweight="bold")
+fig.supylabel("Mean uncertainty [%]", fontweight="bold")
 
 plt.show()
 plt.close()
