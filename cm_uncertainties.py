@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.colors import Normalize
@@ -5,34 +7,42 @@ from matplotlib.cm import ScalarMappable
 import pandas as pd
 import numpy as np
 
-pred_path = 'iop_model_predictions/'
+# Define constants
+pred_path = Path("iop_model_predictions/")
+save_path = Path("results/")
+variables = ["aCDOM_443", "aCDOM_675", "aNAP_443", "aNAP_675", "aph_443", "aph_675"]
 
-mdn_wd = pd.read_csv(pred_path + 'mdn_wd_preds.csv')
-mdn_ood = pd.read_csv(pred_path + 'mdn_ood_preds.csv')
-dc_wd = pd.read_csv(pred_path + 'bnn_dropconnect_wd_preds.csv')
-dc_ood = pd.read_csv(pred_path + 'bnn_dropconnect_ood_preds.csv')
-mcd_wd = pd.read_csv(pred_path + 'bnn_mcd_wd_preds.csv')
-mcd_ood = pd.read_csv(pred_path + 'bnn_mcd_ood_preds.csv')
-ens_wd = pd.read_csv(pred_path + 'ensemble_wd_preds.csv')
-ens_ood = pd.read_csv(pred_path + 'ensemble_ood_preds.csv')
-rnn_wd = pd.read_csv(pred_path + 'rnn_wd_preds.csv')
-rnn_ood = pd.read_csv(pred_path + 'rnn_ood_preds.csv')
+# Load data
+mdn_wd = pd.read_csv(pred_path/"mdn_wd_preds.csv")
+mdn_ood = pd.read_csv(pred_path/"mdn_ood_preds.csv")
+
+dc_wd = pd.read_csv(pred_path/"bnn_dropconnect_wd_preds.csv")
+dc_ood = pd.read_csv(pred_path/"bnn_dropconnect_ood_preds.csv")
+
+mcd_wd = pd.read_csv(pred_path/"bnn_mcd_wd_preds.csv")
+mcd_ood = pd.read_csv(pred_path/"bnn_mcd_ood_preds.csv")
+
+ens_wd = pd.read_csv(pred_path/"ensemble_wd_preds.csv")
+ens_ood = pd.read_csv(pred_path/"ensemble_ood_preds.csv")
+
+rnn_wd = pd.read_csv(pred_path/"rnn_wd_preds.csv")
+rnn_ood = pd.read_csv(pred_path/"rnn_ood_preds.csv")
 
 # Ensure all dfs are loaded
 dataframes = {
-    'mdn_wd': mdn_wd,
-    'mdn_ood': mdn_ood,
-    'dc_wd': dc_wd,
-    'dc_ood': dc_ood,
-    'mcd_wd': mcd_wd,
-    'mcd_ood': mcd_ood,
-    'ens_wd': ens_wd,
-    'ens_ood': ens_ood,
-    'rnn_wd' : rnn_wd,
-    'rnn_ood' : rnn_ood
+    "mdn_wd": mdn_wd,
+    "mdn_ood": mdn_ood,
+    "dc_wd": dc_wd,
+    "dc_ood": dc_ood,
+    "mcd_wd": mcd_wd,
+    "mcd_ood": mcd_ood,
+    "ens_wd": ens_wd,
+    "ens_ood": ens_ood,
+    "rnn_wd" : rnn_wd,
+    "rnn_ood" : rnn_ood
 }
 
-iops_of_interest = ['aCDOM_443', 'aCDOM_675', 'aNAP_443', 'aNAP_675', 'aph_443', 'aph_675']
+iops_of_interest = ["aCDOM_443", "aCDOM_675", "aNAP_443", "aNAP_675", "aph_443", "aph_675"]
 
 def calculate_percentage_from_category(df, category1, category2, iops_of_interest):
     """
@@ -40,8 +50,8 @@ def calculate_percentage_from_category(df, category1, category2, iops_of_interes
     selects the specific columns, and calculates the percentage of category1 over category2 for those columns.
 
     """
-    df_cat_reset_1 = df[df['Category'] == category1].reset_index(drop=True)
-    df_cat_reset_2 = df[df['Category'] == category2].reset_index(drop=True)
+    df_cat_reset_1 = df[df["Category"] == category1].reset_index(drop=True)
+    df_cat_reset_2 = df[df["Category"] == category2].reset_index(drop=True)
 
     result = (df_cat_reset_1[iops_of_interest] / df_cat_reset_2[iops_of_interest]) * 100
 
@@ -49,13 +59,13 @@ def calculate_percentage_from_category(df, category1, category2, iops_of_interes
 
 def calculate_uncertainties_and_categories(df, iops_of_interest):
     result_dict = {
-        'percent_total_uncertainty': calculate_percentage_from_category(df, 'total_unc', 'pred_scaled_for_unc', iops_of_interest),
-        'percent_aleatoric_uncertainty': calculate_percentage_from_category(df, 'ale_unc', 'pred_scaled_for_unc', iops_of_interest),
-        'percent_epistemic_uncertainty': calculate_percentage_from_category(df, 'epi_unc', 'pred_scaled_for_unc', iops_of_interest),
-        'pred_scaled': df[df['Category'] == 'pred_scaled_for_unc'],
-        'y_true': df[df['Category'] == 'y_true'],
-        'y_pred': df[df['Category'] == 'y_pred'],
-        'std_pred': df[df['Category'] == 'pred_std'].reset_index(drop=True)
+        "percent_total_uncertainty": calculate_percentage_from_category(df, "total_unc", "pred_scaled_for_unc", iops_of_interest),
+        "percent_aleatoric_uncertainty": calculate_percentage_from_category(df, "ale_unc", "pred_scaled_for_unc", iops_of_interest),
+        "percent_epistemic_uncertainty": calculate_percentage_from_category(df, "epi_unc", "pred_scaled_for_unc", iops_of_interest),
+        "pred_scaled": df[df["Category"] == "pred_scaled_for_unc"],
+        "y_true": df[df["Category"] == "y_true"],
+        "y_pred": df[df["Category"] == "y_pred"],
+        "std_pred": df[df["Category"] == "pred_std"].reset_index(drop=True)
     }
     return result_dict
 
@@ -79,14 +89,14 @@ def filter_uncertainties(df_total, df_aleatoric, df_epistemic):
 
 # Iterate over each result and apply the filtering function
 for key, result in results.items():
-    result['percent_total_uncertainty'], result['percent_aleatoric_uncertainty'], result['percent_epistemic_uncertainty'], = filter_uncertainties(
-        result['percent_total_uncertainty'],
-        result['percent_aleatoric_uncertainty'],
-        result['percent_epistemic_uncertainty']
+    result["percent_total_uncertainty"], result["percent_aleatoric_uncertainty"], result["percent_epistemic_uncertainty"], = filter_uncertainties(
+        result["percent_total_uncertainty"],
+        result["percent_aleatoric_uncertainty"],
+        result["percent_epistemic_uncertainty"]
     )
 
 # example
-results['mdn_wd']['percent_total_uncertainty']['aCDOM_675'].median()
+results["mdn_wd"]["percent_total_uncertainty"]["aCDOM_675"].median()
 # should be 10.73736
 
 # Assuming the `results` dictionary is already populated as described,
@@ -96,7 +106,7 @@ def calculate_average_uncertainties(results, iops_of_interest):
     averages = {}
     for model, data in results.items():
         model_averages = {}
-        for uncertainty_type in ['percent_total_uncertainty', 'percent_aleatoric_uncertainty', 'percent_epistemic_uncertainty']:
+        for uncertainty_type in ["percent_total_uncertainty", "percent_aleatoric_uncertainty", "percent_epistemic_uncertainty"]:
             df = data[uncertainty_type]
             avg_uncertainties = df[iops_of_interest].mean().to_dict()
             model_averages[uncertainty_type] = avg_uncertainties
@@ -113,16 +123,16 @@ def prepare_cm_data(average_uncertainties, uncertainty_type):
 
     # Iterate through models and organize data into WD and OOD dfs
     for model, data in average_uncertainties.items():
-        if 'wd' in model:
-            data_wd.loc[model.replace('_wd', '')] = pd.Series(data[uncertainty_type])
-        elif 'ood' in model:
-            data_ood.loc[model.replace('_ood', '')] = pd.Series(data[uncertainty_type])
+        if "wd" in model:
+            data_wd.loc[model.replace("_wd", "")] = pd.Series(data[uncertainty_type])
+        elif "ood" in model:
+            data_ood.loc[model.replace("_ood", "")] = pd.Series(data[uncertainty_type])
 
     return data_wd, data_ood
 
-data_total_wd, data_total_ood = prepare_cm_data(average_uncertainties, 'percent_total_uncertainty')
-data_aleatoric_wd, data_aleatoric_ood = prepare_cm_data(average_uncertainties, 'percent_aleatoric_uncertainty')
-data_epistemic_wd, data_epistemic_ood = prepare_cm_data(average_uncertainties, 'percent_epistemic_uncertainty')
+data_total_wd, data_total_ood = prepare_cm_data(average_uncertainties, "percent_total_uncertainty")
+data_aleatoric_wd, data_aleatoric_ood = prepare_cm_data(average_uncertainties, "percent_aleatoric_uncertainty")
+data_epistemic_wd, data_epistemic_ood = prepare_cm_data(average_uncertainties, "percent_epistemic_uncertainty")
 
 fraction_aleatoric_wd = data_aleatoric_wd / data_total_wd
 fraction_aleatoric_ood = data_aleatoric_ood / data_total_ood
@@ -136,13 +146,12 @@ cmap_fraction = plt.cm.BrBG.resampled(10)
 norm_fraction = Normalize(vmin=0, vmax=1)
 
 # Setup figure and axes
-# fig, axs = plt.subplots(2, 2, figsize=(8, 10), sharex=True, sharey=True, gridspec_kw={'width_ratios': [1, 1],'wspace': -0.55, 'hspace': 0.2})
+# fig, axs = plt.subplots(2, 2, figsize=(8, 10), sharex=True, sharey=True, gridspec_kw={"width_ratios": [1, 1],"wspace": -0.55, "hspace": 0.2})
 fig, axs = plt.subplots(2, 2, figsize=(8, 7), sharex=True, sharey=True, gridspec_kw={"wspace": 0.1, "hspace": -0.15})
-plt.style.use('default')
+plt.style.use("default")
 
-new_model_labels = ['MDN', 'BNN DC', 'BNN MCD', 'ENS NN', 'RNN']
-variables = ['aCDOM_443', 'aCDOM_675', 'aNAP_443', 'aNAP_675', 'aph_443', 'aph_675']
-display_titles = ['a$_{CDOM}$ 443', 'a$_{CDOM}$ 675', 'a$_{NAP}$ 443', 'a$_{NAP}$ 675', 'a$_{ph}$ 443', 'a$_{ph}$ 675']
+new_model_labels = ["MDN", "BNN DC", "BNN MCD", "ENS NN", "RNN"]
+display_titles = ["a$_{CDOM}$ 443", "a$_{CDOM}$ 675", "a$_{NAP}$ 443", "a$_{NAP}$ 675", "a$_{ph}$ 443", "a$_{ph}$ 675"]
 
 # Plot data as matrices
 for ax, data in zip(axs[0], data_uncertainty):
@@ -178,11 +187,10 @@ axs[0, 0].set_title("Within distribution (WD)", fontsize=12, fontweight="bold")
 axs[0, 1].set_title("Out of distribution (OOD)", fontsize=12, fontweight="bold")
 
 # Super labels
-fig.supxlabel('IOPs', fontsize=12, fontweight='bold')
-fig.supylabel('Models', fontsize=12, fontweight='bold')
+fig.supxlabel("IOPs", fontsize=12, fontweight="bold")
+fig.supylabel("Models", fontsize=12, fontweight="bold")
 
 # Save
-save_path = './'
-plt.savefig(save_path + 'avg_uncertainty_results.png', dpi=200, bbox_inches='tight')
+plt.savefig(save_path/"avg_uncertainty_results.png", dpi=200, bbox_inches="tight")
 
 plt.show()

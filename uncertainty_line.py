@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
@@ -7,26 +7,28 @@ from matplotlib import pyplot as plt
 
 # Define constants
 pred_path = Path("iop_model_predictions/")
-columns_of_interest = ['aCDOM_443', 'aCDOM_675', 'aNAP_443', 'aNAP_675', 'aph_443', 'aph_675']
+save_path = Path("results/")
+variables = ["aCDOM_443", "aCDOM_675", "aNAP_443", "aNAP_675", "aph_443", "aph_675"]
 
 # Load data
-mdn_wd = pd.read_csv(pred_path/'mdn_wd_preds.csv')
-mdn_ood = pd.read_csv(pred_path/'mdn_ood_preds.csv')
+mdn_wd = pd.read_csv(pred_path/"mdn_wd_preds.csv")
+mdn_ood = pd.read_csv(pred_path/"mdn_ood_preds.csv")
 
-dc_wd = pd.read_csv(pred_path/'bnn_dropconnect_wd_preds.csv')
-dc_ood = pd.read_csv(pred_path/'bnn_dropconnect_ood_preds.csv')
+dc_wd = pd.read_csv(pred_path/"bnn_dropconnect_wd_preds.csv")
+dc_ood = pd.read_csv(pred_path/"bnn_dropconnect_ood_preds.csv")
 
-mcd_wd = pd.read_csv(pred_path/'bnn_mcd_wd_preds.csv')
-mcd_ood = pd.read_csv(pred_path/'bnn_mcd_ood_preds.csv')
+mcd_wd = pd.read_csv(pred_path/"bnn_mcd_wd_preds.csv")
+mcd_ood = pd.read_csv(pred_path/"bnn_mcd_ood_preds.csv")
 
-ens_wd = pd.read_csv(pred_path/'ensemble_wd_preds.csv')
-ens_ood = pd.read_csv(pred_path/'ensemble_ood_preds.csv')
+ens_wd = pd.read_csv(pred_path/"ensemble_wd_preds.csv")
+ens_ood = pd.read_csv(pred_path/"ensemble_ood_preds.csv")
 
-rnn_wd = pd.read_csv(pred_path/'rnn_wd_preds.csv')
-rnn_ood = pd.read_csv(pred_path/'rnn_ood_preds.csv')
+rnn_wd = pd.read_csv(pred_path/"rnn_wd_preds.csv")
+rnn_ood = pd.read_csv(pred_path/"rnn_ood_preds.csv")
 
 
-def calculate_percentage_from_category(df, category1, category2, columns_of_interest):
+def calculate_percentage_from_category(df: pd.DataFrame, category1: str, category2: str, *,
+                                       columns_of_interest: Iterable[str]=variables) -> pd.DataFrame:
     """
     Filters two categories from the main dataframe, resets their indexes,
     selects the specific columns, and calculates the percentage of category1 over category2 for those columns.
@@ -41,8 +43,8 @@ def calculate_percentage_from_category(df, category1, category2, columns_of_inte
     - A dataframe with the calculated percentages for the specified columns.
     """
     # Filter dataframes by category and reset indexes
-    df_cat_reset_1 = df[df['Category'] == category1].reset_index(drop=True)
-    df_cat_reset_2 = df[df['Category'] == category2].reset_index(drop=True)
+    df_cat_reset_1 = df[df["Category"] == category1].reset_index(drop=True)
+    df_cat_reset_2 = df[df["Category"] == category2].reset_index(drop=True)
 
     # Perform the operation on the specified columns
     result = (df_cat_reset_1[columns_of_interest] / df_cat_reset_2[columns_of_interest]) * 100
@@ -53,19 +55,19 @@ def calculate_percentage_from_category(df, category1, category2, columns_of_inte
     return result
 
 # Use the updated function to calculate percentages directly from the main dataframe
-percent_total_uncertainty = calculate_percentage_from_category(rnn_ood, 'total_unc', 'pred_scaled_for_unc', columns_of_interest)
+percent_total_uncertainty = calculate_percentage_from_category(rnn_ood, "total_unc", "pred_scaled_for_unc")
 
-percent_aleatoric_uncertainty = calculate_percentage_from_category(rnn_ood, 'ale_unc', 'pred_scaled_for_unc', columns_of_interest)
+percent_aleatoric_uncertainty = calculate_percentage_from_category(rnn_ood, "ale_unc", "pred_scaled_for_unc")
 
-percent_epistemic_uncertainty = calculate_percentage_from_category(rnn_ood, 'epi_unc', 'pred_scaled_for_unc', columns_of_interest)
+percent_epistemic_uncertainty = calculate_percentage_from_category(rnn_ood, "epi_unc", "pred_scaled_for_unc")
 
 # Other categories
-pred_scaled = rnn_ood[rnn_ood['Category'] == 'pred_scaled_for_unc']
+pred_scaled = rnn_ood[rnn_ood["Category"] == "pred_scaled_for_unc"]
 
-y_true = rnn_ood[rnn_ood['Category'] == 'y_true']
-y_pred = rnn_ood[rnn_ood['Category'] == 'y_pred']
+y_true = rnn_ood[rnn_ood["Category"] == "y_true"]
+y_pred = rnn_ood[rnn_ood["Category"] == "y_pred"]
 
-std_pred = rnn_ood[rnn_ood['Category'] == 'pred_std'].reset_index(drop=True)
+std_pred = rnn_ood[rnn_ood["Category"] == "pred_std"].reset_index(drop=True)
 
 # Calculate log-binned statistics
 statistics = ["mean", "std"]
