@@ -9,34 +9,30 @@ from matplotlib import pyplot as plt
 pred_path = Path("iop_model_predictions/")
 save_path = Path("results/")
 variables = ["aCDOM_443", "aCDOM_675", "aNAP_443", "aNAP_675", "aph_443", "aph_675"]
+reference_column = "pred_scaled_for_unc"
 
 
 ### Functions for loading and processing dataframes
-def filter_df(df: pd.DataFrame, category: str, *, suffix: str="") -> pd.DataFrame:
+def filter_df(df: pd.DataFrame, category: str) -> pd.DataFrame:
     """
     Reorganise a single dataframe to have Instance as its index, only contain data columns, and (optionally) have a suffix added to all columns.
     """
     df_filtered = df.loc[df["Category"] == category]
     return df_filtered.set_index("Instance") \
-                      .drop(columns=["Category"]) \
-                      .add_suffix(suffix)
+                      .drop(columns=["Category"])
 
 
-def reorganise_df(df: pd.DataFrame, *, reference: str="pred_scaled_for_unc") -> pd.DataFrame:
+def reorganise_df(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Reorganise an input dataframe to have a single index with columns per category.
+    Reorganise an input dataframe so that "Category" becomes a multi-index.
     """
-    # Filter dataframes by category
-    df_reference = filter_df(df, reference, suffix="_ref")
-    df_true = filter_df(df, "y_true", suffix="_true")
-    df_pred = filter_df(df, "y_pred", suffix="_pred")
-    df_std = filter_df(df, "pred_std", suffix="_pred_std")
-    df_unc_total = filter_df(df, "total_unc", suffix="_unc_total")
-    df_unc_aleatoric = filter_df(df, "ale_unc", suffix="_unc_aleatoric")
-    df_unc_epistemic = filter_df(df, "epi_unc", suffix="_unc_epistemic")
+    # Filter dataframes by category into a dictionary
+    dataframes = {key: filter_df(df, key) for key in df["Category"].unique()}
 
     # Join everything back into a single dataframe
-    return df_reference.join(df_true).join(df_pred).join(df_std).join(df_unc_total).join(df_unc_aleatoric).join(df_unc_epistemic)
+    df_combined = pd.concat(dataframes)
+
+    return df_combined
 
 
 def read_data(filename: Path | str) -> pd.DataFrame:
@@ -49,14 +45,14 @@ def read_data(filename: Path | str) -> pd.DataFrame:
 
 
 ### Further processing
-def calculate_percentage_from_category(df: pd.DataFrame, *, columns_of_interest: Iterable[str]=variables) -> pd.DataFrame:
+def calculate_percentage_uncertainty(df: pd.DataFrame, *, reference_suffix: str="_ref", columns_of_interest: Iterable[str]=variables) -> pd.DataFrame:
     """
     Calculates the percentage uncertainty (total, aleatoric, epistemic) relative to the scaled prediction.
 
     Parameters:
     - df: the main dataframe containing all data.
     Optional:
-    - reference: the category for the denominator (default: "pred_scaled_for_unc")
+    - reference_suffix: the suffix for the denominator (default: "_ref")
     - columns_of_interest: the IOPs to perform the operation on (default: `variables`)
 
     Returns:
@@ -152,8 +148,7 @@ def log_binned_statistics_combined(x: pd.DataFrame, total: pd.DataFrame, aleator
     epistemic_binned = epistemic_binned[statistics].add_suffix("_epistemic")
 
     # Combine and return
-    total_binned = total_binned.join(aleatoric_binned)
-    total_binned = total_binned.join(epistemic_binned)
+    total_binned = total_binned.join(aleatoric_binned).join(epistemic_binned)
 
     return total_binned
 
