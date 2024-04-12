@@ -88,8 +88,6 @@ ens_ood = read_data(pred_path/"ensemble_ood_preds.csv")
 rnn_wd = read_data(pred_path/"rnn_wd_preds.csv")
 rnn_ood = read_data(pred_path/"rnn_ood_preds.csv")
 
-raise Exception
-
 # Calculate log-binned statistics
 statistics = ["mean", "std"]
 col = "aph_675"
@@ -110,6 +108,7 @@ def log_binned_statistics(x: pd.Series, y: pd.Series, *,
     # Setup
     x_log = np.log10(x)
     bins_log = np.linspace(np.log10(vmin), np.log10(vmax), n)
+    bins = np.power(10, bins_log)
 
     # Find the indices per bin
     slices = [(x_log >= centre - binwidth) & (x_log <= centre + binwidth) for centre in bins_log]
@@ -120,27 +119,37 @@ def log_binned_statistics(x: pd.Series, y: pd.Series, *,
     binned_stds = [b.std() for b in binned]
 
     # Wrap into dataframe
-    binned = pd.DataFrame(data={"centre": np.power(10, bins_log), "mean": binned_means, "std": binned_stds})
+    binned = pd.DataFrame(index=bins, data={"mean": binned_means, "std": binned_stds})
     return binned
 
 
-def log_binned_statistics_combined(x: pd.DataFrame, total: pd.DataFrame, aleatoric: pd.DataFrame, epistemic: pd.DataFrame, column: str, **kwargs) -> pd.DataFrame:
+def log_binned_statistics_all_variables(reference: pd.DataFrame, data: pd.DataFrame, *,
+                                        columns: Iterable[str]=variables) -> pd.DataFrame:
+    """
+    Calculate log binned statistics for each of the variables in one dataframe.
+    """
+    # Perform calculations
+    binned = {key: log_binned_statistics(reference.loc[:,key], data.loc[:,key]) for key in columns}
+
+    # Add suffices to columns and merge
+    binned = [df.add_prefix(f"{key}_") for key, df in binned.items()]
+    binned = binned[0].join(binned[1:])
+
+    return binned
+
+
+def log_binned_statistics_combined(df: pd.DataFrame, *,
+                                   reference_key: str="y_true", uncertainty_keys: Iterable[str]=("total_unc_pct", "ale_unc_pct", "epi_unc_pct")) -> pd.DataFrame:
     """
     Calculate log binned statistics for each of the uncertainty dataframes relative to x, and combine them into a single dataframe.
     """
-    # Bin individually
-    total_binned = log_binned_statistics(x[column], total[column])
-    aleatoric_binned = log_binned_statistics(x[column], aleatoric[column])
-    epistemic_binned = log_binned_statistics(x[column], epistemic[column])
+    # Bin individual uncertainty keys
+    binned = {key: log_binned_statistics_all_variables(df.loc[reference_key], df.loc[key]) for key in uncertainty_keys}
 
-    # Extract data columns
-    aleatoric_binned = aleatoric_binned[statistics].add_suffix("_aleatoric")
-    epistemic_binned = epistemic_binned[statistics].add_suffix("_epistemic")
+    # Combine into one multi-index DataFrame
+    binned = pd.concat(binned)
 
-    # Combine and return
-    total_binned = total_binned.join(aleatoric_binned).join(epistemic_binned)
-
-    return total_binned
+    return binned
 
 
 def plot_log_binned_statistics(binned: pd.DataFrame, *, ax: Optional[plt.Axes]=None) -> None:
@@ -156,8 +165,7 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *, ax: Optional[plt.Axes]=N
     else:
         fig = ax.figure
 
-
-binned = log_binned_statistics_combined(y_true, percent_total_uncertainty, percent_aleatoric_uncertainty, percent_epistemic_uncertainty, col)
+binned = log_binned_statistics_combined(mdn_wd)
 
 # Plot
 fig, ax = plt.subplots(1, 1, sharex=True, sharey=True)
