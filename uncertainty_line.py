@@ -24,15 +24,9 @@ def filter_df(df: pd.DataFrame, category: str) -> pd.DataFrame:
 
 def reorganise_df(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Reorganise an input dataframe so that "Category" becomes a multi-index.
+    Reorganise an input dataframe so that "Category" and "Instance" become a multi-index.
     """
-    # Filter dataframes by category into a dictionary
-    dataframes = {key: filter_df(df, key) for key in df["Category"].unique()}
-
-    # Join everything back into a single dataframe
-    df_combined = pd.concat(dataframes)
-
-    return df_combined
+    return df.set_index(["Category", "Instance"])
 
 
 def calculate_percentage_uncertainty(df: pd.DataFrame, *,
@@ -179,7 +173,7 @@ def plot_log_binned_statistics(binned: pd.DataFrame, variable: str, *,
 
 
 # mdn_wd, mdn_ood, dc_wd, dc_ood, mcd_wd, mcd_ood, ens_wd, ens_ood, rnn_wd, rnn_ood
-binned = log_binned_statistics_combined(rnn_wd)
+binned = log_binned_statistics_combined(mdn_wd)
 
 # Plot
 fig, axs = plt.subplots(nrows=1, ncols=len(variables), sharex=True, figsize=(15, 5), layout="constrained")
