@@ -220,8 +220,8 @@ def performance(key, y1, y2, metrics=[rmse, slope, msa, rmsle, sspb, MAD, leqzna
 
 ####
 
-pred_path = 'C:\\github_repos\\iop_nns\\pnn_model_estimates\\'
-fig_save_path = 'C:\\github_repos\\iop_nns\\manuscript_figures\\'
+pred_path = 'pnn_model_estimates/'
+fig_save_path = 'manuscript_figures/'
 
 # MDN, BNN DC, BNN MCD, ENS, RNN - RS, WD, OOD result estimates
 
@@ -327,7 +327,7 @@ def calculate_metrics(y_true, y_pred):
 
         # Calculate regression
         slope, intercept, r_value, p_value, std_err = linregress(log_y_true, log_y_pred)
-        r_squared = r_value ** 2 
+        r_squared = r_value ** 2
 
         return {
             'sspb': sspb(y_true_filtered, y_pred_filtered),
@@ -344,7 +344,7 @@ for name, result in results.items():
     metrics_df = pd.DataFrame(index=columns_of_interest, columns=['mdsa', 'sspb', 'r_squared'])
 
     for col in columns_of_interest:
-        y_true = result['y_true'][col].values.flatten()  
+        y_true = result['y_true'][col].values.flatten()
         y_pred = result['y_pred'][col].values.flatten()
         metrics = calculate_metrics(y_true, y_pred)
         metrics_df.loc[col] = [metrics['mdsa'], metrics['sspb'], metrics['r_squared']]
@@ -386,7 +386,7 @@ display_titles = ['a$_{CDOM}$ 443', 'a$_{CDOM}$ 675', 'a$_{ph}$ 443', 'a$_{ph}$ 
 def plot_vertical_lollipop_charts(metrics_results_list, titles):
     n_groups = len(display_titles)
     n_metrics = len(metrics_display)
-    n_models = len(metrics_results_list[0])  
+    n_models = len(metrics_results_list[0])
     bar_width = 0.15
     opacity = 0.8
 
