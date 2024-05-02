@@ -6,8 +6,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 ### Define constants
-pred_path = Path("iop_model_predictions/")
-save_path = Path("results/")
+pred_path = Path("pnn_model_estimates/")
+save_path = Path("manuscript_figures/")
 variables = ("aCDOM_443", "aCDOM_675", "aNAP_443", "aNAP_675", "aph_443", "aph_675")
 uncertainty_labels = ("Total", "Aleatoric", "Epistemic")
 colors = ("black", "blue", "orange")
@@ -173,7 +173,7 @@ def plot_log_binned_statistics(binned: pd.DataFrame, variable: str, *,
 
 
 # mdn_wd, mdn_ood, dc_wd, dc_ood, mcd_wd, mcd_ood, ens_wd, ens_ood, rnn_wd, rnn_ood
-binned = log_binned_statistics_combined(mdn_wd)
+binned = log_binned_statistics_combined(mcd_wd)
 
 # Plot
 fig, axs = plt.subplots(nrows=1, ncols=len(variables), sharex=True, figsize=(15, 5), layout="constrained")
@@ -190,5 +190,6 @@ fig.suptitle("")
 fig.supxlabel("In situ value", fontweight="bold")
 fig.supylabel("Mean uncertainty [%]", fontweight="bold")
 
+plt.savefig(save_path/"uncertainty_line.png")
 plt.show()
 plt.close()
