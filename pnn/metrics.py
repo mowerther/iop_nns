@@ -70,7 +70,7 @@ def nrmse(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
 	""" Normalized Root Mean Squared Error """
 	return rmse(y, y_hat) / y.mean()
 
-@label('R^2')
+@label("R²")
 def r_squared(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     """ R² """
     SSres = ((y - y_hat)**2).sum()
@@ -79,27 +79,11 @@ def r_squared(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     return R2
 
 @only_positive
+@label("R² (log)")
 def log_r_squared(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     """ R² of the logs """
     y, y_hat = np.log10(y), np.log10(y_hat)
     return r_squared(y, y_hat)
-
-
-@label('<=0')
-def leqz(y1, y2=None):
-    """ Less than or equal to zero (y2) """
-    if y2 is None: y2 = y1
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore')
-        return (y2 <= 0).sum()
-
-@label('<=0|NaN')
-def leqznan(y1, y2=None):
-    """ Less than or equal to zero (y2) """
-    if y2 is None: y2 = y1
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore')
-        return np.logical_or(np.isnan(y2), y2 <= 0).sum()
 
 @label('MAD')
 def MAD(y1, y2):
@@ -113,7 +97,7 @@ def MAD(y1, y2):
     return 10**np.nanmean(np.abs(y1 - y2))-1
 
 @label('MdAPE')
-def mape(y, y_hat):
+def mape(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     """ Mean Absolute Percentage Error """
     med = np.abs( (y - y_hat) / y).median()
     MAPE = 100 * med
@@ -121,15 +105,16 @@ def mape(y, y_hat):
 
 @only_positive
 @label('MSA')
-def msa(y, y_hat):
-	""" Mean Symmetric Accuracy """
-	# https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2017SW001669
-	return 100 * (np.exp(np.nanmean(np.abs(np.log(y_hat / y)))) - 1)
-
+def msa(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
+    """ Mean Symmetric Accuracy """
+    # https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2017SW001669
+    m = np.abs(np.log(y_hat / y)).mean()
+    MSA = 100 * (np.exp(m) - 1)
+    return MSA
 
 @only_positive
 @label('MdSA')
-def mdsa(y, y_hat):
+def mdsa(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     """ Median Symmetric Accuracy """
     # https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2017SW001669
     med = np.abs(np.log(y_hat / y)).median()
@@ -138,7 +123,7 @@ def mdsa(y, y_hat):
 
 @only_positive
 @label('SSPB')
-def sspb(y, y_hat):
+def sspb(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     """ Symmetric Signed Percentage Bias """
     # https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2017SW001669
     med = np.log(y_hat / y).median()
@@ -146,50 +131,50 @@ def sspb(y, y_hat):
     return SSPB
 
 @label('Bias')
-def bias(y, y_hat):
+def bias(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
 	""" Mean Bias """
 	return (y_hat - y).mean()
 
-@only_positive
-@label('Slope')
-def slope(y, y_hat):
-	""" Logarithmic slope """
-	slope_, intercept_, r_value, p_value, std_err = linregress(np.log10(y), np.log10(y_hat))
-	return slope_
+# @only_positive
+# @label('Slope')
+# def slope(y, y_hat):
+# 	""" Logarithmic slope """
+# 	slope_, intercept_, r_value, p_value, std_err = linregress(np.log10(y), np.log10(y_hat))
+# 	return slope_
 
-@only_positive
-@label('Intercept')
-def intercept(y, y_hat):
-	""" Locarithmic intercept """
-	slope_, intercept_, r_value, p_value, std_err = linregress(np.log10(y), np.log10(y_hat))
-	return intercept_
+# @only_positive
+# @label('Intercept')
+# def intercept(y, y_hat):
+# 	""" Locarithmic intercept """
+# 	slope_, intercept_, r_value, p_value, std_err = linregress(np.log10(y), np.log10(y_hat))
+# 	return intercept_
 
-@label('MWR')
-def mwr(y, y_hat, y_bench):
-	"""
-	Model Win Rate - Percent of samples in which model has a closer
-	estimate than the benchmark.
-		y: true, y_hat: model, y_bench: benchmark
-	"""
-	y_bench[y_bench < 0] = np.nan
-	y_hat[y_hat < 0] = np.nan
-	y[y < 0] = np.nan
-	valid = np.logical_and(np.isfinite(y_hat), np.isfinite(y_bench))
-	diff1 = np.abs(y[valid] - y_hat[valid])
-	diff2 = np.abs(y[valid] - y_bench[valid])
-	stats = np.zeros(len(y))
-	stats[valid]  = diff1 < diff2
-	stats[~np.isfinite(y_bench)] = 1
-	stats[~np.isfinite(y_hat)] = 0
-	return stats.sum() / np.isfinite(y).sum()
+# @label('MWR')
+# def mwr(y, y_hat, y_bench):
+# 	"""
+# 	Model Win Rate - Percent of samples in which model has a closer
+# 	estimate than the benchmark.
+# 		y: true, y_hat: model, y_bench: benchmark
+# 	"""
+# 	y_bench[y_bench < 0] = np.nan
+# 	y_hat[y_hat < 0] = np.nan
+# 	y[y < 0] = np.nan
+# 	valid = np.logical_and(np.isfinite(y_hat), np.isfinite(y_bench))
+# 	diff1 = np.abs(y[valid] - y_hat[valid])
+# 	diff2 = np.abs(y[valid] - y_bench[valid])
+# 	stats = np.zeros(len(y))
+# 	stats[valid]  = diff1 < diff2
+# 	stats[~np.isfinite(y_bench)] = 1
+# 	stats[~np.isfinite(y_hat)] = 0
+# 	return stats.sum() / np.isfinite(y).sum()
 
 
 ### AGGREGATE FUNCTIONS
-def performance(key, y1, y2, metrics=[rmse, slope, msa, rmsle, sspb, MAD, leqznan]):#[rmse, rmsle, mape, r_squared, bias, mae, leqznan, slope]):
-    """ Return a string containing performance using various metrics.
-        y1 should be the true value, y2 the estimated value. """
-    return '%8s | %s' % (key, '   '.join([
-            '%s: %6.3f' % (f.__name__, f(y1,y2)) for f in metrics]))
+# def performance(key, y1, y2, metrics=[rmse, msa, rmsle, sspb, MAD]):
+#     """ Return a string containing performance using various metrics.
+#         y1 should be the true value, y2 the estimated value. """
+#     return '%8s | %s' % (key, '   '.join([
+#             '%s: %6.3f' % (f.__name__, f(y1,y2)) for f in metrics]))
 
 
 _MASK_THRESHOLD = 1e-4
