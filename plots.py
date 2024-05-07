@@ -9,15 +9,12 @@ from matplotlib import pyplot as plt
 from matplotlib import ticker
 from matplotlib.ticker import ScalarFormatter
 
-from pnn import io, metrics
+from pnn import io, logbins, metrics
+from pnn.constants import pred_path, save_path, iops, network_types, split_types
 
 ### CONSTANTS
 plt.style.use("default")
 
-pred_path = Path("pnn_model_estimates/")
-save_path = Path("manuscript_figures/")
-
-variables = ("aCDOM_443", "aCDOM_675", "aNAP_443", "aNAP_675", "aph_443", "aph_675")
 uncertainty_labels = ("Total", "Aleatoric", "Epistemic")
 colors = ("black", "blue", "orange")
 
@@ -30,75 +27,13 @@ model_colors = {
     'rnn': '#FFC733',
     }
 
-
-### RUN SCRIPT
 ### LOAD DATA
-network_types = ["mdn", "bnn_dropconnect", "bnn_mcd", "ensemble", "rnn"]
-split_types = ["wd", "ood", "random_split"]
 results = {f"{network}_{split}": io.read_data(pred_path/f"{network}_{split}_preds.csv") for network, split in itertools.product(network_types, split_types)}
 print("Read results into `results` dictionary")
 print(results.keys())
 
 ### LINE PLOT
 # Calculate log-binned statistics
-def log_binned_statistics(x: pd.Series, y: pd.Series, *,
-                          vmin: float=1e-4, vmax: float=40, binwidth: float=0.2, n: int=100) -> pd.DataFrame:
-    """
-    Calculate statistics (mean, std) for y as a function of x, in log-space bins.
-    binwidth and n can be chosen separately to allow for overlapping bins.
-    Example:
-        x = in situ data
-        y = total uncertainty in prediction
-        vmin = 0.1 ; vmax = 10 ; binwidth = 1 ; n = 2
-        Calculates mean and std uncertainty in prediction at (0.1 < x < 1), (1 < x < 10)
-    """
-    # Setup
-    x_log = np.log10(x)
-    bins_log = np.linspace(np.log10(vmin), np.log10(vmax), n)
-    bins = np.power(10, bins_log)
-
-    # Find the indices per bin
-    slices = [(x_log >= centre - binwidth) & (x_log <= centre + binwidth) for centre in bins_log]
-    binned = [y.loc[s] for s in slices]
-
-    # Calculate statistics
-    binned_means = [b.mean() for b in binned]
-    binned_stds = [b.std() for b in binned]
-
-    # Wrap into dataframe
-    binned = pd.DataFrame(index=bins, data={"mean": binned_means, "std": binned_stds})
-    return binned
-
-
-def log_binned_statistics_all_variables(reference: pd.DataFrame, data: pd.DataFrame, *,
-                                        columns: Iterable[str]=variables) -> pd.DataFrame:
-    """
-    Calculate log binned statistics for each of the variables in one dataframe.
-    """
-    # Perform calculations
-    binned = {key: log_binned_statistics(reference.loc[:,key], data.loc[:,key]) for key in columns}
-
-    # Add suffices to columns and merge
-    binned = [df.add_prefix(f"{key}_") for key, df in binned.items()]
-    binned = binned[0].join(binned[1:])
-
-    return binned
-
-
-def log_binned_statistics_combined(df: pd.DataFrame, *,
-                                   reference_key: str="y_true", uncertainty_keys: Iterable[str]=("total_unc_pct", "ale_unc_pct", "epi_unc_pct")) -> pd.DataFrame:
-    """
-    Calculate log binned statistics for each of the uncertainty dataframes relative to x, and combine them into a single dataframe.
-    """
-    # Bin individual uncertainty keys
-    binned = {key: log_binned_statistics_all_variables(df.loc[reference_key], df.loc[key]) for key in uncertainty_keys}
-
-    # Combine into one multi-index DataFrame
-    binned = pd.concat(binned)
-
-    return binned
-
-
 def plot_log_binned_statistics(binned: pd.DataFrame, variable: str, *,
                                ax: Optional[plt.Axes]=None,
                                uncertainty_keys: Iterable[str]=("total_unc_pct", "ale_unc_pct", "epi_unc_pct")) -> None:
@@ -129,12 +64,12 @@ def plot_log_binned_statistics(binned: pd.DataFrame, variable: str, *,
 
 
 # mdn_wd, mdn_ood, dc_wd, dc_ood, mcd_wd, mcd_ood, ens_wd, ens_ood, rnn_wd, rnn_ood
-binned = log_binned_statistics_combined(results["mdn_wd"])
+binned = logbins.log_binned_statistics_combined(results["mdn_wd"])
 
 # Plot
-fig, axs = plt.subplots(nrows=1, ncols=len(variables), sharex=True, figsize=(15, 5), layout="constrained")
+fig, axs = plt.subplots(nrows=1, ncols=len(iops), sharex=True, figsize=(15, 5), layout="constrained")
 
-for ax, var in zip(axs, variables):
+for ax, var in zip(axs, iops):
     plot_log_binned_statistics(binned, var, ax=ax)
 
 # Settings
