@@ -1,6 +1,5 @@
 # Folders for input/output
 iop_model_predictions/
-results/
 
 # Input/output files in the main folder, used for testing only
 *.csv
