@@ -62,6 +62,8 @@ def plot_log_binned_statistics(binned: Iterable[pd.DataFrame], *,
         for ax, var in zip(ax_row, iops):
             plot_log_binned_statistics_line(df, var, ax=ax, legend=False)
 
+        ax_row[0].set_ylabel(label)
+
     # Settings
     axs[0, 0].set_xscale("log")
     for ax in axs.ravel():
