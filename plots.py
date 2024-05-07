@@ -9,81 +9,20 @@ from matplotlib import pyplot as plt
 from matplotlib import ticker
 from matplotlib.ticker import ScalarFormatter
 
-from pnn import io, logbins, metrics
+from pnn import io, logbins, metrics, plot
 from pnn.constants import pred_path, save_path, iops, network_types, split_types
 
 ### CONSTANTS
-plt.style.use("default")
 
-uncertainty_labels = ("Total", "Aleatoric", "Epistemic")
-colors = ("black", "blue", "orange")
-
-# Define model colors for distinction
-model_colors = {
-    'mdn': '#FF5733',
-    'mcd': '#33FF57',
-    'dc': '#3357FF',
-    'ens': '#F933FF',
-    'rnn': '#FFC733',
-    }
 
 ### LOAD DATA
 results = {f"{network}_{split}": io.read_data(pred_path/f"{network}_{split}_preds.csv") for network, split in itertools.product(network_types, split_types)}
 print("Read results into `results` dictionary")
 print(results.keys())
 
-### LINE PLOT
-# Calculate log-binned statistics
-def plot_log_binned_statistics(binned: pd.DataFrame, variable: str, *,
-                               ax: Optional[plt.Axes]=None,
-                               uncertainty_keys: Iterable[str]=("total_unc_pct", "ale_unc_pct", "epi_unc_pct")) -> None:
-    """
-    Given a DataFrame containing log-binned statistics, plot the total/aleatoric/epistemic uncertainties for one variable.
-    Plots a line for the mean uncertainty and a shaded area for the standard deviation.
-    If no ax is provided, a new figure is created.
-    """
-    # Set up keys
-    mean, std = f"{variable}_mean", f"{variable}_std"
-
-    # Set up a new figure if desired
-    NEW_FIGURE = (ax is None)
-    if NEW_FIGURE:
-        fig, ax = plt.subplots(1, 1)
-    else:
-        fig = ax.figure
-
-    # Loop over uncertainty types and plot each
-    for unc, label, color in zip(uncertainty_keys, uncertainty_labels, colors):
-        df = binned.loc[unc]
-        df.plot.line(ax=ax, y=mean, color=color, label=label)
-        ax.fill_between(df.index, df[mean] - df[std], df[mean] + df[std], color=color, alpha=0.1)
-
-    # Labels
-    ax.set_xlabel(variable)
-    ax.grid(True, ls="--")
-
-
-# mdn_wd, mdn_ood, dc_wd, dc_ood, mcd_wd, mcd_ood, ens_wd, ens_ood, rnn_wd, rnn_ood
-binned = logbins.log_binned_statistics_combined(results["mdn_wd"])
-
-# Plot
-fig, axs = plt.subplots(nrows=1, ncols=len(iops), sharex=True, figsize=(15, 5), layout="constrained")
-
-for ax, var in zip(axs, iops):
-    plot_log_binned_statistics(binned, var, ax=ax)
-
-# Settings
-axs[0].set_xscale("log")
-for ax in axs:
-    ax.set_ylim(ymin=0)
-
-fig.suptitle("")
-fig.supxlabel("In situ value", fontweight="bold")
-fig.supylabel("Mean uncertainty [%]", fontweight="bold")
-
-plt.savefig(save_path/"uncertainty_line.png")
-plt.show()
-plt.close()
+### LOG-BINNED UNCERTAINTY (LINE) PLOT
+binned = {key: logbins.log_binned_statistics_combined(df) for key, df in results.items()}
+plot.plot_log_binned_statistics(binned)
 
 
 ### LOLLIPOP PLOT
@@ -120,7 +59,7 @@ def plot_vertical_lollipop_charts(metrics_results_list, titles):
 
             for model_idx, (model_key, df) in enumerate(metrics_results.items()):
                 model_short = model_key.split('_')[0]
-                color = model_colors.get(model_short, 'gray')
+                color = plot.model_colors.get(model_short, 'gray')
 
                 # Drop aNAP
                 df = df.drop(columns=[key for key in df.columns if "NAP" in key])

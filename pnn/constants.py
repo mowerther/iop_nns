@@ -13,3 +13,11 @@ save_path = Path("manuscript_figures/")
 iops = ("aCDOM_443", "aCDOM_675", "aNAP_443", "aNAP_675", "aph_443", "aph_675")
 network_types = ("mdn", "bnn_dropconnect", "bnn_mcd", "ensemble", "rnn")
 split_types = ("wd", "ood", "random_split")
+
+uncertainty_types = {"ale_unc_pct": "Aleatoric",
+                     "epi_unc_pct": "Epistemic",
+                     "total_unc_pct": "Total",}
+
+uncertainty_colors = {"ale_unc_pct": "blue",
+                      "epi_unc_pct": "orange",
+                      "total_unc_pct": "black",}

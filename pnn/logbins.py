@@ -6,7 +6,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .constants import iops
+from .constants import iops, uncertainty_types
 
 def log_binned_statistics(x: pd.Series, y: pd.Series, *,
                           vmin: float=1e-4, vmax: float=40, binwidth: float=0.2, n: int=100) -> pd.DataFrame:
@@ -53,7 +53,7 @@ def log_binned_statistics_all_variables(reference: pd.DataFrame, data: pd.DataFr
 
 
 def log_binned_statistics_combined(df: pd.DataFrame, *,
-                                   reference_key: str="y_true", uncertainty_keys: Iterable[str]=("total_unc_pct", "ale_unc_pct", "epi_unc_pct")) -> pd.DataFrame:
+                                   reference_key: str="y_true", uncertainty_keys: Iterable[str]=uncertainty_types.keys()) -> pd.DataFrame:
     """
     Calculate log binned statistics for each of the uncertainty dataframes relative to x, and combine them into a single dataframe.
     """
