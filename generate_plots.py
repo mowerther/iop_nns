@@ -21,6 +21,7 @@ print(results.keys())
 ### LOG-BINNED UNCERTAINTY (LINE) PLOT
 binned = {key: logbins.log_binned_statistics_combined(df) for key, df in results.items()}
 plot.plot_log_binned_statistics(binned)
+print("Saved log-binned uncertainty (line) plot")
 
 
 ### LOLLIPOP PLOT
@@ -85,3 +86,4 @@ def plot_vertical_lollipop_charts(metrics_results_list, titles):
 
 # Example usage with the revised function and hypothetical data structure
 plot_vertical_lollipop_charts([random_metrics_results, wd_metrics_results, ood_metrics_results], ['Random split', 'Within-distribution split', 'Out-of-distribution split'])
+print("Saved performance metric (lollipop) plot")
