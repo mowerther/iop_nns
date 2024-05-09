@@ -135,48 +135,6 @@ def bias(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
 	""" Mean Bias """
 	return (y_hat - y).mean()
 
-# @only_positive
-# @label('Slope')
-# def slope(y, y_hat):
-# 	""" Logarithmic slope """
-# 	slope_, intercept_, r_value, p_value, std_err = linregress(np.log10(y), np.log10(y_hat))
-# 	return slope_
-
-# @only_positive
-# @label('Intercept')
-# def intercept(y, y_hat):
-# 	""" Locarithmic intercept """
-# 	slope_, intercept_, r_value, p_value, std_err = linregress(np.log10(y), np.log10(y_hat))
-# 	return intercept_
-
-# @label('MWR')
-# def mwr(y, y_hat, y_bench):
-# 	"""
-# 	Model Win Rate - Percent of samples in which model has a closer
-# 	estimate than the benchmark.
-# 		y: true, y_hat: model, y_bench: benchmark
-# 	"""
-# 	y_bench[y_bench < 0] = np.nan
-# 	y_hat[y_hat < 0] = np.nan
-# 	y[y < 0] = np.nan
-# 	valid = np.logical_and(np.isfinite(y_hat), np.isfinite(y_bench))
-# 	diff1 = np.abs(y[valid] - y_hat[valid])
-# 	diff2 = np.abs(y[valid] - y_bench[valid])
-# 	stats = np.zeros(len(y))
-# 	stats[valid]  = diff1 < diff2
-# 	stats[~np.isfinite(y_bench)] = 1
-# 	stats[~np.isfinite(y_hat)] = 0
-# 	return stats.sum() / np.isfinite(y).sum()
-
-
-### AGGREGATE FUNCTIONS
-# def performance(key, y1, y2, metrics=[rmse, msa, rmsle, sspb, MAD]):
-#     """ Return a string containing performance using various metrics.
-#         y1 should be the true value, y2 the estimated value. """
-#     return '%8s | %s' % (key, '   '.join([
-#             '%s: %6.3f' % (f.__name__, f(y1,y2)) for f in metrics]))
-
-
 _MASK_THRESHOLD = 1e-4
 def calculate_metrics(df: pd.DataFrame) -> pd.DataFrame:
     # Ensure non-negative and non-zero filtering
