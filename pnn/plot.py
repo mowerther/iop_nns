@@ -87,7 +87,6 @@ def plot_performance_metrics_lollipop(metrics_results: dict[str, pd.DataFrame], 
     """
     # Constants
     bar_width = 0.15
-    opacity = 0.8
 
     # Separating the results for the scenarios
     metrics_results_split = {label: {key: val for key, val in metrics_results.items() if f"_{label}" in key} for label in splits}
