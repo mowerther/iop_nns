@@ -941,3 +941,81 @@ for i, pred_mean in enumerate(pred_mean_list):
         make_plots(pred_mean, pred_std, y, scenario_title, f"row_{idx_counter}")
         print('saved')
 
+
+#### not a result plot: but the scenario distributions
+### -> render the same as the IOP distribution plots of aph443, anap443, acdom443
+## -> see scenario_datasets folder for the .csv files
+
+random_train = pd.read_csv('robust_train_random.csv').rename(columns={'org_aNAP_443':'org_anap_443', 'org_aph_443':'org_aph_443', 'org_aCDOM_443':'org_acdom_443'})
+random_test = pd.read_csv('robust_test_random.csv').rename(columns={'org_aNAP_443':'org_anap_443', 'org_aph_443':'org_aph_443', 'org_aCDOM_443':'org_acdom_443'})
+
+train_set_wd = pd.read_csv('wd_train_set.csv')
+test_set_wd = pd.read_csv('wd_test_set.csv')
+
+train_set_oos = pd.read_csv('ood_train_set.csv')
+test_set_oos = pd.read_csv('ood_test_set.csv')
+
+clipped_variables = ['org_aph_443', 'org_anap_443', 'org_acdom_443']
+
+random_train_clipped = random_train[clipped_variables].clip(lower=0.00001)
+random_test_clipped = random_test[clipped_variables].clip(lower=0.00001)
+
+# Update the original dataframes with the clipped values
+random_train.update(random_train_clipped)
+random_test.update(random_test_clipped)
+
+# Remove rows where any of the clipped variables have values <= 0.000001
+random_train_r = random_train[~(random_train[clipped_variables] <= 0.000001).any(axis=1)]
+random_test_r = random_test[~(random_test[clipped_variables] <= 0.000001).any(axis=1)]
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+columns = ['org_aph_443', 'org_anap_443', 'org_acdom_443']
+
+def plot_pdf_curves_only(train_set_random, test_set_random, train_set, test_set, train_set_oos, test_set_oos, columns, figsize=(14, 8)):
+    fig, axes = plt.subplots(3, len(columns), figsize=figsize, constrained_layout=True)
+
+    x_labels = [r'a$_{ph}$443 [m$^{-1}$]', r'a$_{nap}$443 [m$^{-1}$]', r'a$_{cdom}$443 [m$^{-1}$]']
+
+    custom_titles = {
+        (0, 1): 'Random split',
+        (1, 1): 'Within-distribution split',
+        (2, 1): 'Out-of-distribution split'
+    }
+
+    datasets = [
+        (train_set_random, test_set_random, "Random split datasets"),
+        (train_set, test_set, "Within-distribution (WD) datasets"),
+        (train_set_oos, test_set_oos, "Out-of-distribution (OOS) datasets")
+    ]
+
+    x_limits = [(-1, 6), (-1, 6), (-1, 6)]
+    y_limits = [(0, 4), (0, 5), (0, 2.5)]
+
+    for row, (train_data, test_data, title) in enumerate(datasets):
+        for idx, col in enumerate(columns):
+            sns.kdeplot(train_data[col], shade=True, bw_adjust=0.5, ax=axes[row, idx], label="Train", color="black",alpha=0.7)
+            sns.kdeplot(test_data[col], shade=True, bw_adjust=0.5, ax=axes[row, idx], label="Test", color="orange",alpha=0.7)
+            #xes[row, idx].set_xscale('log')
+            axes[row, idx].set_xlim(*x_limits[idx])
+            axes[row, idx].set_ylim(*y_limits[idx])
+            axes[row,idx].set_ylabel("")
+            axes[row, idx].set_xlabel(x_labels[idx] if row == 2 else '', fontsize=14)
+            if (row, idx) in custom_titles:
+                axes[row, idx].set_title(custom_titles[(row, idx)],fontweight='bold')
+            else:
+                axes[row, idx].set_title('')
+            axes[row, idx].grid(True, which='both', linestyle='--', alpha=0.6)
+
+    fig.supylabel('Density', x=-0.03,y=0.55, fontsize=12, fontweight='bold')
+    fig.supxlabel('IOP', fontsize=12, fontweight='bold')
+
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(1.05, 0.57), ncol=1, frameon=True, fontsize=14)
+
+    plt.savefig(r'C:\SwitchDrive\Data\Update_4\plots\pdf_all_data_split.png',dpi=200,bbox_inches='tight')
+    plt.show()
+
+# Usage example, assuming the same datasets and columns are defined
+plot_pdf_curves_only(random_train_r, random_test_r, train_set_wd, test_set_wd, train_set_oos, test_set_oos, columns)
