@@ -12,13 +12,11 @@ from matplotlib.ticker import ScalarFormatter
 from pnn import io, logbins, metrics, plot
 from pnn.constants import pred_path, save_path, iops, network_types, split_types
 
-### CONSTANTS
-
-
 ### LOAD DATA
 results = {f"{network}_{split}": io.read_data(pred_path/f"{network}_{split}_preds.csv") for network, split in itertools.product(network_types, split_types)}
 print("Read results into `results` dictionary")
 print(results.keys())
+
 
 ### LOG-BINNED UNCERTAINTY (LINE) PLOT
 binned = {key: logbins.log_binned_statistics_combined(df) for key, df in results.items()}
