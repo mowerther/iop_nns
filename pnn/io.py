@@ -1,12 +1,14 @@
 """
 Functions for reading the PNN output dataframes.
 """
+import itertools
 from pathlib import Path
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
+from .constants import pred_path, network_types, split_types
 
 ### LOADING / PROCESSING DATA
 def filter_df(df: pd.DataFrame, category: str) -> pd.DataFrame:
@@ -58,3 +60,11 @@ def read_data(filename: Path | str) -> pd.DataFrame:
     df = pd.concat([df, df_percent])
 
     return df
+
+
+def read_all_data(folder: Path | str=pred_path) -> dict[str, pd.DataFrame]:
+    """
+    Read all data from a given folder into dataframes.
+    """
+    results = {f"{network}_{split}": read_data(pred_path/f"{network}_{split}_preds.csv") for network, split in itertools.product(network_types, split_types)}
+    return results
