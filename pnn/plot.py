@@ -73,6 +73,7 @@ def plot_log_binned_statistics(binned: Iterable[pd.DataFrame], *,
     fig.suptitle("")
     fig.supxlabel("In situ value", fontweight="bold")
     fig.supylabel("Mean uncertainty [%]", fontweight="bold")
+    fig.align_ylabels()
 
     plt.savefig(saveto)
     plt.close()
