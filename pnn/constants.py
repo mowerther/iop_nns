@@ -33,7 +33,3 @@ split_types = {"random_split": "Random split",
 uncertainty_types = {"ale_unc_pct": "Aleatoric",
                      "epi_unc_pct": "Epistemic",
                      "total_unc_pct": "Total",}
-
-uncertainty_colors = {"ale_unc_pct": "blue",
-                      "epi_unc_pct": "orange",
-                      "total_unc_pct": "black",}

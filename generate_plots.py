@@ -1,7 +1,7 @@
 """
 Main script for loading data and generating plots.
 """
-from pnn import io, logbins, metrics, plot
+from pnn import aggregate, io, logbins, metrics, plot
 
 ### LOAD DATA
 results = io.read_all_data()
@@ -25,3 +25,8 @@ print("Saved performance metric (lollipop) plot")
 binned = {key: logbins.log_binned_statistics_combined(df) for key, df in results.items()}
 plot.plot_log_binned_statistics(binned)
 print("Saved log-binned uncertainty (line) plot")
+
+# Heatmap
+results_agg = aggregate.aggregate_uncertainty(results)
+plot.uncertainty_heatmap(results_agg)
+print("Saved uncertainty heatmap plot")

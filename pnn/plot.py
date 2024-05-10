@@ -9,12 +9,16 @@ import pandas as pd
 from matplotlib import pyplot as plt
 plt.style.use("default")
 from matplotlib import ticker
+from cmcrameri.cm import managua
 
-from .constants import iops, iops_main, network_types, split_types, uncertainty_colors, uncertainty_types, save_path, supplementary_path
+from .constants import iops, iops_main, network_types, split_types, uncertainty_types, save_path, supplementary_path
 from . import io, metrics
 
 
 ### CONSTANTS
+cmap_uniform = plt.cm.cividis.resampled(10)
+cmap_aleatoric_fraction = managua.resampled(10)
+
 model_colors = {
     "mdn": "#FF5733",
     "bnn_dropconnect": "#3357FF",
@@ -22,8 +26,9 @@ model_colors = {
     "ensemble": "#F933FF",
     "rnn": "#FFC733",}
 
-cmap_uniform = plt.cm.cividis.resampled(10)
-cmap_diverging = plt.cm.coolwarm.resampled(10)
+uncertainty_colors = {"ale_unc_pct": cmap_aleatoric_fraction.colors[-3],
+                      "epi_unc_pct": cmap_aleatoric_fraction.colors[2],
+                      "total_unc_pct": "black",}
 
 
 ### FUNCTIONS
@@ -39,7 +44,7 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
     """
     # Constants
     rowkwargs = {"total_unc_pct": dict(vmin=0, vmax=20, cmap=cmap_uniform),
-                 "ale_frac": dict(vmin=0, vmax=1, cmap=cmap_diverging),}
+                 "ale_frac": dict(vmin=0, vmax=1, cmap=cmap_aleatoric_fraction),}
     lims = (1e-4, 1e1)
     scale = "log"
 
@@ -186,7 +191,7 @@ def plot_performance_metrics_lollipop(metrics_results: dict[str, pd.DataFrame], 
     plt.close()
 
 
-## Log-binned statistics - line plot
+## Uncertainty statistics - line plot
 def plot_log_binned_statistics_line(binned: pd.DataFrame, variable: str, ax: plt.Axes, *,
                                     uncertainty_keys: Iterable[str]=uncertainty_types.keys(), **kwargs) -> None:
     """
@@ -235,6 +240,7 @@ def plot_log_binned_statistics(binned: Iterable[pd.DataFrame], *,
     for ax, var in zip(axs[-1], iops.values()):
         ax.set_xlabel(var)
 
+    # Labels
     fig.suptitle("")
     fig.supxlabel("In situ value", fontweight="bold")
     fig.supylabel("Mean uncertainty [%]", fontweight="bold")
@@ -243,201 +249,64 @@ def plot_log_binned_statistics(binned: Iterable[pd.DataFrame], *,
     plt.savefig(saveto)
     plt.close()
 
-# ########
-# ### heatmap of the mean uncertainty and the aleatoric fraction
-# ########
 
-# import pandas as pd
-# import numpy as np
+## Uncertainty statistics - heatmap
+heatmap_metrics = {"total_unc_pct": "Total uncertainty [%]", "ale_frac": "Aleatoric fraction"}
+def uncertainty_heatmap(results_agg: pd.DataFrame, *,
+                        variables=iops_main,
+                        saveto: Path | str=save_path/"uncertainty_heatmap.png") -> None:
+    """
+    Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
+    """
+    # Constants
+    rowkwargs = {"total_unc_pct": dict(vmin=0, vmax=20, cmap=cmap_uniform),
+                 "ale_frac": dict(vmin=0, vmax=1, cmap=cmap_aleatoric_fraction),}
 
-# # the data is organised differently now?
-# dataframes = {
-#     'mdn_wd': mdn_wd,
-#     'mdn_ood': mdn_ood,
-#     'mdn_random':mdn_random,
-#     'dc_wd': dc_wd,
-#     'dc_ood': dc_ood,
-#     'dc_random':dc_random,
-#     'mcd_wd': mcd_wd,
-#     'mcd_ood': mcd_ood,
-#     'mcd_random': mcd_random,
-#     'ens_wd': ens_wd,
-#     'ens_ood': ens_ood,
-#     'ens_random':ens_random,
-#     'rnn_wd' : rnn_wd,
-#     'rnn_ood' : rnn_ood,
-#     'rnn_random':rnn_random,
-# }
+    # Pre-process data
+    results_agg = pd.concat({split: pd.concat({network: results_agg.loc[f"{network}-{split}"] for network in network_types}) for split in split_types})
+    results_agg = results_agg.reorder_levels([2, 0, 1])
 
-# columns_of_interest = ['aCDOM_443', 'aCDOM_675', 'aph_443', 'aph_675']
+    # Generate figure
+    fig, axs = plt.subplots(nrows=2, ncols=len(split_types), sharex=True, sharey=True, figsize=(11, 9), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
 
-# def calculate_uncertainties_and_categories(df, columns_of_interest):
-#     result_dict = {
-#         'percent_total_uncertainty': calculate_percentage_from_category(df, 'total_unc', 'pred_scaled_for_unc', columns_of_interest),
-#         'percent_aleatoric_uncertainty': calculate_percentage_from_category(df, 'ale_unc', 'pred_scaled_for_unc', columns_of_interest),
-#         'percent_epistemic_uncertainty': calculate_percentage_from_category(df, 'epi_unc', 'pred_scaled_for_unc', columns_of_interest),
-#         'pred_scaled': df[df['Category'] == 'pred_scaled_for_unc'],
-#         'y_true': df[df['Category'] == 'y_true'],
-#         'y_pred': df[df['Category'] == 'y_pred'],
-#         'std_pred': df[df['Category'] == 'pred_std'].reset_index(drop=True)
-#     }
-#     return result_dict
+    # Plot data
+    for ax_row, (unc, unc_label), kwargs in zip(axs, heatmap_metrics.items(), rowkwargs.values()):
+        # Plot each panel per row
+        for ax, split in zip(ax_row, split_types):
+            # Select relevant data
+            df = results_agg.loc[(unc, split)]
+            df = df[variables.keys()]
 
-# # Apply the function to each DataFrame and store the results in a new dictionary
-# results = {df_name: calculate_uncertainties_and_categories(df, columns_of_interest) for df_name, df in dataframes.items()}
+            # Plot image
+            im = ax.imshow(df, **kwargs)
 
+            # Plot individual values
+            for i, x in enumerate(network_types):
+                for j, y in enumerate(variables):
+                    ax.text(j, i, f"{df.iloc[i, j]:.2f}", ha="center", va="center", color="w")
 
-# def filter_uncertainties_with_count(df_total, df_aleatoric, df_epistemic):
-#     # Identify indices where any of the uncertainties are < 0 or > 200 in any of the three dataframes
-#     mask = (df_total < 0) | (df_total > 1000) | (df_aleatoric < 0) | (df_aleatoric > 1000) | (df_epistemic < 0) | (df_epistemic > 1000)
-#     filtered_indices = mask.any(axis=1)
+        # Color bar per row
+        cb = fig.colorbar(im, ax=ax_row, fraction=0.1, pad=0.01, shrink=1)
+        cb.set_label(label=unc_label, weight="bold")
+        cb.locator = ticker.MaxNLocator(nbins=6)
+        cb.update_ticks()
 
-#     # Count the number of observations to remove
-#     removed_count = filtered_indices.sum()
+    # Labels
+    fig.supxlabel("IOPs", fontweight="bold")
+    fig.supylabel("Models", fontweight="bold")
 
-#     # Filter out the rows from all dataframes
-#     df_total_filtered = df_total[~filtered_indices]
-#     df_aleatoric_filtered = df_aleatoric[~filtered_indices]
-#     df_epistemic_filtered = df_epistemic[~filtered_indices]
+    wrap_labels = lambda labels: list(zip(*enumerate(labels)))  # (0, 1, ...) (label0, label1, ...)
+    for ax in axs[-1]:
+        ax.set_xticks(*wrap_labels(variables.values()), rotation=45, ha="right")
 
-#     return df_total_filtered, df_aleatoric_filtered, df_epistemic_filtered, removed_count
+    for ax in axs[:, 0]:
+        ax.set_yticks(*wrap_labels(network_types.values()))
 
-# # Initialize a counter
-# total_removed = 0
+    for ax, label in zip(axs[0], split_types.values()):
+        ax.set_title(label, fontweight="bold")
 
-# for key, result in results.items():
-#     result['percent_total_uncertainty'], result['percent_aleatoric_uncertainty'], result['percent_epistemic_uncertainty'], removed_count = filter_uncertainties_with_count(
-#         result['percent_total_uncertainty'],
-#         result['percent_aleatoric_uncertainty'],
-#         result['percent_epistemic_uncertainty']
-#     )
-#     total_removed += removed_count
-
-# print(f"Total observations removed: {total_removed}")
-
-# def calculate_average_uncertainties(results, columns_of_interest):
-#     averages = {}
-#     for model, data in results.items():
-#         model_averages = {}
-#         for uncertainty_type in ['percent_total_uncertainty', 'percent_aleatoric_uncertainty', 'percent_epistemic_uncertainty']:
-#             df = data[uncertainty_type]
-#             avg_uncertainties = df[columns_of_interest].mean().to_dict()
-#             model_averages[uncertainty_type] = avg_uncertainties
-#         averages[model] = model_averages
-#     return averages
-
-# columns_of_interest = ['aCDOM_443', 'aCDOM_675', 'aph_443', 'aph_675']  # subset
-# average_uncertainties = calculate_average_uncertainties(results, columns_of_interest)
-
-# from matplotlib.colors import Normalize
-
-# def prepare_heatmap_data(average_uncertainties, uncertainty_type):
-#     data_random = pd.DataFrame(columns=columns_of_interest)
-#     data_wd = pd.DataFrame(columns=columns_of_interest)
-#     data_ood = pd.DataFrame(columns=columns_of_interest)
-
-#     for model, data in average_uncertainties.items():
-#         if 'random' in model:
-#           data_random.loc[model.replace('_random', '')] = pd.Series(data[uncertainty_type])
-#         elif 'wd' in model:
-#             data_wd.loc[model.replace('_wd', '')] = pd.Series(data[uncertainty_type])
-#         elif 'ood' in model:
-#             data_ood.loc[model.replace('_ood', '')] = pd.Series(data[uncertainty_type])
-
-#     return data_random, data_wd, data_ood
-
-# data_total_random, data_total_wd, data_total_ood = prepare_heatmap_data(average_uncertainties, 'percent_total_uncertainty')
-# data_aleatoric_random, data_aleatoric_wd, data_aleatoric_ood = prepare_heatmap_data(average_uncertainties, 'percent_aleatoric_uncertainty')
-# data_epistemic_random, data_epistemic_wd, data_epistemic_ood = prepare_heatmap_data(average_uncertainties, 'percent_epistemic_uncertainty')
-
-# fraction_aleatoric_wd = data_aleatoric_wd / data_total_wd
-# fraction_aleatoric_ood = data_aleatoric_ood / data_total_ood
-# fraction_aleatoric_random = data_aleatoric_random / data_total_random
-
-# data_uncertainty = [data_total_random, data_total_wd, data_total_ood]
-# cmap_uncertainty = plt.cm.cividis.resampled(10)
-# norm_uncertainty = Normalize(vmin=0, vmax=30)
-
-# data_fraction = [fraction_aleatoric_random, fraction_aleatoric_wd, fraction_aleatoric_ood]
-# cmap_fraction = plt.cm.BrBG.resampled(10)
-# norm_fraction = Normalize(vmin=0, vmax=1)
-
-
-# from matplotlib.cm import ScalarMappable
-# import numpy as np
-# import matplotlib.pyplot as plt
-# from matplotlib.colors import ListedColormap
-# fig, axs = plt.subplots(2, 3, figsize=(11, 9), sharex=False, sharey=True, gridspec_kw={"wspace": 0.1, "hspace": -0.15})
-# plt.style.use('default')
-
-# new_model_labels = ['MDN', 'BNN DC', 'BNN MCD', 'ENS NN', 'RNN']
-# variables = ['aCDOM_443', 'aCDOM_675', 'aph_443', 'aph_675']
-# display_titles = ['a$_{CDOM}$ 443', 'a$_{CDOM}$ 675', 'a$_{ph}$ 443', 'a$_{ph}$ 675']
-
-# viridis = plt.cm.viridis
-
-# new_colors = viridis(np.linspace(0, 1, 15))
-# cmap_uncertainty = ListedColormap(new_colors)
-
-# cmap_fraction = cm.managua.resampled(5)
-
-# for ax, data in zip(axs[0], data_uncertainty):
-#     ax.imshow(data, cmap=cmap_uncertainty, norm=norm_uncertainty)
-
-# for ax, data in zip(axs[1], data_fraction):
-#     ax.imshow(data, cmap=cmap_fraction, norm=norm_fraction)
-
-# for ax, data in zip(axs.ravel(), [*data_uncertainty, *data_fraction]):
-#     for i, x in enumerate(new_model_labels):
-#         for j, y in enumerate(variables):
-#             ax.text(j, i, f"{data.iloc[i, j]:.2f}", ha="center", va="center", color="w")
-
-# wrap_labels = lambda labels: list(zip(*enumerate(labels)))
-# for ax in axs[1]:
-#     ax.set_xticks(*wrap_labels(display_titles), rotation=45, ha="right")
-
-# for ax in axs[:, 0]:
-#     ax.set_yticks(*wrap_labels(new_model_labels))
-
-# # Colour bars - shrink factor is manual, but easier than using make_axes_locatable with multiple axes
-# cbar = fig.colorbar(ScalarMappable(norm=norm_uncertainty, cmap=cmap_uncertainty), ax=axs[0].tolist(), fraction=0.05, pad=0.03, shrink=0.7)
-# cbar.set_label("Mean uncertainty [%]", size=12, weight="bold")
-# cbar_ticks = cbar.get_ticks()
-# if cbar_ticks[-1] == 30:
-#     cbar_ticklabels = [f"{tick:.0f}" for tick in cbar_ticks[:-1]] + ["$\geq$ 30"]
-#     cbar.set_ticks(cbar_ticks)
-#     cbar.set_ticklabels(cbar_ticklabels)
-
-# cbar = fig.colorbar(ScalarMappable(norm=norm_fraction, cmap=cmap_fraction), ax=axs[1].tolist(), fraction=0.05, pad=0.03, shrink=0.7)
-# cbar.set_label("Aleatoric fraction", size=12, weight="bold")
-# cbar.set_ticks(np.arange(0, 1.01, 0.2))
-
-# axs[0, 0].set_title("Random split", fontsize=12, fontweight="bold")
-# axs[0, 1].set_title("Within-distribution", fontsize=12, fontweight="bold")
-# axs[0, 2].set_title("Out-of-distribution", fontsize=12, fontweight="bold")
-
-# # align the x-limits of the bottom row subplots to match the top row
-# for ax_row in axs:
-#     for ax in ax_row[1:]:
-#         ax.set_xlim(axs[0, 0].get_xlim())
-
-# # turn off the x-axis labels and ticks for the first row only
-# for ax in axs[0]:
-#     ax.set_xticklabels([])
-#     ax.set_xticks([])
-
-# # x-axis labels and ticks for the second row
-# for ax in axs[1]:
-#     ax.set_xticklabels(display_titles, rotation=45, ha="right")
-#     ax.set_xticks(np.arange(len(display_titles)))
-
-# fig.supxlabel('IOPs', y=0.03, fontsize=12, fontweight='bold')
-# fig.supylabel('Models',x=0.001, fontsize=12, fontweight='bold')
-
-# save_path = '/content/drive/My Drive/iop_ml/plots/'
-# plt.savefig(save_path + 'avg_uncertainty_w_random_2.png', dpi=200, bbox_inches='tight')
-
-# plt.show()
+    plt.savefig(saveto)
+    plt.close()
 
 
 # ### sharpness and coverage factor plots
