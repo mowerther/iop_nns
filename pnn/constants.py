@@ -7,6 +7,7 @@ from pathlib import Path
 # Filenames
 pred_path = Path("pnn_model_estimates/")
 save_path = Path("manuscript_figures/")
+supplementary_path = save_path/"supplementary/"
 
 
 # Variables

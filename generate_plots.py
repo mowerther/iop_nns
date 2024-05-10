@@ -10,6 +10,10 @@ print(results.keys())
 
 
 ### MODEL PERFORMANCE
+# y vs y_hat scatter plots
+plot.plot_performance_scatter(results)
+print("Saved match-up (scatter) plots")
+
 # Performance metrics and lollipop plot
 metrics_results = {key: metrics.calculate_metrics(df) for key, df in results.items()}
 plot.plot_performance_metrics_lollipop(metrics_results)

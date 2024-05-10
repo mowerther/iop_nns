@@ -10,16 +10,8 @@ import pandas as pd
 
 from .constants import pred_path, network_types, split_types
 
+
 ### LOADING / PROCESSING DATA
-def filter_df(df: pd.DataFrame, category: str) -> pd.DataFrame:
-    """
-    Reorganise a single dataframe to have Instance as its index, only contain data columns, and (optionally) have a suffix added to all columns.
-    """
-    df_filtered = df.loc[df["Category"] == category]
-    return df_filtered.set_index("Instance") \
-                      .drop(columns=["Category"])
-
-
 def reorganise_df(df: pd.DataFrame) -> pd.DataFrame:
     """
     Reorganise an input dataframe so that "Category" and "Instance" become a multi-index.
@@ -49,6 +41,17 @@ def calculate_percentage_uncertainty(df: pd.DataFrame, *,
     return result
 
 
+def calculate_aleatoric_fraction(df: pd.DataFrame, *,
+                                 aleatoric_key: str="ale_unc", total_key: str="total_unc",
+                                 fraction_key: str="ale_frac") -> pd.DataFrame:
+    """
+    Calculate what fraction of the total uncertainty consists of aleatoric uncertainty.
+    """
+    fraction = df.loc[aleatoric_key] / df.loc[total_key]
+    result = pd.concat({fraction_key: fraction})
+    return result
+
+
 def read_data(filename: Path | str) -> pd.DataFrame:
     """
     Read data from a dataframe and process it.
@@ -57,7 +60,9 @@ def read_data(filename: Path | str) -> pd.DataFrame:
     df = reorganise_df(df)
 
     df_percent = calculate_percentage_uncertainty(df)
-    df = pd.concat([df, df_percent])
+    df_aleatoric_fraction = calculate_aleatoric_fraction(df)
+
+    df = pd.concat([df, df_percent, df_aleatoric_fraction])
 
     return df
 
@@ -66,5 +71,16 @@ def read_all_data(folder: Path | str=pred_path) -> dict[str, pd.DataFrame]:
     """
     Read all data from a given folder into dataframes.
     """
-    results = {f"{network}_{split}": read_data(pred_path/f"{network}_{split}_preds.csv") for network, split in itertools.product(network_types, split_types)}
+    results = {f"{network}-{split}": read_data(pred_path/f"{network}_{split}_preds.csv") for network, split in itertools.product(network_types, split_types)}
     return results
+
+
+### CONVENIENCE FUNCTIONS
+def network_and_split_from_key(key: str) -> tuple[str, str]:
+    """
+    For a combined key, e.g. 'mdn-random_split', return the associated network and split type labels.
+    """
+    networkkey, splitkey = key.split("-")
+    model = network_types[networkkey]
+    split = split_types[splitkey]
+    return model, split

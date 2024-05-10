@@ -2,15 +2,16 @@
 Various plotting functions.
 """
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 plt.style.use("default")
+from matplotlib import ticker
 
-from .constants import iops, iops_main, network_types, split_types, uncertainty_colors, uncertainty_types, save_path
-from .metrics import metrics_display
+from .constants import iops, iops_main, network_types, split_types, uncertainty_colors, uncertainty_types, save_path, supplementary_path
+from . import io, metrics
 
 
 ### CONSTANTS
@@ -21,11 +22,109 @@ model_colors = {
     "ensemble": "#F933FF",
     "rnn": "#FFC733",}
 
+cmap_uniform = plt.cm.cividis.resampled(10)
+cmap_diverging = plt.cm.coolwarm.resampled(10)
+
 
 ### FUNCTIONS
+## Performance (matchups) - scatter plot, per algorithm/scenario combination
+# -> for appendix, just performance, not (fractional) uncertainties ?
+scatterplot_metrics = {"total_unc_pct": "Total uncertainty [%]", "ale_frac": "Aleatoric fraction"}
+def plot_performance_scatter_single(df: pd.DataFrame, *,
+                                    columns: dict[str, str]=iops, rows: dict[str, str]=scatterplot_metrics,
+                                    title: Optional[str]=None,
+                                    saveto: Path | str="scatterplot.png") -> None:
+    """
+    Plot one DataFrame with y, y_hat, with total uncertainty (top) or aleatoric fraction (bottom) as colour.
+    """
+    # Constants
+    rowkwargs = {"total_unc_pct": dict(vmin=0, vmax=20, cmap=cmap_uniform),
+                 "ale_frac": dict(vmin=0, vmax=1, cmap=cmap_diverging),}
+    lims = (1e-4, 1e1)
+    scale = "log"
+
+    # Create figure
+    fig, axs = plt.subplots(nrows=len(rows), ncols=len(columns), sharex=True, sharey=True, figsize=(20, 10), squeeze=False, layout="constrained")
+
+    # Plot data per row
+    for ax_row, (ckey, clabel), kwargs in zip(axs, rows.items(), rowkwargs.values()):
+        # Plot data per panel
+        for ax, variable in zip(ax_row, columns):
+            im = ax.scatter(df.loc["y_true", variable], df.loc["y_pred", variable], c=df.loc[ckey, variable], alpha=0.7, **kwargs)
+
+        # Color bar per row
+        cb = fig.colorbar(im, ax=ax_row[-1], label=clabel)
+        cb.locator = ticker.MaxNLocator(nbins=6)
+        cb.update_ticks()
+
+    # Matchup plot settings
+    for ax in axs.ravel():
+        # ax.set_aspect("equal")
+        ax.axline((0, 0), slope=1, color="black")
+        ax.grid(True, color="black", alpha=0.5, linestyle="--")
+
+    # Regression
+    # slope, intercept, r_value, p_value, std_err = linregress(np.log(x_values), np.log(y_values))
+
+    # # Set x_reg to span the entire x-axis range of the plot
+    # # x_reg = np.linspace(*ax.get_xlim(), 500)
+    # # y_reg = np.exp(intercept + slope * np.log(x_reg))
+    # limits = [min(ax.get_xlim()[0], ax.get_ylim()[0]), 10, 10]
+    # ax.plot(limits, limits, ls='--', color='black')
+
+    # if row in [0,1,2,3,4,5]:
+    #     x_reg = np.logspace(-3, 1, 500)  # Generates 500 points between 10^-3 and 10^1
+    #     y_reg = np.exp(intercept + slope * np.log(x_reg))
+
+    #     ax.plot(x_reg, y_reg, color='grey', label=f'R²={r_value**2:.2f}')
+    #     ax.legend(loc='upper left')
+
+    # Metrics
+    for ax, variable in zip(axs[0], columns):
+        # Calculate
+        y, y_hat = df.loc["y_true", variable], df.loc["y_pred", variable]
+        r_square = f"$R^2 = {metrics.log_r_squared(y, y_hat):.2f}$"
+        sspb = f"SSPB = ${metrics.sspb(y, y_hat):+.1f}$%"
+        other_metrics = [f"{func.__name__} = {func(y, y_hat):.1f}%" for func in [metrics.mdsa, metrics.mape]]
+
+        # Format
+        metrics_text = "\n".join([r_square, sspb, *other_metrics])
+        ax.text(0.95, 0.03, metrics_text, transform=ax.transAxes, horizontalalignment="right", verticalalignment="bottom", color="black", size=9, bbox={"facecolor": "white", "edgecolor": "black"})
+
+    # Plot settings
+    axs[0, 0].set_xscale(scale)
+    axs[0, 0].set_yscale(scale)
+    axs[0, 0].set_xlim(*lims)
+    axs[0, 0].set_ylim(*lims)
+
+    # Labels
+    for ax, label in zip(axs[0], columns.values()):
+        ax.set_title(label)
+    fig.supxlabel("In-situ (actual)", fontsize="x-large", fontweight="bold")
+    fig.supylabel("Model estimate", x=-0.02, fontsize="x-large", fontweight="bold")
+    fig.suptitle(title, fontsize="x-large")
+
+    # Save result
+    plt.savefig(saveto, dpi=200, bbox_inches="tight")
+    plt.close()
+
+def plot_performance_scatter(results: dict[str, pd.DataFrame], *,
+                             saveto: Path | str=supplementary_path/"scatterplot.png", **kwargs) -> None:
+    """
+    Plot many DataFrames with y, y_hat, with total uncertainty (top) or aleatoric fraction (bottom) as colour.
+    """
+    saveto = Path(saveto)
+
+    # Loop over results and plot each dataframe in a separate figure
+    for key, df in results.items():
+        network, split = io.network_and_split_from_key(key)
+        saveto_here = saveto.with_stem(f"{saveto.stem}_{key}")
+        plot_performance_scatter_single(df, title=f"{network} {split}", saveto=saveto_here, **kwargs)
+
+
 ## Performance metrics - lollipop plot
 def plot_performance_metrics_lollipop(metrics_results: dict[str, pd.DataFrame], *,
-                                      groups: dict[str, str]=iops_main, metrics_to_plot: dict[str, str]=metrics_display, models_to_plot: dict[str, str]=network_types, splits: dict[str, str]=split_types,
+                                      groups: dict[str, str]=iops_main, metrics_to_plot: dict[str, str]=metrics.metrics_display, models_to_plot: dict[str, str]=network_types, splits: dict[str, str]=split_types,
                                       saveto: Path | str=save_path/"performance_lolliplot_vertical.png") -> None:
     """
     Plot some number of DataFrames containing performance metric statistics.
@@ -34,7 +133,7 @@ def plot_performance_metrics_lollipop(metrics_results: dict[str, pd.DataFrame], 
     bar_width = 0.15
 
     # Separating the results for the scenarios
-    metrics_results_split = {label: {key: val for key, val in metrics_results.items() if f"_{label}" in key} for label in splits}
+    metrics_results_split = {label: {key: val for key, val in metrics_results.items() if f"-{label}" in key} for label in splits}
 
     # Generate figure ; rows are metrics, columns are split types
     n_groups = len(groups)
@@ -107,11 +206,10 @@ def plot_log_binned_statistics_line(binned: pd.DataFrame, variable: str, ax: plt
         ax.fill_between(df.index, df[mean] - df[std], df[mean] + df[std], color=color, alpha=0.1)
 
     # Labels
-    ax.set_xlabel(variable)
     ax.grid(True, ls="--")
 
 def plot_log_binned_statistics(binned: Iterable[pd.DataFrame], *,
-                               saveto: Path | str=save_path/"uncertainty_line.png") -> None:
+                               saveto: Path | str=supplementary_path/"uncertainty_line.png") -> None:
     """
     Plot some number of DataFrames containing log-binned statistics.
     """
@@ -123,16 +221,19 @@ def plot_log_binned_statistics(binned: Iterable[pd.DataFrame], *,
     fig, axs = plt.subplots(nrows=len(binned), ncols=len(iops), sharex=True, figsize=(15, 25), layout="constrained", squeeze=False)
 
     # Plot lines
-    for ax_row, (label, df) in zip(axs, binned.items()):
+    for ax_row, (key, df) in zip(axs, binned.items()):
         for ax, var in zip(ax_row, iops):
             plot_log_binned_statistics_line(df, var, ax=ax, legend=False)
 
-        ax_row[0].set_ylabel(label)
+        network, split = io.network_and_split_from_key(key)
+        ax_row[0].set_ylabel(f"{network}\n{split}")
 
     # Settings
     axs[0, 0].set_xscale("log")
     for ax in axs.ravel():
         ax.set_ylim(ymin=0)
+    for ax, var in zip(axs[-1], iops.values()):
+        ax.set_xlabel(var)
 
     fig.suptitle("")
     fig.supxlabel("In situ value", fontweight="bold")
@@ -141,161 +242,6 @@ def plot_log_binned_statistics(binned: Iterable[pd.DataFrame], *,
 
     plt.savefig(saveto)
     plt.close()
-
-
-# ## Performance - scatter plot, per algorithm/scenario combination
-# # -> for appendix, just performance, not (fractional) uncertainties
-# def calculate_percentage_from_category(df, category1, category2, columns_of_interest):
-#     """
-#     Filters two categories from the main dataframe, resets their indexes,
-#     selects the specific columns, and calculates the percentage of category1 over category2 for those columns.
-
-#     Parameters:
-#     - df: the main dataframe containing all data.
-#     - category1: the category for the numerator.
-#     - category2: the category for the denominator.
-#     - columns_of_interest: the IOPs to perform the operation on
-
-#     Returns:
-#     - A dataframe with the calculated percentages for the specified columns.
-#     """
-#     # Filter dataframes by category and reset indexes
-#     df_cat_reset_1 = df[df['Category'] == category1].reset_index(drop=True)
-#     df_cat_reset_2 = df[df['Category'] == category2].reset_index(drop=True)
-
-#     # Perform the operation on the specified columns
-#     result = np.abs(df_cat_reset_1[columns_of_interest] / df_cat_reset_2[columns_of_interest]) * 100
-
-#     return result
-
-# # Define the columns of interest
-# columns_of_interest = ['aCDOM_443', 'aCDOM_675', 'aNAP_443', 'aNAP_675', 'aph_443', 'aph_675']
-
-# # Use the updated function to calculate percentages directly from the main dataframe
-# percent_total_uncertainty = calculate_percentage_from_category(mcd_ood, 'total_unc', 'pred_scaled_for_unc', columns_of_interest)
-# percent_aleatoric_uncertainty = calculate_percentage_from_category(mcd_ood, 'ale_unc', 'pred_scaled_for_unc', columns_of_interest)
-# percent_epistemic_uncertainty = calculate_percentage_from_category(mcd_ood, 'epi_unc', 'pred_scaled_for_unc', columns_of_interest)
-
-# # Other categories
-# pred_scaled = mcd_ood[mcd_ood['Category'] == 'pred_scaled_for_unc']
-# y_true = mcd_ood[mcd_ood['Category'] == 'y_true']
-# y_pred = mcd_ood[mcd_ood['Category'] == 'y_pred']
-# std_pred = mcd_ood[mcd_ood['Category'] == 'pred_std'].reset_index(drop=True)
-
-# fraction_aleatoric_unc = percent_aleatoric_uncertainty / percent_total_uncertainty
-
-# column_names = ['aCDOM_443', 'aCDOM_675', 'aNAP_443', 'aNAP_675', 'aph_443', 'aph_675']
-# display_titles = ['a$_{CDOM}$ 443', 'a$_{CDOM}$ 675', 'a$_{NAP}$ 443', 'a$_{NAP}$ 675', 'a$_{ph}$ 443', 'a$_{ph}$ 675']
-# uncertainty_labels = ['Total uncertainty', 'Fraction of Aleatoric']
-
-# norm_total = plt.Normalize(vmin=0, vmax=20)
-# norm_aleatoric = plt.Normalize(vmin=0, vmax=1)
-
-
-# fig, axs = plt.subplots(2, 6, figsize=(20, 10), constrained_layout=True)
-# axs = axs.ravel()
-
-
-# ### scatterplot starts here
-# def plot_uncertainty(ax, y_true, y_pred, uncertainties, actual_title, display_title, show_title, row, norm, cmap='viridis'):
-#     y_true_reset = y_true.reset_index(drop=True)
-#     y_pred_reset = y_pred.reset_index(drop=True)
-
-#     # Apply the mask for values greater than 10^-4 for each variable
-#     # Not needed I think?
-#     mask = (y_true_reset[actual_title] > 1e-4) & (y_pred_reset[actual_title] > 1e-4)
-
-#     # Apply the mask
-#     x_values = y_true_reset.loc[mask, actual_title]
-#     y_values = y_pred_reset.loc[mask, actual_title]
-#     color_values = uncertainties.loc[mask]
-
-#     if show_title:
-#       ax.set_title(display_title, fontsize=16)
-
-#     # Scatter plot
-#     sc = ax.scatter(x_values, y_values, c=color_values, cmap=cmap, norm=norm, alpha=1)
-
-#     # Calculate regression
-#     slope, intercept, r_value, p_value, std_err = linregress(np.log(x_values), np.log(y_values))
-
-#     # Set x_reg to span the entire x-axis range of the plot
-#     # x_reg = np.linspace(*ax.get_xlim(), 500)
-#     # y_reg = np.exp(intercept + slope * np.log(x_reg))
-#     limits = [min(ax.get_xlim()[0], ax.get_ylim()[0]), 10, 10]
-#     ax.plot(limits, limits, ls='--', color='black')
-
-#     if row in [0,1,2,3,4,5]:
-#         x_reg = np.logspace(-3, 1, 500)  # Generates 500 points between 10^-3 and 10^1
-#         y_reg = np.exp(intercept + slope * np.log(x_reg))
-
-#         ax.plot(x_reg, y_reg, color='grey', label=f'R²={r_value**2:.2f}')
-#         ax.legend(loc='upper left')
-
-#     ax.set_xscale('log')
-#     ax.set_yscale('log')
-#     ax.set_xlim(1e-3, 10)
-#     ax.set_ylim(1e-3, 10)
-#     ax.grid(True, ls='--', alpha=0.5)
-
-#     if row in [0,1,2,3,4,5]:
-#       tr = x_values
-#       pred = y_values
-
-#       sspb_b = sspb(tr, pred)
-#       mdsa_b = mdsa(tr, pred)
-#       mape_b = mape(tr, pred)
-
-#       textstr_b = '\n'.join((
-#       r'$\mathrm{Bias = %.2f}$' % (sspb_b, ) + '%',
-#       r'$\mathrm{MdSA = %.2f}$' % (mdsa_b, )  + '%',
-#       r'$\mathrm{MdAPE = %.2f}$' % (mape_b, )  + '%',
-#           ))
-
-#       x_set_g = 0.18
-#       y_set_g= 0.0011
-
-#       ax.text(x_set_g,y_set_g, textstr_b, color='black', size=9,
-#           bbox=dict(facecolor='none', edgecolor="none"))
-
-#     return sc
-
-# scalars = []  # To keep track of scatter objects for colorbars
-# for i, uncertainty_label in enumerate(['Total uncertainty', 'Fraction of Aleatoric']):
-#     uncertainties = percent_total_uncertainty if i == 0 else fraction_aleatoric_unc
-#     norm = norm_total if i == 0 else norm_aleatoric
-#     # requires import cmcrameri
-#     cmap = cm.batlowK if i == 0 else cm.managua
-
-#     for j, (actual_title, display_title) in enumerate(zip(column_names, display_titles)):
-#         index = i * len(column_names) + j
-#         sc = plot_uncertainty(axs.ravel()[index], y_true, y_pred, uncertainties[actual_title], actual_title, display_title, i == 0, index, norm, cmap)
-#         if i == 1 or (i == 0 and j == 0):  # Keep first scalar of each row for colorbars
-#             scalars.append(sc)
-
-# fig.supxlabel('In-situ (actual)', fontsize='x-large', fontweight='bold')
-# fig.supylabel('Model estimate', x=-0.02, fontsize='x-large', fontweight='bold')
-
-# # Colorbar for Total Uncertainty (top row)
-# cbar_ax1 = fig.add_axes([1.01, 0.575, 0.02, 0.35])  # Adjust position for the top row
-# cbar1 = fig.colorbar(scalars[0], cax=cbar_ax1, norm=norm_total)
-# cbar1.set_label('Total uncertainty [%]', fontsize=12,fontweight='bold')
-# cbar_ticks = cbar1.get_ticks()
-# if cbar_ticks[-1] == 20:  # If the last tick is exactly at the max value (20)
-#     cbar_ticklabels = [f"{tick:.0f}" for tick in cbar_ticks[:-1]] + ["$\geq$ 20"]
-#     cbar1.set_ticks(cbar_ticks)
-#     cbar1.set_ticklabels(cbar_ticklabels)
-
-# # Colorbar for Fraction of Aleatoric Uncertainty (second row)
-# cbar_ax2 = fig.add_axes([1.01, 0.102, 0.02, 0.35])  # Adjust position for the bottom row
-# cbar2 = fig.colorbar(scalars[1], cax=cbar_ax2, norm=norm_aleatoric, cmap='coolwarm')
-# cbar2.set_label('Aleatoric fraction', fontsize=12, fontweight='bold')
-
-# #cbar.set_label('Uncertainty [%]')
-# #save_path = '/content/drive/My Drive/iop_ml/plots/'
-# #plt.savefig(save_path + 'mcd_wd_unc.png',dpi=200,bbox_inches='tight')
-# plt.show()
-
 
 # ########
 # ### heatmap of the mean uncertainty and the aleatoric fraction
