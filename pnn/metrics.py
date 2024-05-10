@@ -3,13 +3,10 @@ Metrics for assessing data/model quality.
 These are optimised for pandas DataFrames.
 """
 import functools
-import warnings
 from typing import Callable, Iterable
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import curve_fit
-from scipy.stats import linregress
 
 ### CONSTANTS
 # Metric display names and their data column names mapping
@@ -41,7 +38,7 @@ def only_positive(func: Callable) -> Callable:
     return helper
 
 
-def label(name):
+def label(name: str) -> Callable:
     """
     Label a function for when it is printed.
     """
@@ -63,7 +60,6 @@ def rmsle(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     """ Root Mean Squared Logarithmic Error """
     y, y_hat = np.log(1 + y), np.log(1 + y_hat)
     return rmse(y, y_hat)
-    # return np.mean(np.abs(np.log(y) - np.log(y_hat)) ** 2) ** 0.5
 
 @label('NRMSE')
 def nrmse(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
@@ -85,18 +81,19 @@ def log_r_squared(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     y, y_hat = np.log10(y), np.log10(y_hat)
     return r_squared(y, y_hat)
 
-@label('MAD')
+@label("MAD")
 def MAD(y1, y2):
     """ Mean Absolute Error """
-    i  = np.logical_and(y1 > 0, y2 > 0)
-    y1 = np.log10(y1[i])
-    y2 = np.log10(y2[i])
-    i  = np.logical_and(np.isfinite(y1), np.isfinite(y2))
-    y1 = y1[i]
-    y2 = y2[i]
-    return 10**np.nanmean(np.abs(y1 - y2))-1
+    return NotImplemented
+#     i  = np.logical_and(y1 > 0, y2 > 0)
+#     y1 = np.log10(y1[i])
+#     y2 = np.log10(y2[i])
+#     i  = np.logical_and(np.isfinite(y1), np.isfinite(y2))
+#     y1 = y1[i]
+#     y2 = y2[i]
+#     return 10**np.nanmean(np.abs(y1 - y2))-1
 
-@label('MdAPE')
+@label("MdAPE")
 def mape(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     """ Mean Absolute Percentage Error """
     med = np.abs( (y - y_hat) / y).median()
@@ -104,7 +101,7 @@ def mape(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     return MAPE
 
 @only_positive
-@label('MSA')
+@label("MSA")
 def msa(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     """ Mean Symmetric Accuracy """
     # https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2017SW001669
@@ -113,28 +110,34 @@ def msa(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     return MSA
 
 @only_positive
-@label('MdSA')
+@label("MdSA")
 def mdsa(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
-    """ Median Symmetric Accuracy """
-    # https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2017SW001669
+    """
+    Median Symmetric Accuracy
+    https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2017SW001669
+    """
     med = np.abs(np.log(y_hat / y)).median()
     MDSA = 100 * (np.exp(med) - 1)
     return MDSA
 
 @only_positive
-@label('SSPB')
+@label("SSPB")
 def sspb(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
-    """ Symmetric Signed Percentage Bias """
-    # https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2017SW001669
+    """
+    Symmetric Signed Percentage Bias
+    https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2017SW001669
+    """
     med = np.log(y_hat / y).median()
     SSPB = 100 * np.sign(med) * (np.exp(np.abs(med)) - 1)
     return SSPB
 
-@label('Bias')
+@label("Bias")
 def bias(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
-	""" Mean Bias """
+	""" Bias (mean difference) """
 	return (y_hat - y).mean()
 
+
+### AGGREGATE FUNCTIONS
 _MASK_THRESHOLD = 1e-4
 def calculate_metrics(df: pd.DataFrame) -> pd.DataFrame:
     # Ensure non-negative and non-zero filtering

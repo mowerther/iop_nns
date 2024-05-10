@@ -1,5 +1,5 @@
 """
-Various plotting functions
+Various plotting functions.
 """
 from pathlib import Path
 from typing import Iterable
@@ -283,8 +283,8 @@ cbar1.set_label('Total uncertainty [%]', fontsize=12,fontweight='bold')
 cbar_ticks = cbar1.get_ticks()
 if cbar_ticks[-1] == 20:  # If the last tick is exactly at the max value (20)
     cbar_ticklabels = [f"{tick:.0f}" for tick in cbar_ticks[:-1]] + ["$\geq$ 20"]
-    cbar1.set_ticks(cbar_ticks)  
-    cbar1.set_ticklabels(cbar_ticklabels) 
+    cbar1.set_ticks(cbar_ticks)
+    cbar1.set_ticklabels(cbar_ticklabels)
 
 # Colorbar for Fraction of Aleatoric Uncertainty (second row)
 cbar_ax2 = fig.add_axes([1.01, 0.102, 0.02, 0.35])  # Adjust position for the bottom row
@@ -607,17 +607,17 @@ for i, var in enumerate(variables):
     ood_bars = ax.bar(index + bar_width, ood_scores, bar_width, label='Out-of-distribution', color='#f4bf75')
 
     ax.set_xticks(index + bar_width / 2)
-    ax.set_xticklabels(new_model_labels, rotation=45)  
-    ax.set_ylim(0, 0.3)  
+    ax.set_xticklabels(new_model_labels, rotation=45)
+    ax.set_ylim(0, 0.3)
     ax.grid(True, axis='y', ls='--',c='black', alpha=0.5)
 
-fig.supylabel('Sharpness',x=-0.005,y=0.55, fontweight='bold',fontsize=14)  
-fig.supxlabel('Models', fontweight='bold',fontsize=14)  
+fig.supylabel('Sharpness',x=-0.005,y=0.55, fontweight='bold',fontsize=14)
+fig.supxlabel('Models', fontweight='bold',fontsize=14)
 
 handles, labels = ax.get_legend_handles_labels()
 fig.legend(handles, labels, loc='upper left', bbox_to_anchor=(1, 0.6))
 
-plt.tight_layout() 
+plt.tight_layout()
 
 save_path = '/content/drive/My Drive/iop_ml/plots/'
 plt.savefig(save_path + 'sharpness_results_wd_ood.png',dpi=200,bbox_inches='tight')
@@ -645,13 +645,13 @@ def calculate_coverage_factor(y_true, y_pred_mean, y_pred_std, k=1):
     lower_bounds = y_pred_mean - k * y_pred_std
     upper_bounds = y_pred_mean + k * y_pred_std
     within_bounds = (y_true >= lower_bounds) & (y_true <= upper_bounds)
-    coverage_factors = np.mean(within_bounds, axis=0) * 100  
+    coverage_factors = np.mean(within_bounds, axis=0) * 100
     return coverage_factors
 
 coverage_factors_results = {}
 
 for key, result in results.items():
-    
+
     y_true_df = result['y_true']
     y_pred_df = result['y_pred']
     std_pred_df = result['std_pred']
@@ -705,7 +705,7 @@ wd_data.columns = display_titles
 ood_data.columns = display_titles
 
 # Normalize the color range for both heatmaps - 0 - 100% coverage
-norm = Normalize(vmin=0, vmax=100) 
+norm = Normalize(vmin=0, vmax=100)
 
 fig, axs = plt.subplots(1, 2, figsize=(11, 5))
 cmap = plt.get_cmap('viridis')

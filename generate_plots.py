@@ -1,3 +1,6 @@
+"""
+Main script for loading data and generating plots.
+"""
 from pnn import io, logbins, metrics, plot
 
 ### LOAD DATA
