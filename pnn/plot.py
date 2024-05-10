@@ -125,7 +125,7 @@ def plot_performance_metrics_lollipop(metrics_results: dict[str, pd.DataFrame], 
 
     # y-axis limits; currently hardcoded
     axs[0, 0].set_ylim(ymin=0)
-    axs[2, 0].set_ylim(0, 1)
+    axs[2, 0].set_ylim(ymax=1)
 
     maxbias = np.abs(axs[1, 0].get_ylim()).max()
     axs[1, 0].set_ylim(-maxbias, maxbias)
