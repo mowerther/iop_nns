@@ -9,13 +9,15 @@ print("Read results into `results` dictionary")
 print(results.keys())
 
 
-### LOG-BINNED UNCERTAINTY (LINE) PLOT
-binned = {key: logbins.log_binned_statistics_combined(df) for key, df in results.items()}
-plot.plot_log_binned_statistics(binned)
-print("Saved log-binned uncertainty (line) plot")
-
-
-### LOLLIPOP PLOT
+### MODEL PERFORMANCE
+# Performance metrics and lollipop plot
 metrics_results = {key: metrics.calculate_metrics(df) for key, df in results.items()}
 plot.plot_performance_metrics_lollipop(metrics_results)
 print("Saved performance metric (lollipop) plot")
+
+
+### MODEL UNCERTAINTY
+# Log-binned uncertainty and line plot
+binned = {key: logbins.log_binned_statistics_combined(df) for key, df in results.items()}
+plot.plot_log_binned_statistics(binned)
+print("Saved log-binned uncertainty (line) plot")

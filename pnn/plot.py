@@ -23,62 +23,6 @@ model_colors = {
 
 
 ### FUNCTIONS
-## Log-binned statistics - line plot
-def plot_log_binned_statistics_line(binned: pd.DataFrame, variable: str, ax: plt.Axes, *,
-                                    uncertainty_keys: Iterable[str]=uncertainty_types.keys(), **kwargs) -> None:
-    """
-    Given a DataFrame containing log-binned statistics, plot the total/aleatoric/epistemic uncertainties for one variable.
-    Plots a line for the mean uncertainty and a shaded area for the standard deviation.
-    If no ax is provided, a new figure is created.
-    """
-    # Set up keys
-    mean, std = f"{variable}_mean", f"{variable}_std"
-
-    # Loop over uncertainty types and plot each
-    for unc, label in uncertainty_types.items():
-        df = binned.loc[unc]
-        color = uncertainty_colors[unc]
-
-        df.plot.line(ax=ax, y=mean, color=color, label=label, **kwargs)
-        ax.fill_between(df.index, df[mean] - df[std], df[mean] + df[std], color=color, alpha=0.1)
-
-    # Labels
-    ax.set_xlabel(variable)
-    ax.grid(True, ls="--")
-
-def plot_log_binned_statistics(binned: Iterable[pd.DataFrame], *,
-                               saveto: Path | str=save_path/"uncertainty_line.png") -> None:
-    """
-    Plot some number of DataFrames containing log-binned statistics.
-    """
-    # If only one DataFrame is provided, wrap it in a list
-    if isinstance(binned, pd.DataFrame):
-        binned = [binned]
-
-    # Generate figure
-    fig, axs = plt.subplots(nrows=len(binned), ncols=len(iops), sharex=True, figsize=(15, 25), layout="constrained", squeeze=False)
-
-    # Plot lines
-    for ax_row, (label, df) in zip(axs, binned.items()):
-        for ax, var in zip(ax_row, iops):
-            plot_log_binned_statistics_line(df, var, ax=ax, legend=False)
-
-        ax_row[0].set_ylabel(label)
-
-    # Settings
-    axs[0, 0].set_xscale("log")
-    for ax in axs.ravel():
-        ax.set_ylim(ymin=0)
-
-    fig.suptitle("")
-    fig.supxlabel("In situ value", fontweight="bold")
-    fig.supylabel("Mean uncertainty [%]", fontweight="bold")
-    fig.align_ylabels()
-
-    plt.savefig(saveto)
-    plt.close()
-
-
 ## Performance metrics - lollipop plot
 def plot_performance_metrics_lollipop(metrics_results: dict[str, pd.DataFrame], *,
                                       groups: dict[str, str]=iops_main, metrics_to_plot: dict[str, str]=metrics_display, models_to_plot: dict[str, str]=network_types, splits: dict[str, str]=split_types,
@@ -140,6 +84,62 @@ def plot_performance_metrics_lollipop(metrics_results: dict[str, pd.DataFrame], 
 
     plt.tight_layout()
     plt.savefig(saveto, dpi=200, bbox_inches="tight")
+    plt.close()
+
+
+## Log-binned statistics - line plot
+def plot_log_binned_statistics_line(binned: pd.DataFrame, variable: str, ax: plt.Axes, *,
+                                    uncertainty_keys: Iterable[str]=uncertainty_types.keys(), **kwargs) -> None:
+    """
+    Given a DataFrame containing log-binned statistics, plot the total/aleatoric/epistemic uncertainties for one variable.
+    Plots a line for the mean uncertainty and a shaded area for the standard deviation.
+    If no ax is provided, a new figure is created.
+    """
+    # Set up keys
+    mean, std = f"{variable}_mean", f"{variable}_std"
+
+    # Loop over uncertainty types and plot each
+    for unc, label in uncertainty_types.items():
+        df = binned.loc[unc]
+        color = uncertainty_colors[unc]
+
+        df.plot.line(ax=ax, y=mean, color=color, label=label, **kwargs)
+        ax.fill_between(df.index, df[mean] - df[std], df[mean] + df[std], color=color, alpha=0.1)
+
+    # Labels
+    ax.set_xlabel(variable)
+    ax.grid(True, ls="--")
+
+def plot_log_binned_statistics(binned: Iterable[pd.DataFrame], *,
+                               saveto: Path | str=save_path/"uncertainty_line.png") -> None:
+    """
+    Plot some number of DataFrames containing log-binned statistics.
+    """
+    # If only one DataFrame is provided, wrap it in a list
+    if isinstance(binned, pd.DataFrame):
+        binned = [binned]
+
+    # Generate figure
+    fig, axs = plt.subplots(nrows=len(binned), ncols=len(iops), sharex=True, figsize=(15, 25), layout="constrained", squeeze=False)
+
+    # Plot lines
+    for ax_row, (label, df) in zip(axs, binned.items()):
+        for ax, var in zip(ax_row, iops):
+            plot_log_binned_statistics_line(df, var, ax=ax, legend=False)
+
+        ax_row[0].set_ylabel(label)
+
+    # Settings
+    axs[0, 0].set_xscale("log")
+    for ax in axs.ravel():
+        ax.set_ylim(ymin=0)
+
+    fig.suptitle("")
+    fig.supxlabel("In situ value", fontweight="bold")
+    fig.supylabel("Mean uncertainty [%]", fontweight="bold")
+    fig.align_ylabels()
+
+    plt.savefig(saveto)
     plt.close()
 
 
