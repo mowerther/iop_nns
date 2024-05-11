@@ -137,6 +137,13 @@ def bias(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
 	return (y_hat - y).mean()
 
 
+@label("Sharpness")
+def sharpness(y_std: pd.DataFrame) -> pd.Series:
+    """ Sharpness (square root of mean of variance per sample) """
+    return np.sqrt((y_std**2).mean())
+
+
+
 ### AGGREGATE FUNCTIONS
 _MASK_THRESHOLD = 1e-4
 def calculate_metrics(df: pd.DataFrame) -> pd.DataFrame:
