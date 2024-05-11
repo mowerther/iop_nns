@@ -142,6 +142,14 @@ def sharpness(y_std: pd.DataFrame) -> pd.Series:
     """ Sharpness (square root of mean of variance per sample) """
     return np.sqrt((y_std**2).mean())
 
+@label("Coverage")
+def coverage(y_true: pd.DataFrame, y_pred: pd.DataFrame, y_pred_std: pd.DataFrame, *, k=1) -> pd.Series:
+    """ Coverage factor (how often does the true value fall within the predicted range?) """
+    lower_bounds = y_pred - k * y_pred_std
+    upper_bounds = y_pred + k * y_pred_std
+    within_bounds = (y_true >= lower_bounds) & (y_true <= upper_bounds)
+    coverage_factors = within_bounds.mean() * 100  # [%]
+    return coverage_factors
 
 
 ### AGGREGATE FUNCTIONS

@@ -372,51 +372,6 @@ def uncertainty_heatmap(results_agg: pd.DataFrame, *,
 
 # plt.show()
 
-# ### Coverage factor
-
-# def calculate_coverage_factor(y_true, y_pred_mean, y_pred_std, k=1):
-#     """
-#     Calculate the coverage factor (P_unc) which is the percentage of true values
-#     that fall within the predicted interval [y_pred_mean - k * y_pred_std, y_pred_mean + k * y_pred_std].
-
-#     Args:
-#     - y_true: Array of true values, shape [n_data_points, n_variables].
-#     - y_pred_mean: Array of predicted means, shape [n_data_points, n_variables].
-#     - y_pred_std: Array of predicted standard deviations, shape [n_data_points, n_variables].
-#     - k: The factor by which to multiply the standard deviation to create the interval.
-
-#     Returns:
-#     - coverage_factors: Array of coverage factor values for each output variable.
-#     """
-#     assert y_true.shape == y_pred_mean.shape == y_pred_std.shape, "Shapes of y_true, y_pred_mean, and y_pred_std must match."
-
-#     lower_bounds = y_pred_mean - k * y_pred_std
-#     upper_bounds = y_pred_mean + k * y_pred_std
-#     within_bounds = (y_true >= lower_bounds) & (y_true <= upper_bounds)
-#     coverage_factors = np.mean(within_bounds, axis=0) * 100
-#     return coverage_factors
-
-# coverage_factors_results = {}
-
-# for key, result in results.items():
-
-#     y_true_df = result['y_true']
-#     y_pred_df = result['y_pred']
-#     std_pred_df = result['std_pred']
-
-#     start_col_index = y_true_df.columns.get_loc('Instance') + 1
-#     coverage_factors = {}
-#     for col in y_true_df.columns[start_col_index:]:
-#         coverage_factors[col] = calculate_coverage_factor(
-#             y_true_df[col].values,
-#             y_pred_df[col].values,
-#             std_pred_df[col].values,
-#             k=1
-#         )
-
-#     coverage_factors_df = pd.DataFrame(coverage_factors, index=[0])
-#     coverage_factors_results[f'{key}_coverage_factors'] = coverage_factors_df
-
 # ### Coverage factor matrix
 
 # import matplotlib.pyplot as plt

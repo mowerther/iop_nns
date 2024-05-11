@@ -8,7 +8,7 @@ import pandas as pd
 
 from . import metrics
 
-def aggregate_uncertainty(results: dict[str, pd.DataFrame]) -> pd.DataFrame:
+def average_uncertainty(results: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """
     Aggregate the uncertainty in given dataframes.
     Note: previous version of heatmaps filtered entries <0 and >200/>1000 in total/epistemic/aleatoric.
@@ -18,10 +18,18 @@ def aggregate_uncertainty(results: dict[str, pd.DataFrame]) -> pd.DataFrame:
     return results_agg
 
 
+_TRUE_KEY = "y_true"
+_MEAN_KEY = "y_pred"
 _STD_KEY = "pred_std"
-def aggregate_sharpness(results: dict[str, pd.DataFrame]) -> pd.DataFrame:
+def sharpness_coverage(results: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """
     Calculate the sharpness etc. per IOP per dataframe, then combine them into one.
     """
-    sharpness_df = pd.DataFrame({key: metrics.sharpness(df.loc[_STD_KEY]) for key, df in results.items()}).T
-    return sharpness_df
+    sharpness = pd.DataFrame({key: metrics.sharpness(df.loc[_STD_KEY]) for key, df in results.items()}).T
+    coverage_factors = pd.DataFrame({key: metrics.coverage(df.loc[_TRUE_KEY], df.loc[_MEAN_KEY], df.loc[_STD_KEY]) for key, df in results.items()}).T
+
+    combined = pd.concat({"sharpness": sharpness,
+                          "coverage": coverage_factors,})
+    combined = combined.reorder_levels([1, 0])
+
+    return combined

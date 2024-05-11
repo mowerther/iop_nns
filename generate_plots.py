@@ -26,7 +26,11 @@ binned = {key: logbins.log_binned_statistics_combined(df) for key, df in results
 plot.plot_log_binned_statistics(binned)
 print("Saved log-binned uncertainty (line) plot")
 
-# Heatmap
-results_agg = aggregate.aggregate_uncertainty(results)
-plot.uncertainty_heatmap(results_agg)
+# Average uncertainty heatmap
+uncertainty_averages = aggregate.average_uncertainty(results)
+plot.uncertainty_heatmap(uncertainty_averages)
 print("Saved uncertainty heatmap plot")
+
+# Sharpness/Coverage heatmap
+sharpness_coverage = aggregate.sharpness_coverage(results)
+print("Saved sharpness/coverage plot")
