@@ -120,7 +120,7 @@ def mdsa(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     MDSA = 100 * (np.exp(med) - 1)
     return MDSA
 
-@only_positive
+# @only_positive
 @label("SSPB")
 def sspb(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     """
@@ -150,25 +150,3 @@ def coverage(y_true: pd.DataFrame, y_pred: pd.DataFrame, y_pred_std: pd.DataFram
     within_bounds = (y_true >= lower_bounds) & (y_true <= upper_bounds)
     coverage_factors = within_bounds.mean() * 100  # [%]
     return coverage_factors
-
-
-### AGGREGATE FUNCTIONS
-_MASK_THRESHOLD = 1e-4
-def calculate_metrics(df: pd.DataFrame) -> pd.DataFrame:
-    # Ensure non-negative and non-zero filtering
-    mask = (df.loc["y_true"] > _MASK_THRESHOLD) & (df.loc["y_pred"] > _MASK_THRESHOLD)
-    df = df[mask].loc[["y_true", "y_pred"]]  # Masked items become np.nan
-
-    # Temporary: make condition work per column
-    if mask.sum().sum() > 0:
-        metrics = {
-            'sspb': sspb(df.loc["y_true"], df.loc["y_pred"]),
-            'mdsa': mdsa(df.loc["y_true"], df.loc["y_pred"]),
-            'mape': mape(df.loc["y_true"], df.loc["y_pred"]),
-            'r_squared': log_r_squared(df.loc["y_true"], df.loc["y_pred"])
-            }
-    else:
-        metrics = {'sspb': None, 'mdsa': None, 'mape': None, 'r_squared': None}
-
-    metrics = pd.DataFrame(metrics).T
-    return metrics

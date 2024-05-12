@@ -16,8 +16,9 @@ def reorganise_df(df: pd.DataFrame) -> pd.DataFrame:
     """
     Reorganise an input dataframe so that "Category" and "Instance" become a multi-index.
     """
-    return df.set_index(["Category", "Instance"])
-
+    df = df.set_index(["Category", "Instance"])
+    df.index.rename({"Category": "category", "Instance": "instance"}, inplace=True)
+    return df
 
 def calculate_percentage_uncertainty(df: pd.DataFrame, *,
                                      reference_key: str="pred_scaled_for_unc", uncertainty_keys: Iterable[str]=("total_unc", "ale_unc", "epi_unc")) -> pd.DataFrame:
@@ -36,7 +37,7 @@ def calculate_percentage_uncertainty(df: pd.DataFrame, *,
 
     # Perform the operation on the specified keys
     result = {update_key(key): to_percentage(df, key) for key in uncertainty_keys}
-    result = pd.concat(result)
+    result = pd.concat(result, names=["category"])
 
     return result
 
@@ -48,11 +49,11 @@ def calculate_aleatoric_fraction(df: pd.DataFrame, *,
     Calculate what fraction of the total uncertainty consists of aleatoric uncertainty.
     """
     fraction = df.loc[aleatoric_key] / df.loc[total_key]
-    result = pd.concat({fraction_key: fraction})
+    result = pd.concat({fraction_key: fraction}, names=["category"])
     return result
 
 
-def read_data(filename: Path | str) -> pd.DataFrame:
+def read_model_outputs(filename: Path | str) -> pd.DataFrame:
     """
     Read data from a dataframe and process it.
     """
@@ -67,11 +68,12 @@ def read_data(filename: Path | str) -> pd.DataFrame:
     return df
 
 
-def read_all_data(folder: Path | str=pred_path) -> dict[str, pd.DataFrame]:
+def read_all_model_outputs(folder: Path | str=pred_path) -> pd.DataFrame:
     """
-    Read all data from a given folder into dataframes.
+    Read all data from a given folder into one big dataframe.
     """
-    results = {f"{network}-{split}": read_data(pred_path/f"{network}_{split}_preds.csv") for network, split in itertools.product(network_types, split_types)}
+    results = {split: pd.concat({network: read_model_outputs(pred_path/f"{network}_{split}_preds.csv") for network in network_types}, names=["network"]) for split in split_types}
+    results = pd.concat(results, names=["split"])
     return results
 
 

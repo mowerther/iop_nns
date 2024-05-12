@@ -4,7 +4,7 @@ Main script for loading data and generating plots.
 from pnn import aggregate, io, logbins, metrics, plot
 
 ### LOAD DATA
-results = io.read_all_data()
+results = io.read_all_model_outputs()
 print("Read results into `results` dictionary")
 print(results.keys())
 
@@ -15,7 +15,7 @@ plot.plot_performance_scatter(results)
 print("Saved match-up (scatter) plots")
 
 # Performance metrics and lollipop plot
-metrics_results = {key: metrics.calculate_metrics(df) for key, df in results.items()}
+metrics_results = aggregate.calculate_metrics(results)
 plot.plot_performance_metrics_lollipop(metrics_results)
 print("Saved performance metric (lollipop) plot")
 

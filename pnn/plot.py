@@ -113,18 +113,23 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
     plt.savefig(saveto, dpi=200, bbox_inches="tight")
     plt.close()
 
-def plot_performance_scatter(results: dict[str, pd.DataFrame], *,
+_scatter_levels = ["split", "network"]
+def plot_performance_scatter(results: pd.DataFrame, *,
                              saveto: Path | str=supplementary_path/"scatterplot.png", **kwargs) -> None:
     """
     Plot many DataFrames with y, y_hat, with total uncertainty (top) or aleatoric fraction (bottom) as colour.
     """
     saveto = Path(saveto)
 
-    # Loop over results and plot each dataframe in a separate figure
-    for key, df in results.items():
-        network, split = io.network_and_split_from_key(key)
-        saveto_here = saveto.with_stem(f"{saveto.stem}_{key}")
-        plot_performance_scatter_single(df, title=f"{network} {split}", saveto=saveto_here, **kwargs)
+    # Loop over results and plot each network/split combination in a separate figure
+    for (split, network), df in results.groupby(level=_scatter_levels):
+        # Set up labels
+        splitlabel, networklabel = split_types[split], network_types[network]
+        saveto_here = saveto.with_stem(f"{saveto.stem}_{network}-{split}")
+
+        # Set up data and plot
+        df = df.droplevel(_scatter_levels)
+        plot_performance_scatter_single(df, title=f"{networklabel} {splitlabel}", saveto=saveto_here, **kwargs)
 
 
 ## Performance metrics - lollipop plot
