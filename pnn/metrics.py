@@ -8,15 +8,6 @@ from typing import Callable, Iterable
 import numpy as np
 import pandas as pd
 
-### CONSTANTS
-# Metric display names and their data column names mapping
-metrics_display = {
-    "mdsa": "MDSA [%]",
-    "sspb": "Bias [%]",
-    "r_squared": r"$R^2$",
-    }
-
-
 ### HELPER DECORATOR FUNCTIONS
 def only_positive(func: Callable) -> Callable:
     """

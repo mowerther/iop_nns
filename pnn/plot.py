@@ -133,17 +133,15 @@ def plot_performance_scatter(results: pd.DataFrame, *,
 
 
 ## Performance metrics - lollipop plot
-def plot_performance_metrics_lollipop(metrics_results: dict[str, pd.DataFrame], *,
-                                      groups: dict[str, str]=iops_main, metrics_to_plot: dict[str, str]=metrics.metrics_display, models_to_plot: dict[str, str]=network_types, splits: dict[str, str]=split_types,
+_lollipop_metrics = metrics_display = {"mdsa": "MDSA [%]", "sspb": "Bias [%]", "r_squared": r"$R^2$"}
+def plot_performance_metrics_lollipop(metrics_results: pd.DataFrame, *,
+                                      groups: dict[str, str]=iops_main, metrics_to_plot: dict[str, str]=_lollipop_metrics, models_to_plot: dict[str, str]=network_types, splits: dict[str, str]=split_types,
                                       saveto: Path | str=save_path/"performance_lolliplot_vertical.png") -> None:
     """
     Plot some number of DataFrames containing performance metric statistics.
     """
     # Constants
     bar_width = 0.15
-
-    # Separating the results for the scenarios
-    metrics_results_split = {label: {key: val for key, val in metrics_results.items() if f"-{label}" in key} for label in splits}
 
     # Generate figure ; rows are metrics, columns are split types
     n_groups = len(groups)
@@ -154,12 +152,15 @@ def plot_performance_metrics_lollipop(metrics_results: dict[str, pd.DataFrame], 
 
     # Plot results; must be done in a loop because there is no Pandas lollipop function
     for ax_row, metric_label in zip(axs, metrics_to_plot):
-        for ax, (split_label, metrics_split) in zip(ax_row, metrics_results_split.items()):
-            for model_idx, (network_type, df) in enumerate(zip(models_to_plot, metrics_split.values())):
+        for ax, split_label in zip(ax_row, splits):
+            for model_idx, network_type in enumerate(models_to_plot):
+                # Select data
+                df = metrics_results.loc[split_label, network_type, metric_label]
+                values = df[groups.keys()]
+
                 color = model_colors.get(network_type, "gray")
                 label = models_to_plot.get(network_type, "model")
 
-                values = df.loc[metric_label][groups.keys()]
                 locations = np.arange(n_groups) - (bar_width * (n_models - 1) / 2) + model_idx * bar_width
 
                 ax.scatter(locations, values, color=color, label=label, s=50, zorder=3)  # Draw points
