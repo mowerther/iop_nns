@@ -1,36 +1,35 @@
 """
 Main script for loading data and generating plots.
 """
-from pnn import aggregate, io, logbins, metrics, plot
+import pnn
 
 ### LOAD DATA
-results = io.read_all_model_outputs()
+results = pnn.io.read_all_model_outputs()
 print("Read results into `results` DataFrame:")
 print(results)
 
 
 ### MODEL PERFORMANCE
 # y vs y_hat scatter plots
-plot.plot_performance_scatter(results)
+pnn.plot.plot_performance_scatter(results)
 print("Saved match-up (scatter) plots")
 
 # Performance metrics and lollipop plot
-metrics_results = aggregate.calculate_metrics(results)
-plot.plot_performance_metrics_lollipop(metrics_results)
+metrics = pnn.aggregate.calculate_metrics(results)
+pnn.plot.plot_performance_metrics_lollipop(metrics)
 print("Saved performance metric (lollipop) plot")
 
 
 ### MODEL UNCERTAINTY
 # Log-binned uncertainty and line plot
-binned = {key: logbins.log_binned_statistics_combined(df) for key, df in results.items()}
-plot.plot_log_binned_statistics(binned)
+binned = {key: pnn.logbins.log_binned_statistics_combined(df) for key, df in results.items()}
+pnn.plot.plot_log_binned_statistics(binned)
 print("Saved log-binned uncertainty (line) plot")
 
 # Average uncertainty heatmap
-uncertainty_averages = aggregate.average_uncertainty(results)
-plot.uncertainty_heatmap(uncertainty_averages)
+uncertainty_averages = pnn.aggregate.average_uncertainty(results)
+pnn.plot.uncertainty_heatmap(uncertainty_averages)
 print("Saved uncertainty heatmap plot")
 
 # Sharpness/Coverage heatmap
-sharpness_coverage = aggregate.sharpness_coverage(results)
 print("Saved sharpness/coverage plot")
