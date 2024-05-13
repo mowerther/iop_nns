@@ -5,8 +5,8 @@ from pnn import aggregate, io, logbins, metrics, plot
 
 ### LOAD DATA
 results = io.read_all_model_outputs()
-print("Read results into `results` dictionary")
-print(results.keys())
+print("Read results into `results` DataFrame:")
+print(results)
 
 
 ### MODEL PERFORMANCE
