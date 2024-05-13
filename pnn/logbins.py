@@ -37,30 +37,24 @@ def log_binned_statistics(x: pd.Series, y: pd.Series, *,
     return binned
 
 
-def log_binned_statistics_all_variables(reference: pd.DataFrame, data: pd.DataFrame, *,
-                                        columns: Iterable[str]=iops) -> pd.DataFrame:
+def log_binned_statistics_df(df: pd.DataFrame, *,
+                             reference_key: str="y_true", uncertainty_keys: Iterable[str]=uncertainty_types.keys(),
+                             columns: Iterable[str]=iops) -> pd.DataFrame:
     """
     Calculate log binned statistics for each of the variables in one dataframe.
     """
     # Perform calculations
-    binned = {key: log_binned_statistics(reference.loc[:,key], data.loc[:,key]) for key in columns}
-
-    # Add suffices to columns and merge
-    binned = [df.add_prefix(f"{key}_") for key, df in binned.items()]
-    binned = binned[0].join(binned[1:])
+    binned = pd.concat({unc_key: pd.concat({col: log_binned_statistics(df.loc[reference_key, col], df.loc[unc_key, col]) for col in columns}, axis=1) for unc_key in uncertainty_keys})
 
     return binned
 
 
-def log_binned_statistics_combined(df: pd.DataFrame, *,
-                                   reference_key: str="y_true", uncertainty_keys: Iterable[str]=uncertainty_types.keys()) -> pd.DataFrame:
+def log_binned_statistics_combined(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate log binned statistics for each of the uncertainty dataframes relative to x, and combine them into a single dataframe.
     """
-    # Bin individual uncertainty keys
-    binned = {key: log_binned_statistics_all_variables(df.loc[reference_key], df.loc[key]) for key in uncertainty_keys}
-
-    # Combine into one multi-index DataFrame
-    binned = pd.concat(binned)
+    # Reorder data and apply
+    df = df.swaplevel("category", "split")
+    binned = df.groupby(level=["split", "network"]).apply(log_binned_statistics_df)
 
     return binned

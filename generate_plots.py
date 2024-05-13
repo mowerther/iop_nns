@@ -22,7 +22,7 @@ print("Saved performance metric (lollipop) plot")
 
 ### MODEL UNCERTAINTY
 # Log-binned uncertainty and line plot
-binned = {key: pnn.logbins.log_binned_statistics_combined(df) for key, df in results.items()}
+binned = pnn.logbins.log_binned_statistics_combined(results)
 pnn.plot.plot_log_binned_statistics(binned)
 print("Saved log-binned uncertainty (line) plot")
 
