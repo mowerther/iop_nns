@@ -1,6 +1,7 @@
 """
 Various plotting functions.
 """
+import itertools
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -124,8 +125,8 @@ def plot_performance_scatter(results: pd.DataFrame, *,
     # Loop over results and plot each network/split combination in a separate figure
     for (split, network), df in results.groupby(level=_scatter_levels):
         # Set up labels
-        splitlabel, networklabel = split_types[split], network_types[network]
         saveto_here = saveto.with_stem(f"{saveto.stem}_{network}-{split}")
+        splitlabel, networklabel = split_types[split], network_types[network]
 
         # Plot
         plot_performance_scatter_single(df, title=f"{networklabel} {splitlabel}", saveto=saveto_here, **kwargs)
@@ -197,46 +198,37 @@ def plot_performance_metrics_lollipop(metrics_results: pd.DataFrame, *,
 
 
 ## Uncertainty statistics - line plot
-def plot_log_binned_statistics_line(binned: pd.DataFrame, variable: str, ax: plt.Axes, *,
+def plot_log_binned_statistics_line(binned: pd.DataFrame, ax: plt.Axes, *,
                                     uncertainty_keys: Iterable[str]=uncertainty_types.keys(), **kwargs) -> None:
     """
     Given a DataFrame containing log-binned statistics, plot the total/aleatoric/epistemic uncertainties for one variable.
     Plots a line for the mean uncertainty and a shaded area for the standard deviation.
     If no ax is provided, a new figure is created.
     """
-    # Set up keys
-    mean, std = f"{variable}_mean", f"{variable}_std"
-
     # Loop over uncertainty types and plot each
     for unc, label in uncertainty_types.items():
         df = binned.loc[unc]
         color = uncertainty_colors[unc]
 
-        df.plot.line(ax=ax, y=mean, color=color, label=label, **kwargs)
-        ax.fill_between(df.index, df[mean] - df[std], df[mean] + df[std], color=color, alpha=0.1)
+        df.plot.line(ax=ax, y="mean", color=color, label=label, **kwargs)
+        ax.fill_between(df.index, df["mean"] - df["std"], df["mean"] + df["std"], color=color, alpha=0.1)
 
     # Labels
     ax.grid(True, ls="--")
 
-def plot_log_binned_statistics(binned: Iterable[pd.DataFrame], *,
+def plot_log_binned_statistics(binned: pd.DataFrame, *,
                                saveto: Path | str=supplementary_path/"uncertainty_line.png") -> None:
     """
-    Plot some number of DataFrames containing log-binned statistics.
+    Plot log-binned statistics from a main DataFrame.
     """
-    # If only one DataFrame is provided, wrap it in a list
-    if isinstance(binned, pd.DataFrame):
-        binned = [binned]
-
     # Generate figure
-    fig, axs = plt.subplots(nrows=len(binned), ncols=len(iops), sharex=True, figsize=(15, 25), layout="constrained", squeeze=False)
+    fig, axs = plt.subplots(nrows=len(split_types)*len(network_types), ncols=len(iops), sharex=True, figsize=(15, 25), layout="constrained", squeeze=False)
 
     # Plot lines
-    for ax_row, (key, df) in zip(axs, binned.items()):
+    for ax_row, (network, split) in zip(axs, itertools.product(network_types, split_types)):
         for ax, var in zip(ax_row, iops):
-            plot_log_binned_statistics_line(df, var, ax=ax, legend=False)
-
-        network, split = io.network_and_split_from_key(key)
-        ax_row[0].set_ylabel(f"{network}\n{split}")
+            df = binned.loc[split, network][var]
+            plot_log_binned_statistics_line(df, ax=ax, legend=False)
 
     # Settings
     axs[0, 0].set_xscale("log")
@@ -244,6 +236,8 @@ def plot_log_binned_statistics(binned: Iterable[pd.DataFrame], *,
         ax.set_ylim(ymin=0)
     for ax, var in zip(axs[-1], iops.values()):
         ax.set_xlabel(var)
+    for ax, (network, split) in zip(axs[:, 0], itertools.product(network_types.values(), split_types.values())):
+        ax.set_ylabel(f"{network}\n{split}")
 
     # Labels
     fig.suptitle("")
