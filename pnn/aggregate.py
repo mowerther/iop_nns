@@ -43,7 +43,6 @@ coverage = metric_to_groupby(metrics.coverage, _TRUE_KEY, _MEAN_KEY, _STD_KEY)
 _MASK_THRESHOLD = 1e-4
 def calculate_metrics(df: pd.DataFrame) -> pd.DataFrame:
     # Ensure non-negative and non-zero filtering
-    df = df.swaplevel("category", "split")
     mask = (df.loc["y_true"] > _MASK_THRESHOLD) & (df.loc["y_pred"] > _MASK_THRESHOLD)
     df = df[mask]  # Masked items become np.nan
 

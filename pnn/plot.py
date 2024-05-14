@@ -127,8 +127,7 @@ def plot_performance_scatter(results: pd.DataFrame, *,
         splitlabel, networklabel = split_types[split], network_types[network]
         saveto_here = saveto.with_stem(f"{saveto.stem}_{network}-{split}")
 
-        # Set up data and plot
-        df = df.droplevel(_scatter_levels)
+        # Plot
         plot_performance_scatter_single(df, title=f"{networklabel} {splitlabel}", saveto=saveto_here, **kwargs)
 
 

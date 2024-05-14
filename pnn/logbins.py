@@ -54,7 +54,7 @@ def log_binned_statistics_combined(df: pd.DataFrame) -> pd.DataFrame:
     Calculate log binned statistics for each of the uncertainty dataframes relative to x, and combine them into a single dataframe.
     """
     # Reorder data and apply
-    df = df.swaplevel("category", "split")
+    # df = df.swaplevel("category", "split")
     binned = df.groupby(level=["split", "network"]).apply(log_binned_statistics_df)
 
     return binned

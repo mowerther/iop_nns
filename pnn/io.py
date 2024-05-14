@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from .constants import pred_path, network_types, split_types
+LEVEL_ORDER = ["category", "split", "network", "instance"]
 
 
 ### LOADING / PROCESSING DATA
@@ -19,6 +20,7 @@ def reorganise_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.set_index(["Category", "Instance"])
     df.index.rename({"Category": "category", "Instance": "instance"}, inplace=True)
     return df
+
 
 def calculate_percentage_uncertainty(df: pd.DataFrame, *,
                                      reference_key: str="pred_scaled_for_unc", uncertainty_keys: Iterable[str]=("total_unc", "ale_unc", "epi_unc")) -> pd.DataFrame:
@@ -59,12 +61,6 @@ def read_model_outputs(filename: Path | str) -> pd.DataFrame:
     """
     df = pd.read_csv(filename)
     df = reorganise_df(df)
-
-    df_percent = calculate_percentage_uncertainty(df)
-    df_aleatoric_fraction = calculate_aleatoric_fraction(df)
-
-    df = pd.concat([df, df_percent, df_aleatoric_fraction])
-
     return df
 
 
@@ -72,8 +68,20 @@ def read_all_model_outputs(folder: Path | str=pred_path) -> pd.DataFrame:
     """
     Read all data from a given folder into one big dataframe.
     """
+    # Read data
     results = {split: pd.concat({network: read_model_outputs(pred_path/f"{network}_{split}_preds.csv") for network in network_types}, names=["network"]) for split in split_types}
     results = pd.concat(results, names=["split"])
+
+    # Reorder
+    results = results.reorder_levels(LEVEL_ORDER)
+
+    # Add additional information
+    df_percent = calculate_percentage_uncertainty(results)
+    df_aleatoric_fraction = calculate_aleatoric_fraction(results)
+
+    # Put it all together
+    results = pd.concat([results, df_percent, df_aleatoric_fraction])
+    results = results.sort_index()
     return results
 
 
