@@ -261,10 +261,6 @@ def uncertainty_heatmap(results_agg: pd.DataFrame, *,
     rowkwargs = {"total_unc_pct": dict(vmin=0, vmax=20, cmap=cmap_uniform),
                  "ale_frac": dict(vmin=0, vmax=1, cmap=cmap_aleatoric_fraction),}
 
-    # Pre-process data
-    results_agg = pd.concat({split: pd.concat({network: results_agg.loc[f"{network}-{split}"] for network in network_types}) for split in split_types})
-    results_agg = results_agg.reorder_levels([2, 0, 1])
-
     # Generate figure
     fig, axs = plt.subplots(nrows=2, ncols=len(split_types), sharex=True, sharey=True, figsize=(11, 9), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
 
@@ -273,7 +269,7 @@ def uncertainty_heatmap(results_agg: pd.DataFrame, *,
         # Plot each panel per row
         for ax, split in zip(ax_row, split_types):
             # Select relevant data
-            df = results_agg.loc[(unc, split)]
+            df = results_agg.loc[unc, split]
             df = df[variables.keys()]
 
             # Plot image

@@ -64,11 +64,11 @@ def calculate_metrics(df: pd.DataFrame) -> pd.DataFrame:
     return df_metrics
 
 
-def average_uncertainty(results: dict[str, pd.DataFrame]) -> pd.DataFrame:
+def average_uncertainty(results: pd.DataFrame) -> pd.DataFrame:
     """
     Aggregate the uncertainty in given dataframes.
     Note: previous version of heatmaps filtered entries <0 and >200/>1000 in total/epistemic/aleatoric.
     """
-    results_agg = {key: df.groupby(level=0).mean() for key, df in results.items()}
-    results_agg = pd.concat(results_agg)
+    level = results.index.names.difference(["instance"])  # Aggregate only over instance
+    results_agg = results.groupby(level=level).mean()
     return results_agg
