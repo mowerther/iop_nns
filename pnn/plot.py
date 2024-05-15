@@ -304,152 +304,69 @@ def uncertainty_heatmap(results_agg: pd.DataFrame, *,
     plt.close()
 
 
-# ### sharpness and coverage factor plots
-# # -> turn into normal barplots?
+## Uncertainty metrics - bar plot
+_bar_metrics = {"sharpness": r"Sharpness [m$^{-1}$]", "coverage": "Coverage [%]"}
+def plot_uncertainty_metrics_bar(uncertainty_metrics: pd.DataFrame, *,
+                                 groups: dict[str, str]=iops_main, metrics_to_plot: dict[str, str]=_bar_metrics, models_to_plot: dict[str, str]=network_types, splits: dict[str, str]=split_types,
+                                      saveto: Path | str=save_path/"uncertainty_metrics_bar.png") -> None:
+    """
+    Plot some number of DataFrames containing performance metric statistics.
+    """
+    # Constants
+    bar_width = 0.15
 
-# import matplotlib.pyplot as plt
-# import numpy as np
+    # Generate figure ; rows are metrics, columns are split types
+    n_groups = len(groups)
+    n_metrics = len(metrics_to_plot)
+    n_models = len(models_to_plot)
+    n_splits = len(splits)
+    fig, axs = plt.subplots(nrows=n_metrics, ncols=n_splits, figsize=(14, 8), sharex=True, sharey="row", squeeze=False)
 
-# # Variables and their display titles
-# #variables = ['aCDOM_443', 'aCDOM_675', 'aNAP_443', 'aNAP_675', 'aph_443', 'aph_675']
-# #display_titles = ['a$_{CDOM}$ 443', 'a$_{CDOM}$ 675', 'a$_{NAP}$ 443', 'a$_{NAP}$ 675', 'a$_{ph}$ 443', 'a$_{ph}$ 675']
+    # Plot results; must be done in a loop because there is no Pandas lollipop function
+    for ax_row, metric_label in zip(axs, metrics_to_plot):
+        for ax, split_label in zip(ax_row, splits):
+            for model_idx, network_type in enumerate(models_to_plot):
+                # Select data
+                df = uncertainty_metrics.loc[split_label, network_type, metric_label]
+                values = df[groups.keys()]
 
-# variables = ['aCDOM_443', 'aCDOM_675', 'aph_443', 'aph_675']
-# display_titles = ['a$_{CDOM}$ 443', 'a$_{CDOM}$ 675', 'a$_{ph}$ 443', 'a$_{ph}$ 675']
+                color = model_colors.get(network_type, "gray")
+                label = models_to_plot.get(network_type, "model")
 
-# models_and_colors = {
-#     'mdn': 'blue',
-#     'dc': 'green',
-#     'mcd': 'red',
-#     'ens': 'purple',
-#     'rnn': 'black'
-# }
-# new_model_labels = ['MDN', 'BNN DC', 'BNN MCD', 'ENS NN', 'RNN']
+                locations = np.arange(n_groups) - (bar_width * (n_models - 1) / 2) + model_idx * bar_width
 
-# fig, axs = plt.subplots(1, 4, figsize=(15, 4))
+                ax.bar(locations, values, color=color, label=label, width=bar_width, zorder=3)  # Draw points
 
-# bar_width = 0.35
-# index = np.arange(len(models_and_colors))
+            ax.grid(True, axis="y", linestyle="--", linewidth=0.5, color="black", alpha=0.4)
 
-# for i, var in enumerate(variables):
-#     ax = axs[i]
-#     ax.set_title(display_titles[i])
+    # Label variables
+    axs[0, 0].set_xticks(np.arange(n_groups))
+    axs[0, 0].set_xticklabels(groups.values())
 
-#     wd_scores = []
-#     ood_scores = []
-#     for model_key in models_and_colors.keys():
-#         wd_label = f'{model_key}_wd_sharpness'
-#         ood_label = f'{model_key}_ood_sharpness'
+    # Label y-axes
+    for ax, ylabel in zip(axs[:, 0], metrics_to_plot.values()):
+        ax.set_ylabel(ylabel, fontsize=12)
+    fig.align_ylabels()
 
-#         wd_score = sharpness_results_dfs[wd_label].loc[0, var] if wd_label in sharpness_results_dfs else 0
-#         ood_score = sharpness_results_dfs[ood_label].loc[0, var] if ood_label in sharpness_results_dfs else 0
-#         wd_scores.append(wd_score)
-#         ood_scores.append(ood_score)
+    # y-axis limits; currently hardcoded
+    # axs[0, 0].set_ylim(ymin=0)
+    # axs[2, 0].set_ylim(ymax=1)
 
-#     wd_bars = ax.bar(index, wd_scores, bar_width, label='Within-distribution', color='#469990')
-#     ood_bars = ax.bar(index + bar_width, ood_scores, bar_width, label='Out-of-distribution', color='#f4bf75')
+    # maxbias = np.abs(axs[1, 0].get_ylim()).max()
+    # axs[1, 0].set_ylim(-maxbias, maxbias)
 
-#     ax.set_xticks(index + bar_width / 2)
-#     ax.set_xticklabels(new_model_labels, rotation=45)
-#     ax.set_ylim(0, 0.3)
-#     ax.grid(True, axis='y', ls='--',c='black', alpha=0.5)
+    # Titles
+    for ax, title in zip(axs[0], splits.values()):
+        ax.set_title(title)
 
-# fig.supylabel('Sharpness',x=-0.005,y=0.55, fontweight='bold',fontsize=14)
-# fig.supxlabel('Models', fontweight='bold',fontsize=14)
+    # Plot legend outside the subplots
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
 
-# handles, labels = ax.get_legend_handles_labels()
-# fig.legend(handles, labels, loc='upper left', bbox_to_anchor=(1, 0.6))
+    plt.tight_layout()
+    plt.savefig(saveto, dpi=200, bbox_inches="tight")
+    plt.close()
 
-# plt.tight_layout()
-
-# save_path = '/content/drive/My Drive/iop_ml/plots/'
-# plt.savefig(save_path + 'sharpness_results_wd_ood.png',dpi=200,bbox_inches='tight')
-
-# plt.show()
-
-# ### Coverage factor matrix
-
-# import matplotlib.pyplot as plt
-# import pandas as pd
-# import numpy as np
-# from matplotlib.colors import Normalize
-# from matplotlib.cm import ScalarMappable
-
-# new_model_labels = ['MDN', 'BNN DC', 'BNN MCD', 'ENS NN', 'RNN']
-
-# # Separate the coverage factors results into 'wd' and 'ood' - but should also have random split for completeness?
-# wd_coverage_factors = {k: v for k, v in coverage_factors_results.items() if 'wd_coverage_factors' in k}
-# ood_coverage_factors = {k: v for k, v in coverage_factors_results.items() if 'ood_coverage_factors' in k}
-
-# def prepare_data_for_heatmap(coverage_dict):
-#     data = pd.DataFrame()
-#     for key, df in coverage_dict.items():
-#         model_name = key.split('_')[0]
-#         df_transposed = df.T
-#         df_transposed.columns = [model_name]
-#         data = pd.concat([data, df_transposed], axis=1)
-#     data = data.T
-#     return data
-
-# wd_data = prepare_data_for_heatmap(wd_coverage_factors)
-# ood_data = prepare_data_for_heatmap(ood_coverage_factors)
-
-# # Exclude 'aNAP_443' and 'aNAP_675' from both wd_data and ood_data
-# wd_data = wd_data[['aCDOM_443', 'aCDOM_675', 'aph_443', 'aph_675']]
-# ood_data = ood_data[['aCDOM_443', 'aCDOM_675', 'aph_443', 'aph_675']]
-
-# display_titles = ['a$_{CDOM}$ 443', 'a$_{CDOM}$ 675', 'a$_{ph}$ 443', 'a$_{ph}$ 675']
-# wd_data.columns = display_titles
-# ood_data.columns = display_titles
-
-# # Normalize the color range for both heatmaps - 0 - 100% coverage
-# norm = Normalize(vmin=0, vmax=100)
-
-# fig, axs = plt.subplots(1, 2, figsize=(11, 5))
-# cmap = plt.get_cmap('viridis')
-
-# def plot_heatmap(data, ax, title, model_labels=None, norm=None):
-#     highest_in_columns = data.max()
-#     im = ax.imshow(data, cmap=cm.batlow, norm=norm)
-#     ax.set_xticks(np.arange(data.shape[1]))
-#     ax.set_yticks(np.arange(data.shape[0]))
-#     ax.set_xticklabels(data.columns)
-#     ax.set_yticklabels(model_labels)
-#     ax.tick_params(top=False, bottom=True, labeltop=False, labelbottom=True)
-#     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-
-#     # Loop over data dimensions and create text annotations.
-#     for i in range(data.shape[0]):
-#         for j in range(data.shape[1]):
-#             if data.iloc[i, j] == highest_in_columns[j]:
-#                 text_color = 'red'  # Red for the highest number in the column
-#             else:
-#                 text_color = 'black'
-#             ax.text(j, i, format(data.iloc[i, j], '.1f'),
-#                     ha="center", va="center", color=text_color, fontsize=10)
-
-#     ax.set_title(title)
-
-# plot_heatmap(wd_data, axs[0], 'Within-distribution', model_labels=new_model_labels, norm=norm)
-# plot_heatmap(ood_data, axs[1], 'Out-of-distribution', model_labels=new_model_labels, norm=norm)
-
-# # Create an axis for the colorbar
-# fig.subplots_adjust(right=0.8)
-# cbar_ax = fig.add_axes([0.8, 0.25, 0.02, 0.5])
-
-# # Create a colorbar in the created axis
-# sm = ScalarMappable(cmap=cm.batlow, norm=norm)
-# sm.set_array([])
-# cbar = fig.colorbar(sm, cax=cbar_ax, ticks=np.arange(0, 101, 20))
-# cbar.set_label('Coverage factor [%]', fontsize=12)
-
-# fig.supxlabel('IOPs', x=0.45,y=-0.09, fontweight='bold',fontsize=14)
-# fig.supylabel('Models',x=0.04, fontweight='bold',fontsize=14)
-
-# save_path = '/content/drive/My Drive/iop_ml/plots/'
-# plt.savefig(save_path + 'coverage_factors_matrix_4_variables.png',dpi=200,bbox_inches='tight')
-
-# plt.show()
 
 # #####
 # ## Calibration plots
