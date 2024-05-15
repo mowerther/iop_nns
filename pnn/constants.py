@@ -36,6 +36,16 @@ class Parameter:
     vmax: Optional[float] = None
     symmetric: bool = False
 
+    # Makes it possible to use the Parameter object as an index.
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    def __eq__(self, other) -> bool:
+        return (self.name == other)
+
+    def __repr__(self) -> str:
+        return self.name
+
 
 ### NETWORKS
 mdn = Parameter("mdn", "MDN", "#994455")

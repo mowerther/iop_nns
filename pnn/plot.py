@@ -37,7 +37,7 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
     for ax_row, uncertainty in zip(axs, rows):
         # Plot data per panel
         for ax, iop in zip(ax_row, columns):
-            im = ax.scatter(df.loc["y_true", iop.name], df.loc["y_pred", iop.name], c=df.loc[uncertainty.name, iop.name],
+            im = ax.scatter(df.loc["y_true", iop], df.loc["y_pred", iop], c=df.loc[uncertainty, iop],
                             alpha=0.7, cmap=uncertainty.cmap, vmin=uncertainty.vmin, vmax=uncertainty.vmax)
 
         # Color bar per row
@@ -70,7 +70,7 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
     # Metrics
     for ax, iop in zip(axs[0], columns):
         # Calculate
-        y, y_hat = df.loc["y_true", iop.name], df.loc["y_pred", iop.name]
+        y, y_hat = df.loc["y_true", iop], df.loc["y_pred", iop]
         r_square = f"$R^2 = {metrics.log_r_squared(y, y_hat):.2f}$"
         sspb = f"SSPB = ${metrics.sspb(y, y_hat):+.1f}$%"
         other_metrics = [f"{func.__name__} = {func(y, y_hat):.1f}%" for func in [metrics.mdsa, metrics.mape]]
@@ -137,8 +137,8 @@ def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
         for ax, split in zip(ax_row, splits):
             for member_idx, member in enumerate(groupmembers):
                 # Select data
-                df = data.loc[split.name, member.name, metric.name]
-                values = df[[p.name for p in groups]]
+                df = data.loc[split, member, metric]
+                values = df[groups]
 
                 color = member.color
                 label = member.label
@@ -189,7 +189,7 @@ def plot_log_binned_statistics_line(binned: pd.DataFrame, ax: plt.Axes, *,
     """
     # Loop over uncertainty types and plot each
     for unc in uncertainties:
-        df = binned.loc[unc.name]
+        df = binned.loc[unc]
         color = unc.color
 
         df.plot.line(ax=ax, y="mean", color=color, label=unc.label, **kwargs)
@@ -209,7 +209,7 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
     # Plot lines
     for ax_row, (network, split) in zip(axs, itertools.product(c.networks, c.splits)):
         for ax, var in zip(ax_row, c.iops):
-            df = binned.loc[split.name, network.name][var.name]
+            df = binned.loc[split, network][var]
             plot_log_binned_statistics_line(df, ax=ax, legend=False)
 
     # Settings
@@ -247,8 +247,8 @@ def uncertainty_heatmap(results_agg: pd.DataFrame, *,
         # Plot each panel per row
         for ax, split in zip(ax_row, c.splits):
             # Select relevant data
-            df = results_agg.loc[unc.name, split.name]
-            df = df[[p.name for p in variables]]
+            df = results_agg.loc[unc, split]
+            df = df[variables]
 
             # Plot image
             im = ax.imshow(df, cmap=unc.cmap, vmin=unc.vmin, vmax=unc.vmax)
@@ -305,8 +305,8 @@ def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
         for ax, split in zip(ax_row, splits):
             for member_idx, member in enumerate(groupmembers):
                 # Select data
-                df = data.loc[split.name, member.name, metric.name]
-                values = df[[p.name for p in groups]]
+                df = data.loc[split, member, metric]
+                values = df[groups]
 
                 color = member.color
                 label = member.label
