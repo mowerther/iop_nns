@@ -145,7 +145,7 @@ def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
 
                 locations = np.arange(n_groups) - (bar_width * (n_members - 1) / 2) + member_idx * bar_width
 
-                ax.scatter(locations, values, color=color, label=label, s=50, zorder=3)  # Draw points
+                ax.scatter(locations, values, color=color, label=label, s=50, zorder=3, edgecolor="black")  # Draw points
                 ax.vlines(locations, 0, values, colors='grey', lw=1, alpha=0.7)
 
             ax.grid(True, axis="y", linestyle="--", linewidth=0.5, color="black", alpha=0.4)

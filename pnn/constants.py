@@ -38,11 +38,11 @@ class Parameter:
 
 
 ### NETWORKS
-mdn = Parameter("mdn", "MDN", "#FF5733")
-bnn_dropconnect = Parameter("bnn_dropconnect", "BNN DC", "#3357FF")
-bnn_mcd = Parameter("bnn_mcd", "BNN MCD", "#33FF57")
-ensemble = Parameter("ensemble", "ENN", "#F933FF")
-rnn = Parameter("rnn", "RNN", "#FFC733")
+mdn = Parameter("mdn", "MDN", "#994455")
+bnn_dropconnect = Parameter("bnn_dropconnect", "BNN DC", "#997700")
+bnn_mcd = Parameter("bnn_mcd", "BNN MCD", "#6699CC")
+ensemble = Parameter("ensemble", "ENN", "#EE99AA")
+rnn = Parameter("rnn", "RNN", "#EECC66")
 
 networks = [mdn, bnn_dropconnect, bnn_mcd, ensemble, rnn]
 networks_fromkey = {p.name: p for p in networks}
@@ -74,12 +74,12 @@ relative_uncertainties = [pred_std_pct, ale_unc_pct, epi_unc_pct]
 _CDOM = r"\text{CDOM}"
 _NAP = r"\text{NAP}"
 _ph = r"\text{ph}"
-aCDOM_443 = Parameter("aCDOM_443", f"$a_{_CDOM}$(443) [{m1}]")
-aCDOM_675 = Parameter("aCDOM_675", f"$a_{_CDOM}$(675) [{m1}]")
-aNAP_443 = Parameter("aNAP_443", f"$a_{_NAP}$(443) [{m1}]")
-aNAP_675 = Parameter("aNAP_675", f"$a_{_NAP}$(675) [{m1}]")
-aph_443 = Parameter("aph_443", f"$a_{_ph}$(443) [{m1}]")
-aph_675 = Parameter("aph_675", f"$a_{_ph}$(675) [{m1}]")
+aCDOM_443 = Parameter("aCDOM_443", f"$a_{_CDOM}$(443)")
+aCDOM_675 = Parameter("aCDOM_675", f"$a_{_CDOM}$(675)")
+aNAP_443 = Parameter("aNAP_443", f"$a_{_NAP}$(443)")
+aNAP_675 = Parameter("aNAP_675", f"$a_{_NAP}$(675)")
+aph_443 = Parameter("aph_443", f"$a_{_ph}$(443)")
+aph_675 = Parameter("aph_675", f"$a_{_ph}$(675)")
 
 iops = [aCDOM_443, aCDOM_675, aNAP_443, aNAP_675, aph_443, aph_675]
 iops_main = [aCDOM_443, aCDOM_675, aph_443, aph_675]

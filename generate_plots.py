@@ -22,11 +22,6 @@ print("Saved performance metric (lollipop) plot")
 
 
 ### MODEL UNCERTAINTY
-# Log-binned uncertainty and line plot
-binned = pnn.logbins.log_binned_statistics_combined(results)
-pnn.plot.plot_log_binned_statistics(binned)
-print("Saved log-binned uncertainty (line) plot")
-
 # Average uncertainty heatmap
 uncertainty_averages = pnn.aggregate.average_uncertainty(results)
 pnn.plot.uncertainty_heatmap(uncertainty_averages)
@@ -35,3 +30,8 @@ print("Saved uncertainty heatmap plot")
 # Sharpness/Coverage heatmap
 pnn.plot.plot_uncertainty_metrics_bar(metrics)
 print("Saved sharpness/coverage plot")
+
+# Log-binned uncertainty and line plot
+binned = pnn.logbins.log_binned_statistics_combined(results)
+pnn.plot.plot_log_binned_statistics(binned)
+print("Saved log-binned uncertainty (line) plot")
