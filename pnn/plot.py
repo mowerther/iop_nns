@@ -10,26 +10,9 @@ import pandas as pd
 from matplotlib import pyplot as plt
 plt.style.use("default")
 from matplotlib import ticker
-from cmcrameri.cm import managua
 
-from .constants import iops, iops_main, network_types, split_types, uncertainty_types, save_path, supplementary_path
-from . import io, metrics
-
-
-### CONSTANTS
-cmap_uniform = plt.cm.cividis.resampled(10)
-cmap_aleatoric_fraction = managua.resampled(10)
-
-model_colors = {
-    "mdn": "#FF5733",
-    "bnn_dropconnect": "#3357FF",
-    "bnn_mcd": "#33FF57",
-    "ensemble": "#F933FF",
-    "rnn": "#FFC733",}
-
-uncertainty_colors = {"ale_unc_pct": cmap_aleatoric_fraction.colors[-3],
-                      "epi_unc_pct": cmap_aleatoric_fraction.colors[2],
-                      "total_unc_pct": "black",}
+from . import metrics
+from . import constants as c
 
 
 ### FUNCTIONS
@@ -37,15 +20,13 @@ uncertainty_colors = {"ale_unc_pct": cmap_aleatoric_fraction.colors[-3],
 # -> for appendix, just performance, not (fractional) uncertainties ?
 scatterplot_metrics = {"total_unc_pct": "Total uncertainty [%]", "ale_frac": "Aleatoric fraction"}
 def plot_performance_scatter_single(df: pd.DataFrame, *,
-                                    columns: dict[str, str]=iops, rows: dict[str, str]=scatterplot_metrics,
+                                    columns: Iterable[c.Parameter]=c.iops, rows: Iterable[c.Parameter]=[c.pred_std_pct, c.ale_frac],
                                     title: Optional[str]=None,
                                     saveto: Path | str="scatterplot.png") -> None:
     """
     Plot one DataFrame with y, y_hat, with total uncertainty (top) or aleatoric fraction (bottom) as colour.
     """
     # Constants
-    rowkwargs = {"total_unc_pct": dict(vmin=0, vmax=20, cmap=cmap_uniform),
-                 "ale_frac": dict(vmin=0, vmax=1, cmap=cmap_aleatoric_fraction),}
     lims = (1e-4, 1e1)
     scale = "log"
 
@@ -53,13 +34,14 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
     fig, axs = plt.subplots(nrows=len(rows), ncols=len(columns), sharex=True, sharey=True, figsize=(20, 10), squeeze=False, layout="constrained")
 
     # Plot data per row
-    for ax_row, (ckey, clabel), kwargs in zip(axs, rows.items(), rowkwargs.values()):
+    for ax_row, uncertainty in zip(axs, rows):
         # Plot data per panel
-        for ax, variable in zip(ax_row, columns):
-            im = ax.scatter(df.loc["y_true", variable], df.loc["y_pred", variable], c=df.loc[ckey, variable], alpha=0.7, **kwargs)
+        for ax, iop in zip(ax_row, columns):
+            im = ax.scatter(df.loc["y_true", iop.name], df.loc["y_pred", iop.name], c=df.loc[uncertainty.name, iop.name],
+                            alpha=0.7, cmap=uncertainty.cmap, vmin=uncertainty.vmin, vmax=uncertainty.vmax)
 
         # Color bar per row
-        cb = fig.colorbar(im, ax=ax_row[-1], label=clabel)
+        cb = fig.colorbar(im, ax=ax_row[-1], label=uncertainty.label)
         cb.locator = ticker.MaxNLocator(nbins=6)
         cb.update_ticks()
 
@@ -86,9 +68,9 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
     #     ax.legend(loc='upper left')
 
     # Metrics
-    for ax, variable in zip(axs[0], columns):
+    for ax, iop in zip(axs[0], columns):
         # Calculate
-        y, y_hat = df.loc["y_true", variable], df.loc["y_pred", variable]
+        y, y_hat = df.loc["y_true", iop.name], df.loc["y_pred", iop.name]
         r_square = f"$R^2 = {metrics.log_r_squared(y, y_hat):.2f}$"
         sspb = f"SSPB = ${metrics.sspb(y, y_hat):+.1f}$%"
         other_metrics = [f"{func.__name__} = {func(y, y_hat):.1f}%" for func in [metrics.mdsa, metrics.mape]]
@@ -104,8 +86,8 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
     axs[0, 0].set_ylim(*lims)
 
     # Labels
-    for ax, label in zip(axs[0], columns.values()):
-        ax.set_title(label)
+    for ax, iop in zip(axs[0], columns):
+        ax.set_title(iop.label)
     fig.supxlabel("In-situ (actual)", fontsize="x-large", fontweight="bold")
     fig.supylabel("Model estimate", x=-0.02, fontsize="x-large", fontweight="bold")
     fig.suptitle(title, fontsize="x-large")
@@ -116,27 +98,27 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
 
 _scatter_levels = ["split", "network"]
 def plot_performance_scatter(results: pd.DataFrame, *,
-                             saveto: Path | str=supplementary_path/"scatterplot.png", **kwargs) -> None:
+                             saveto: Path | str=c.supplementary_path/"scatterplot.png", **kwargs) -> None:
     """
     Plot many DataFrames with y, y_hat, with total uncertainty (top) or aleatoric fraction (bottom) as colour.
     """
     saveto = Path(saveto)
 
     # Loop over results and plot each network/split combination in a separate figure
-    for (split, network), df in results.groupby(level=_scatter_levels):
+    for (splitkey, networkkey), df in results.groupby(level=_scatter_levels):
         # Set up labels
-        saveto_here = saveto.with_stem(f"{saveto.stem}_{network}-{split}")
-        splitlabel, networklabel = split_types[split], network_types[network]
+        saveto_here = saveto.with_stem(f"{saveto.stem}_{networkkey}-{splitkey}")
+        split, network = c.splits_fromkey[splitkey], c.networks_fromkey[networkkey]
 
         # Plot
-        plot_performance_scatter_single(df, title=f"{networklabel} {splitlabel}", saveto=saveto_here, **kwargs)
+        plot_performance_scatter_single(df, title=f"{network.label} {split.label}", saveto=saveto_here, **kwargs)
 
 
 ## Performance metrics - lollipop plot
-_lollipop_metrics = metrics_display = {"mdsa": "MDSA [%]", "sspb": "Bias [%]", "r_squared": r"$R^2$"}
-def plot_performance_metrics_lollipop(metrics_results: pd.DataFrame, *,
-                                      groups: dict[str, str]=iops_main, metrics_to_plot: dict[str, str]=_lollipop_metrics, models_to_plot: dict[str, str]=network_types, splits: dict[str, str]=split_types,
-                                      saveto: Path | str=save_path/"performance_lolliplot_vertical.png") -> None:
+_lollipop_metrics = [c.mdsa, c.sspb, c.r_squared]
+def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
+                                      groups: Iterable[c.Parameter]=c.iops_main, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_lollipop_metrics, splits: Iterable[c.Parameter]=c.splits,
+                                      saveto: Path | str=c.save_path/"performance_lolliplot_vertical.png") -> None:
     """
     Plot some number of DataFrames containing performance metric statistics.
     """
@@ -145,23 +127,23 @@ def plot_performance_metrics_lollipop(metrics_results: pd.DataFrame, *,
 
     # Generate figure ; rows are metrics, columns are split types
     n_groups = len(groups)
-    n_metrics = len(metrics_to_plot)
-    n_models = len(models_to_plot)
-    n_splits = len(splits)
-    fig, axs = plt.subplots(nrows=n_metrics, ncols=n_splits, figsize=(14, 8), sharex=True, sharey="row", squeeze=False)
+    n_members = len(groupmembers)
+    n_rows = len(metrics)
+    n_cols = len(splits)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(14, 8), sharex=True, sharey="row", squeeze=False)
 
     # Plot results; must be done in a loop because there is no Pandas lollipop function
-    for ax_row, metric_label in zip(axs, metrics_to_plot):
-        for ax, split_label in zip(ax_row, splits):
-            for model_idx, network_type in enumerate(models_to_plot):
+    for ax_row, metric in zip(axs, metrics):
+        for ax, split in zip(ax_row, splits):
+            for member_idx, member in enumerate(groupmembers):
                 # Select data
-                df = metrics_results.loc[split_label, network_type, metric_label]
-                values = df[groups.keys()]
+                df = data.loc[split.name, member.name, metric.name]
+                values = df[[p.name for p in groups]]
 
-                color = model_colors.get(network_type, "gray")
-                label = models_to_plot.get(network_type, "model")
+                color = member.color
+                label = member.label
 
-                locations = np.arange(n_groups) - (bar_width * (n_models - 1) / 2) + model_idx * bar_width
+                locations = np.arange(n_groups) - (bar_width * (n_members - 1) / 2) + member_idx * bar_width
 
                 ax.scatter(locations, values, color=color, label=label, s=50, zorder=3)  # Draw points
                 ax.vlines(locations, 0, values, colors='grey', lw=1, alpha=0.7)
@@ -170,23 +152,24 @@ def plot_performance_metrics_lollipop(metrics_results: pd.DataFrame, *,
 
     # Label variables
     axs[0, 0].set_xticks(np.arange(n_groups))
-    axs[0, 0].set_xticklabels(groups.values())
+    axs[0, 0].set_xticklabels([p.label for p in groups])
 
     # Label y-axes
-    for ax, ylabel in zip(axs[:, 0], metrics_to_plot.values()):
-        ax.set_ylabel(ylabel, fontsize=12)
+    for ax, metric in zip(axs[:, 0], metrics):
+        ax.set_ylabel(metric.label, fontsize=12)
     fig.align_ylabels()
 
     # y-axis limits; currently hardcoded
-    axs[0, 0].set_ylim(ymin=0)
-    axs[2, 0].set_ylim(ymax=1)
-
-    maxbias = np.abs(axs[1, 0].get_ylim()).max()
-    axs[1, 0].set_ylim(-maxbias, maxbias)
+    for ax, metric in zip(axs[:, 0], metrics):
+        if metric.symmetric:
+            maxvalue = np.abs(ax.get_ylim()).max()
+            ax.set_ylim(-maxvalue, maxvalue)
+        else:
+            ax.set_ylim(metric.vmin, metric.vmax)
 
     # Titles
-    for ax, title in zip(axs[0], splits.values()):
-        ax.set_title(title)
+    for ax, split in zip(axs[0], splits):
+        ax.set_title(split.label)
 
     # Plot legend outside the subplots
     handles, labels = ax.get_legend_handles_labels()
@@ -199,45 +182,44 @@ def plot_performance_metrics_lollipop(metrics_results: pd.DataFrame, *,
 
 ## Uncertainty statistics - line plot
 def plot_log_binned_statistics_line(binned: pd.DataFrame, ax: plt.Axes, *,
-                                    uncertainty_keys: Iterable[str]=uncertainty_types.keys(), **kwargs) -> None:
+                                    uncertainties: Iterable[str]=c.relative_uncertainties, **kwargs) -> None:
     """
     Given a DataFrame containing log-binned statistics, plot the total/aleatoric/epistemic uncertainties for one variable.
     Plots a line for the mean uncertainty and a shaded area for the standard deviation.
-    If no ax is provided, a new figure is created.
     """
     # Loop over uncertainty types and plot each
-    for unc, label in uncertainty_types.items():
-        df = binned.loc[unc]
-        color = uncertainty_colors[unc]
+    for unc in uncertainties:
+        df = binned.loc[unc.name]
+        color = unc.color
 
-        df.plot.line(ax=ax, y="mean", color=color, label=label, **kwargs)
+        df.plot.line(ax=ax, y="mean", color=color, label=unc.label, **kwargs)
         ax.fill_between(df.index, df["mean"] - df["std"], df["mean"] + df["std"], color=color, alpha=0.1)
 
     # Labels
     ax.grid(True, ls="--")
 
 def plot_log_binned_statistics(binned: pd.DataFrame, *,
-                               saveto: Path | str=supplementary_path/"uncertainty_line.png") -> None:
+                               saveto: Path | str=c.supplementary_path/"uncertainty_line.png") -> None:
     """
     Plot log-binned statistics from a main DataFrame.
     """
     # Generate figure
-    fig, axs = plt.subplots(nrows=len(split_types)*len(network_types), ncols=len(iops), sharex=True, figsize=(15, 25), layout="constrained", squeeze=False)
+    fig, axs = plt.subplots(nrows=len(c.splits)*len(c.networks), ncols=len(c.iops), sharex=True, figsize=(15, 25), layout="constrained", squeeze=False)
 
     # Plot lines
-    for ax_row, (network, split) in zip(axs, itertools.product(network_types, split_types)):
-        for ax, var in zip(ax_row, iops):
-            df = binned.loc[split, network][var]
+    for ax_row, (network, split) in zip(axs, itertools.product(c.networks, c.splits)):
+        for ax, var in zip(ax_row, c.iops):
+            df = binned.loc[split.name, network.name][var.name]
             plot_log_binned_statistics_line(df, ax=ax, legend=False)
 
     # Settings
     axs[0, 0].set_xscale("log")
     for ax in axs.ravel():
         ax.set_ylim(ymin=0)
-    for ax, var in zip(axs[-1], iops.values()):
-        ax.set_xlabel(var)
-    for ax, (network, split) in zip(axs[:, 0], itertools.product(network_types.values(), split_types.values())):
-        ax.set_ylabel(f"{network}\n{split}")
+    for ax, var in zip(axs[-1], c.iops):
+        ax.set_xlabel(var.label)
+    for ax, (network, split) in zip(axs[:, 0], itertools.product(c.networks, c.splits)):
+        ax.set_ylabel(f"{network.label}\n{split.label}")
 
     # Labels
     fig.suptitle("")
@@ -250,39 +232,35 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
 
 
 ## Uncertainty statistics - heatmap
-heatmap_metrics = {"total_unc_pct": "Total uncertainty [%]", "ale_frac": "Aleatoric fraction"}
+_heatmap_metrics = [c.pred_std_pct, c.ale_frac]
 def uncertainty_heatmap(results_agg: pd.DataFrame, *,
-                        variables=iops_main,
-                        saveto: Path | str=save_path/"uncertainty_heatmap.png") -> None:
+                        variables: Iterable[c.Parameter]=c.iops_main,
+                        saveto: Path | str=c.save_path/"uncertainty_heatmap.png") -> None:
     """
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
     """
-    # Constants
-    rowkwargs = {"total_unc_pct": dict(vmin=0, vmax=20, cmap=cmap_uniform),
-                 "ale_frac": dict(vmin=0, vmax=1, cmap=cmap_aleatoric_fraction),}
-
     # Generate figure
-    fig, axs = plt.subplots(nrows=2, ncols=len(split_types), sharex=True, sharey=True, figsize=(11, 9), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
+    fig, axs = plt.subplots(nrows=2, ncols=len(c.splits), sharex=True, sharey=True, figsize=(11, 9), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
 
     # Plot data
-    for ax_row, (unc, unc_label), kwargs in zip(axs, heatmap_metrics.items(), rowkwargs.values()):
+    for ax_row, unc in zip(axs, _heatmap_metrics):
         # Plot each panel per row
-        for ax, split in zip(ax_row, split_types):
+        for ax, split in zip(ax_row, c.splits):
             # Select relevant data
-            df = results_agg.loc[unc, split]
-            df = df[variables.keys()]
+            df = results_agg.loc[unc.name, split.name]
+            df = df[[p.name for p in variables]]
 
             # Plot image
-            im = ax.imshow(df, **kwargs)
+            im = ax.imshow(df, cmap=unc.cmap, vmin=unc.vmin, vmax=unc.vmax)
 
             # Plot individual values
-            for i, x in enumerate(network_types):
+            for i, x in enumerate(c.networks):
                 for j, y in enumerate(variables):
                     ax.text(j, i, f"{df.iloc[i, j]:.2f}", ha="center", va="center", color="w")
 
         # Color bar per row
         cb = fig.colorbar(im, ax=ax_row, fraction=0.1, pad=0.01, shrink=1)
-        cb.set_label(label=unc_label, weight="bold")
+        cb.set_label(label=unc.label, weight="bold")
         cb.locator = ticker.MaxNLocator(nbins=6)
         cb.update_ticks()
 
@@ -290,25 +268,25 @@ def uncertainty_heatmap(results_agg: pd.DataFrame, *,
     fig.supxlabel("IOPs", fontweight="bold")
     fig.supylabel("Models", fontweight="bold")
 
-    wrap_labels = lambda labels: list(zip(*enumerate(labels)))  # (0, 1, ...) (label0, label1, ...)
+    wrap_labels = lambda parameters: list(zip(*enumerate(p.label for p in parameters)))  # (0, 1, ...) (label0, label1, ...)
     for ax in axs[-1]:
-        ax.set_xticks(*wrap_labels(variables.values()), rotation=45, ha="right")
+        ax.set_xticks(*wrap_labels(variables), rotation=45, ha="right")
 
     for ax in axs[:, 0]:
-        ax.set_yticks(*wrap_labels(network_types.values()))
+        ax.set_yticks(*wrap_labels(c.networks))
 
-    for ax, label in zip(axs[0], split_types.values()):
-        ax.set_title(label, fontweight="bold")
+    for ax, split in zip(axs[0], c.splits):
+        ax.set_title(split.label, fontweight="bold")
 
     plt.savefig(saveto)
     plt.close()
 
 
 ## Uncertainty metrics - bar plot
-_bar_metrics = {"sharpness": r"Sharpness [m$^{-1}$]", "coverage": "Coverage [%]"}
-def plot_uncertainty_metrics_bar(uncertainty_metrics: pd.DataFrame, *,
-                                 groups: dict[str, str]=iops_main, metrics_to_plot: dict[str, str]=_bar_metrics, models_to_plot: dict[str, str]=network_types, splits: dict[str, str]=split_types,
-                                      saveto: Path | str=save_path/"uncertainty_metrics_bar.png") -> None:
+_bar_metrics = [c.sharpness, c.coverage]
+def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
+                                 groups: Iterable[c.Parameter]=c.iops_main, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_bar_metrics, splits: Iterable[c.Parameter]=c.splits,
+                                 saveto: Path | str=c.save_path/"uncertainty_metrics_bar.png") -> None:
     """
     Plot some number of DataFrames containing performance metric statistics.
     """
@@ -317,23 +295,23 @@ def plot_uncertainty_metrics_bar(uncertainty_metrics: pd.DataFrame, *,
 
     # Generate figure ; rows are metrics, columns are split types
     n_groups = len(groups)
-    n_metrics = len(metrics_to_plot)
-    n_models = len(models_to_plot)
-    n_splits = len(splits)
-    fig, axs = plt.subplots(nrows=n_metrics, ncols=n_splits, figsize=(14, 8), sharex=True, sharey="row", squeeze=False)
+    n_members = len(groupmembers)
+    n_rows = len(metrics)
+    n_cols = len(splits)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(14, 8), sharex=True, sharey="row", squeeze=False)
 
-    # Plot results; must be done in a loop because there is no Pandas lollipop function
-    for ax_row, metric_label in zip(axs, metrics_to_plot):
-        for ax, split_label in zip(ax_row, splits):
-            for model_idx, network_type in enumerate(models_to_plot):
+    # Plot results
+    for ax_row, metric in zip(axs, metrics):
+        for ax, split in zip(ax_row, splits):
+            for member_idx, member in enumerate(groupmembers):
                 # Select data
-                df = uncertainty_metrics.loc[split_label, network_type, metric_label]
-                values = df[groups.keys()]
+                df = data.loc[split.name, member.name, metric.name]
+                values = df[[p.name for p in groups]]
 
-                color = model_colors.get(network_type, "gray")
-                label = models_to_plot.get(network_type, "model")
+                color = member.color
+                label = member.label
 
-                locations = np.arange(n_groups) - (bar_width * (n_models - 1) / 2) + model_idx * bar_width
+                locations = np.arange(n_groups) - (bar_width * (n_members - 1) / 2) + member_idx * bar_width
 
                 ax.bar(locations, values, color=color, label=label, width=bar_width, zorder=3)  # Draw points
 
@@ -341,23 +319,24 @@ def plot_uncertainty_metrics_bar(uncertainty_metrics: pd.DataFrame, *,
 
     # Label variables
     axs[0, 0].set_xticks(np.arange(n_groups))
-    axs[0, 0].set_xticklabels(groups.values())
+    axs[0, 0].set_xticklabels([p.label for p in groups])
 
     # Label y-axes
-    for ax, ylabel in zip(axs[:, 0], metrics_to_plot.values()):
-        ax.set_ylabel(ylabel, fontsize=12)
+    for ax, metric in zip(axs[:, 0], metrics):
+        ax.set_ylabel(metric.label, fontsize=12)
     fig.align_ylabels()
 
     # y-axis limits; currently hardcoded
-    # axs[0, 0].set_ylim(ymin=0)
-    # axs[2, 0].set_ylim(ymax=1)
-
-    # maxbias = np.abs(axs[1, 0].get_ylim()).max()
-    # axs[1, 0].set_ylim(-maxbias, maxbias)
+    for ax, metric in zip(axs[:, 0], metrics):
+        if metric.symmetric:
+            maxvalue = np.abs(ax.get_ylim()).max()
+            ax.set_ylim(-maxvalue, maxvalue)
+        else:
+            ax.set_ylim(metric.vmin, metric.vmax)
 
     # Titles
-    for ax, title in zip(axs[0], splits.values()):
-        ax.set_title(title)
+    for ax, split in zip(axs[0], splits):
+        ax.set_title(split.label)
 
     # Plot legend outside the subplots
     handles, labels = ax.get_legend_handles_labels()

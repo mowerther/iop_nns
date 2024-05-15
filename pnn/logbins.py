@@ -6,7 +6,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .constants import iops, uncertainty_types
+from . import constants as c
 
 def log_binned_statistics(x: pd.Series, y: pd.Series, *,
                           vmin: float=1e-4, vmax: float=40, binwidth: float=0.2, n: int=100) -> pd.DataFrame:
@@ -38,13 +38,13 @@ def log_binned_statistics(x: pd.Series, y: pd.Series, *,
 
 
 def log_binned_statistics_df(df: pd.DataFrame, *,
-                             reference_key: str="y_true", uncertainty_keys: Iterable[str]=uncertainty_types.keys(),
-                             columns: Iterable[str]=iops) -> pd.DataFrame:
+                             reference_key: str="y_true", uncertainties: Iterable[str]=c.relative_uncertainties,
+                             columns: Iterable[str]=c.iops) -> pd.DataFrame:
     """
     Calculate log binned statistics for each of the variables in one dataframe.
     """
     # Perform calculations
-    binned = pd.concat({unc_key: pd.concat({col: log_binned_statistics(df.loc[reference_key, col], df.loc[unc_key, col]) for col in columns}, axis=1) for unc_key in uncertainty_keys})
+    binned = pd.concat({unc.name: pd.concat({col.name: log_binned_statistics(df.loc[reference_key, col.name], df.loc[unc.name, col.name]) for col in columns}, axis=1) for unc in uncertainties})
 
     return binned
 
@@ -54,7 +54,6 @@ def log_binned_statistics_combined(df: pd.DataFrame) -> pd.DataFrame:
     Calculate log binned statistics for each of the uncertainty dataframes relative to x, and combine them into a single dataframe.
     """
     # Reorder data and apply
-    # df = df.swaplevel("category", "split")
     binned = df.groupby(level=["split", "network"]).apply(log_binned_statistics_df)
 
     return binned

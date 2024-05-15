@@ -8,7 +8,8 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .constants import pred_path, network_types, split_types
+from . import constants as c
+from .constants import pred_path
 LEVEL_ORDER = ["category", "split", "network", "instance"]
 
 
@@ -69,7 +70,7 @@ def read_all_model_outputs(folder: Path | str=pred_path) -> pd.DataFrame:
     Read all data from a given folder into one big dataframe.
     """
     # Read data
-    results = {split: pd.concat({network: read_model_outputs(pred_path/f"{network}_{split}_preds.csv") for network in network_types}, names=["network"]) for split in split_types}
+    results = {split.name: pd.concat({network.name: read_model_outputs(pred_path/f"{network.name}_{split.name}_preds.csv") for network in c.networks}, names=["network"]) for split in c.splits}
     results = pd.concat(results, names=["split"])
 
     # Reorder
@@ -83,14 +84,3 @@ def read_all_model_outputs(folder: Path | str=pred_path) -> pd.DataFrame:
     results = pd.concat([results, df_percent, df_aleatoric_fraction])
     results = results.sort_index()
     return results
-
-
-### CONVENIENCE FUNCTIONS
-def network_and_split_from_key(key: str) -> tuple[str, str]:
-    """
-    For a combined key, e.g. 'mdn-random_split', return the associated network and split type labels.
-    """
-    networkkey, splitkey = key.split("-")
-    model = network_types[networkkey]
-    split = split_types[splitkey]
-    return model, split

@@ -33,4 +33,5 @@ pnn.plot.uncertainty_heatmap(uncertainty_averages)
 print("Saved uncertainty heatmap plot")
 
 # Sharpness/Coverage heatmap
+pnn.plot.plot_uncertainty_metrics_bar(metrics)
 print("Saved sharpness/coverage plot")
