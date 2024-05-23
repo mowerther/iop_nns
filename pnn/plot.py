@@ -7,6 +7,7 @@ from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
+
 from matplotlib import pyplot as plt
 plt.style.use("default")
 from matplotlib import ticker

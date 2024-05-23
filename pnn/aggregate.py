@@ -5,6 +5,7 @@ from typing import Callable, Iterable
 
 import numpy as np
 import pandas as pd
+import uncertainty_toolbox as uct
 
 from . import constants as c, metrics
 
@@ -69,3 +70,11 @@ def average_uncertainty(results: pd.DataFrame) -> pd.DataFrame:
     level = results.index.names.difference(["instance"])  # Aggregate only over instance
     results_agg = results.groupby(level=level).median()
     return results_agg
+
+
+_calibration_curve_single = lambda df: uct.get_proportion_lists_vectorized(df.loc[c.y_pred].to_numpy(), df.loc[c.total_unc].to_numpy(), df.loc[c.y_true].to_numpy())
+def calibration_curve(results: pd.DataFrame) -> pd.DataFrame:
+    """
+    Determine calibration curves for results.
+    """
+    pass
