@@ -20,7 +20,7 @@ from . import constants as c
 # -> for appendix, just performance, not (fractional) uncertainties ?
 scatterplot_metrics = {"total_unc_pct": "Total uncertainty [%]", "ale_frac": "Aleatoric fraction"}
 def plot_performance_scatter_single(df: pd.DataFrame, *,
-                                    columns: Iterable[c.Parameter]=c.iops, rows: Iterable[c.Parameter]=[c.pred_std_pct, c.ale_frac],
+                                    columns: Iterable[c.Parameter]=c.iops, rows: Iterable[c.Parameter]=[c.total_unc_pct, c.ale_frac],
                                     title: Optional[str]=None,
                                     saveto: Path | str="scatterplot.png") -> None:
     """
@@ -232,7 +232,7 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
 
 
 ## Uncertainty statistics - heatmap
-_heatmap_metrics = [c.pred_std_pct, c.ale_frac]
+_heatmap_metrics = [c.total_unc_pct, c.ale_frac]
 def uncertainty_heatmap(results_agg: pd.DataFrame, *,
                         variables: Iterable[c.Parameter]=c.iops_main,
                         saveto: Path | str=c.save_path/"uncertainty_heatmap.png") -> None:

@@ -6,7 +6,7 @@ from typing import Callable, Iterable
 import numpy as np
 import pandas as pd
 
-from . import metrics
+from . import constants as c, metrics
 
 ### CONSTANTS
 split_network = ["split", "network"]  # Aggregation levels
@@ -28,15 +28,12 @@ def metric_to_groupby(func: Callable, *df_keys: Iterable[str]) -> Callable:
 
 
 ### AGGREGATE METRICS
-_TRUE_KEY = "y_true"
-_MEAN_KEY = "y_pred"
-_STD_KEY = "pred_std"
-sspb = metric_to_groupby(metrics.sspb, _TRUE_KEY, _MEAN_KEY)
-mdsa = metric_to_groupby(metrics.mdsa, _TRUE_KEY, _MEAN_KEY)
-mape = metric_to_groupby(metrics.mape, _TRUE_KEY, _MEAN_KEY)
-log_r_squared = metric_to_groupby(metrics.log_r_squared, _TRUE_KEY, _MEAN_KEY)
-sharpness = metric_to_groupby(metrics.sharpness, _STD_KEY)
-coverage = metric_to_groupby(metrics.coverage, _TRUE_KEY, _MEAN_KEY, _STD_KEY)
+sspb = metric_to_groupby(metrics.sspb, c.y_true, c.y_pred)
+mdsa = metric_to_groupby(metrics.mdsa, c.y_true, c.y_pred)
+mape = metric_to_groupby(metrics.mape, c.y_true, c.y_pred)
+log_r_squared = metric_to_groupby(metrics.log_r_squared, c.y_true, c.y_pred)
+sharpness = metric_to_groupby(metrics.sharpness, c.total_unc)
+coverage = metric_to_groupby(metrics.coverage, c.y_true, c.y_pred, c.total_unc)
 
 
 ### FUNCTIONS

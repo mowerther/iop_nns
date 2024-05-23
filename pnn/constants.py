@@ -18,6 +18,7 @@ supplementary_path = save_path/"supplementary/"
 
 ### UNITS
 m1 = r"m$^{-1}$"
+m2 = r"m$^{-2}$"
 
 
 ### PLOTTING
@@ -49,9 +50,9 @@ class Parameter:
 
 ### NETWORKS
 mdn = Parameter("mdn", "MDN", "#994455")
-bnn_dropconnect = Parameter("bnn_dropconnect", "BNN DC", "#997700")
+bnn_dropconnect = Parameter("bnn_dropcon", "BNN DC", "#997700")
 bnn_mcd = Parameter("bnn_mcd", "BNN MCD", "#6699CC")
-ensemble = Parameter("ensemble", "ENN", "#EE99AA")
+ensemble = Parameter("ens_nn", "ENN", "#EE99AA")
 rnn = Parameter("rnn", "RNN", "#EECC66")
 
 networks = [mdn, bnn_dropconnect, bnn_mcd, ensemble, rnn]
@@ -60,24 +61,35 @@ networks_fromkey = {p.name: p for p in networks}
 
 ### SPLIT TYPES
 random_split = Parameter("random_split", "Random split")
-wd = Parameter("wd", "Within-distribution split")
-ood = Parameter("ood", "Out-of-distribution split")
+wd = Parameter("wd_split", "Within-distribution split")
+ood = Parameter("ood_split", "Out-of-distribution split")
 
 splits = [random_split, wd, ood]
 splits_fromkey = {p.name: p for p in splits}
 
 
 ### UNCERTAINTY TYPES
+ale_var = Parameter("ale_var", f"Aleatoric variance [{m2}]", cmap_aleatoric_fraction.colors[-3], vmin=0)
 ale_unc = Parameter("ale_unc", f"Aleatoric uncertainty [{m1}]", cmap_aleatoric_fraction.colors[-3], vmin=0)
 ale_unc_pct = Parameter("ale_unc_pct", "Aleatoric uncertainty [%]", cmap_aleatoric_fraction.colors[-3], vmin=0, vmax=20)
+
+epi_var = Parameter("epi_var", f"Epistemic variance [{m2}]", cmap_aleatoric_fraction.colors[2], vmin=0)
 epi_unc = Parameter("epi_unc", f"Epistemic uncertainty [{m1}]", cmap_aleatoric_fraction.colors[2], vmin=0)
 epi_unc_pct = Parameter("epi_unc_pct", "Epistemic uncertainty [%]", cmap_aleatoric_fraction.colors[2], vmin=0, vmax=20)
-pred_std = Parameter("pred_std", f"Total uncertainty [{m1}]", "black", vmin=0)
-pred_std_pct = Parameter("total_unc_pct", "Total uncertainty [%]", "black", vmin=0, vmax=20)
+
+total_var = Parameter("total_var", f"Total variance [{m2}]", "black", vmin=0)
+total_unc = Parameter("std_dev", f"Total uncertainty [{m1}]", "black", vmin=0)
+total_unc_pct = Parameter("std_dev_pct", "Total uncertainty [%]", "black", vmin=0, vmax=100)
+
 ale_frac = Parameter("ale_frac", "Aleatoric fraction", cmap=cmap_aleatoric_fraction, vmin=0, vmax=1)
 
-uncertainties = [pred_std, ale_unc, epi_unc]
-relative_uncertainties = [pred_std_pct, ale_unc_pct, epi_unc_pct]
+uncertainties = [total_unc, ale_unc, epi_unc]
+relative_uncertainties = [total_unc_pct, ale_unc_pct, epi_unc_pct]
+
+
+### OTHER KEYS
+y_true = "y_true"
+y_pred = "y_pred"
 
 
 ### IOPs
