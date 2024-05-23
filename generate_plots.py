@@ -33,6 +33,7 @@ print("Saved sharpness/coverage plot")
 
 # Calibration curves
 calibration_curves = pnn.aggregate.calibration_curve(results)
+pnn.plot.plot_calibration_curves(calibration_curves)
 print("Saved calibration curve plot")
 
 # Log-binned uncertainty and line plot

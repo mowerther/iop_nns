@@ -348,114 +348,49 @@ def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
     plt.close()
 
 
-# #####
-# ## Calibration plots
-# #####
+## Uncertainty metrics - calibration curves
+def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
+                            rows: Iterable[c.Parameter]=c.iops, columns: Iterable[c.Parameter]=c.splits, groupmembers: Iterable[c.Parameter]=c.networks,
+                            saveto: Path | str=c.save_path/"calibration_curves.png") -> None:
+    """
+    Plot calibration curves (expected vs. observed).
+    """
+    # Create figure
+    fig, axs = plt.subplots(nrows=len(rows), ncols=len(columns), sharex=True, sharey=True, figsize=(8, 10), layout="constrained", squeeze=False)
 
-# ### Need to add the random split results as a calibration row
+    # Loop and plot
+    for ax_row, row_key in zip(axs, rows):
+        for ax, col_key in zip(ax_row, columns):
+            # Select data
+            df = calibration_curves.loc[col_key][row_key]
 
-# import matplotlib.pyplot as plt
-# import numpy as np
-# import matplotlib.lines as mlines
-# import pandas as pd
+            # Plot data
+            for key in groupmembers:
+                df.loc[key].plot(ax=ax, c=key.color, lw=3)
 
-# # Define the new model labels for the legend
-# new_model_labels = ['MDN', 'BNN DC', 'BNN MCD', 'ENS NN', 'RNN']
+            # Plot diagonal
+            ax.axline((0, 0), slope=1, c="black")
+            ax.grid(True, ls="--", c="black", alpha=0.5)
 
-# # Assuming you have all the necessary data loaded and the function from uct is imported
-# # pip install uncertainty-toolbox
+    # Limits
+    axs[0, 0].set_xlim(0, 1)
+    axs[0, 0].set_ylim(0, 1)
 
-# # Define colors for each model for distinction
-# model_colors = {
-#     'mdn': 'red',
-#     'mcd': 'green',
-#     'dc': 'blue',
-#     'ens': 'orange',
-#     'rnn': 'cyan'
-# }
+    # Labels
+    fig.supxlabel("Estimated proportion in interval", fontweight="bold")
+    fig.supylabel("Actual proportion in interval", fontweight="bold")
 
-# column_names = ['aCDOM_443', 'aCDOM_675', 'aph_443', 'aph_675']
-# display_titles = ['a$_{CDOM}$ 443', 'a$_{CDOM}$ 675', 'a$_{ph}$ 443', 'a$_{ph}$ 675']
+    for ax, title in zip(axs[0], columns):
+        ax.set_title(title.label)
 
-# # Assuming the original plot_calibration function is imported from uct
-# # Define a DataFrame to hold miscalibration areas for 'wd' and 'ood'
-# miscalibration_areas_wd = pd.DataFrame(columns=column_names, index=new_model_labels)
-# miscalibration_areas_ood = pd.DataFrame(columns=column_names, index=new_model_labels)
+    for ax, label in zip(axs[:, 0], rows):
+        ax.set_ylabel(label.label)
 
-# # Define a function to calculate miscalibration area
-# def calculate_miscalibration_area(exp_proportions, obs_proportions):
-#     # Ensure exp_proportions and obs_proportions are numpy arrays
-#     exp_proportions = np.array(exp_proportions)
-#     obs_proportions = np.array(obs_proportions)
-#     return np.abs(exp_proportions - obs_proportions).mean()
+    for ax in axs[-1]:
+        ax.set_xlabel(None)
 
-# # Custom plot_calibration function with removed fill_between and updated labels
-# def custom_plot_calibration(y_true, y_std, y_pred, model_label, color, ax=None):
-#     # Call the original plot_calibration function with swapped y_pred and y_true
-#     ax = uct.viz.plot_calibration(y_pred, y_std, y_true, ax=ax)
-
-#     # Set the color and label of the last line (our calibration curve)
-#     ax.get_lines()[-1].set_color(color)
-#     ax.get_lines()[-1].set_label(model_label)
-
-#     # Remove the miscalibration area text box
-#     for text in ax.texts:
-#         if "Miscalibration area" in text.get_text():
-#             text.remove()
-
-#     for line in ax.lines:
-#         if line.get_label() == 'Ideal':
-#             line.remove()
-#     for coll in ax.collections:
-#         coll.remove()
-
-#     ax.plot([0, 1], [0, 1], 'k--', label='Ideal')
-
-#     ax.set_xlabel("Observed Proportion in Interval")
-#     ax.set_ylabel("Predicted Proportion in Interval")
-
-#     return ax
-
-# # Create the figure with the specified size
-# fig = plt.figure(figsize=(14, 5))
-
-# # Adjust your plotting function to the new layout and axis labels
-# def plot_calibration_curves(fig, results):
-#     # Creating 2 rows for 'WD' and 'OOD', and 6 columns for the variables
-#     for i, column in enumerate(column_names):
-#         for j, data_key in enumerate(['_wd', '_ood']):
-#             ax = fig.add_subplot(2, 6, i + j * 6 + 1)
-#             for model_idx, model_name in enumerate(['mdn', 'dc', 'mcd', 'ens', 'rnn']):
-#                 model_key = f"{model_name}{data_key}"
-#                 if model_key in results:
-#                     model_results = results[model_key]
-#                     y_pred = model_results['y_pred'][column].values
-#                     y_std = model_results['std_pred'][column].values
-#                     y_true = model_results['y_true'][column].values
-#                     custom_plot_calibration(y_pred, y_std, y_true, new_model_labels[model_idx], model_colors[model_name], ax=ax)
-
-#             ax.set_title(display_titles[i])
-#             ax.set_xlabel("")
-#             ax.set_ylabel("")
-
-# plot_calibration_curves(fig, results)
-
-# # Add a global legend outside of the subplots
-# handles = [mlines.Line2D([], [], color=color, label=label) for label, color in zip(new_model_labels, model_colors.values())]
-# fig.legend(handles=handles, loc='lower center', ncol=len(new_model_labels), bbox_to_anchor=(0.35, -0.06))
-
-# fig.supxlabel("Estimated proportion in interval", x=0.35,fontsize=12)
-# fig.supylabel("Actual proportion in interval",x=0.01, fontsize=12)
-
-# fig.text(0.35, 1.01, 'Within-distribution', ha='center', va='center', fontsize=14, fontweight='bold', transform=fig.transFigure)
-# fig.text(0.35, 0.52, 'Out-of-distribution', ha='center', va='center', fontsize=14, fontweight='bold', transform=fig.transFigure)
-
-# plt.tight_layout(h_pad=5)
-
-# save_path = '/content/drive/My Drive/iop_ml/plots/'
-# plt.savefig(save_path + 'calibration_curves_presentation.png',dpi=200,bbox_inches='tight')
-# # Show the plot
-# plt.show()
+    plt.savefig(saveto)
+    plt.close()
 
 # #####
 # # plot to exemplify sharpness, coverage factor, calibration confidence in the methods section - not a result plot
