@@ -67,5 +67,5 @@ def average_uncertainty(results: pd.DataFrame) -> pd.DataFrame:
     Note: previous version of heatmaps filtered entries <0 and >200/>1000 in total/epistemic/aleatoric.
     """
     level = results.index.names.difference(["instance"])  # Aggregate only over instance
-    results_agg = results.groupby(level=level).mean()
+    results_agg = results.groupby(level=level).median()
     return results_agg
