@@ -31,6 +31,10 @@ print("Saved uncertainty heatmap plot")
 pnn.plot.plot_uncertainty_metrics_bar(metrics)
 print("Saved sharpness/coverage plot")
 
+# Calibration curves
+calibration_curves = pnn.aggregate.calibration_curve(results)
+print("Saved calibration curve plot")
+
 # Log-binned uncertainty and line plot
 binned = pnn.logbins.log_binned_statistics_combined(results)
 pnn.plot.plot_log_binned_statistics(binned)

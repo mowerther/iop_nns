@@ -72,9 +72,23 @@ def average_uncertainty(results: pd.DataFrame) -> pd.DataFrame:
     return results_agg
 
 
-_calibration_curve_single = lambda df: uct.get_proportion_lists_vectorized(df.loc[c.y_pred].to_numpy(), df.loc[c.total_unc].to_numpy(), df.loc[c.y_true].to_numpy())
+# Calibration curves
+def _calibration_curve_single(df: pd.DataFrame) -> pd.DataFrame:
+    expected, observed = uct.get_proportion_lists_vectorized(df.loc[c.y_pred].to_numpy(), df.loc[c.total_unc].to_numpy(), df.loc[c.y_true].to_numpy())
+    observed = pd.DataFrame(index=expected, data=observed).rename_axis("expected")
+    return observed
+
+
+def _calibration_curve_pernetwork(df: pd.DataFrame, *, columns=c.iops) -> pd.DataFrame:
+    observed = {key.name: _calibration_curve_single(df[key]) for key in columns}
+    observed = pd.concat(observed, axis=1)
+    observed.columns = observed.columns.droplevel(1)
+    return observed
+
+
 def calibration_curve(results: pd.DataFrame) -> pd.DataFrame:
     """
     Determine calibration curves for results.
     """
-    pass
+    observed = results.groupby(level=split_network).apply(_calibration_curve_pernetwork)
+    return observed
