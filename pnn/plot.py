@@ -192,8 +192,8 @@ def plot_log_binned_statistics_line(binned: pd.DataFrame, ax: plt.Axes, *,
         df = binned.loc[unc]
         color = unc.color
 
-        df.plot.line(ax=ax, y="mean", color=color, label=unc.label, **kwargs)
-        ax.fill_between(df.index, df["mean"] - df["std"], df["mean"] + df["std"], color=color, alpha=0.1)
+        df.plot.line(ax=ax, y="median", color=color, label=unc.label, **kwargs)
+        ax.fill_between(df.index, df["median"] - df["std"], df["median"] + df["std"], color=color, alpha=0.1)
 
     # Labels
     ax.grid(True, ls="--")
@@ -224,7 +224,7 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
     # Labels
     fig.suptitle("")
     fig.supxlabel("In situ value", fontweight="bold")
-    fig.supylabel("Mean uncertainty [%]", fontweight="bold")
+    fig.supylabel("Median uncertainty [%]", fontweight="bold")
     fig.align_ylabels()
 
     plt.savefig(saveto)

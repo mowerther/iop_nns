@@ -11,13 +11,13 @@ from . import constants as c
 def log_binned_statistics(x: pd.Series, y: pd.Series, *,
                           vmin: float=1e-4, vmax: float=40, binwidth: float=0.2, n: int=100) -> pd.DataFrame:
     """
-    Calculate statistics (mean, std) for y as a function of x, in log-space bins.
+    Calculate statistics (median, std) for y as a function of x, in log-space bins.
     binwidth and n can be chosen separately to allow for overlapping bins.
     Example:
         x = in situ data
         y = total uncertainty in prediction
         vmin = 0.1 ; vmax = 10 ; binwidth = 1 ; n = 2
-        Calculates mean and std uncertainty in prediction at (0.1 < x < 1), (1 < x < 10)
+        Calculates median and std uncertainty in prediction at (0.1 < x < 1), (1 < x < 10)
     """
     # Setup
     x_log = np.log10(x)
@@ -29,16 +29,16 @@ def log_binned_statistics(x: pd.Series, y: pd.Series, *,
     binned = [y.loc[s] for s in slices]
 
     # Calculate statistics
-    binned_means = [b.mean() for b in binned]
+    binned_averages = [b.median() for b in binned]
     binned_stds = [b.std() for b in binned]
 
     # Wrap into dataframe
-    binned = pd.DataFrame(index=bins, data={"mean": binned_means, "std": binned_stds})
+    binned = pd.DataFrame(index=bins, data={"median": binned_averages, "std": binned_stds})
     return binned
 
 
 def log_binned_statistics_df(df: pd.DataFrame, *,
-                             reference_key: str="y_true", uncertainties: Iterable[str]=c.relative_uncertainties,
+                             reference_key: str=c.y_true, uncertainties: Iterable[str]=c.relative_uncertainties,
                              columns: Iterable[str]=c.iops) -> pd.DataFrame:
     """
     Calculate log binned statistics for each of the variables in one dataframe.
