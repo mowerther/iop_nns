@@ -6,6 +6,7 @@ scenario_datasets/
 *.csv
 *.pdf
 *.png
+*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
