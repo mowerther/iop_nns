@@ -73,16 +73,9 @@ def log_r_squared(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
     return r_squared(y, y_hat)
 
 @label("MAD")
-def MAD(y1, y2):
-    """ Mean Absolute Error """
-    return NotImplemented
-#     i  = np.logical_and(y1 > 0, y2 > 0)
-#     y1 = np.log10(y1[i])
-#     y2 = np.log10(y2[i])
-#     i  = np.logical_and(np.isfinite(y1), np.isfinite(y2))
-#     y1 = y1[i]
-#     y2 = y2[i]
-#     return 10**np.nanmean(np.abs(y1 - y2))-1
+def MAD(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
+    """ Median Absolute Deviation """
+    return (y_hat - y).abs().median()
 
 @label("MdAPE")
 def mape(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:

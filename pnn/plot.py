@@ -185,7 +185,7 @@ def plot_log_binned_statistics_line(binned: pd.DataFrame, ax: plt.Axes, *,
                                     uncertainties: Iterable[str]=c.relative_uncertainties, **kwargs) -> None:
     """
     Given a DataFrame containing log-binned statistics, plot the total/aleatoric/epistemic uncertainties for one variable.
-    Plots a line for the mean uncertainty and a shaded area for the standard deviation.
+    Plots a line for the average uncertainty and a shaded area for typical deviations.
     """
     # Loop over uncertainty types and plot each
     for unc in uncertainties:
@@ -193,7 +193,7 @@ def plot_log_binned_statistics_line(binned: pd.DataFrame, ax: plt.Axes, *,
         color = unc.color
 
         df.plot.line(ax=ax, y="median", color=color, label=unc.label, **kwargs)
-        ax.fill_between(df.index, df["median"] - df["std"], df["median"] + df["std"], color=color, alpha=0.1)
+        ax.fill_between(df.index, df["median"] - df["mad"], df["median"] + df["mad"], color=color, alpha=0.1)
 
     # Labels
     ax.grid(True, ls="--")

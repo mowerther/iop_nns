@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from . import constants as c
+from . import metrics
 
 def log_binned_statistics(x: pd.Series, y: pd.Series, *,
                           vmin: float=1e-4, vmax: float=40, binwidth: float=0.2, n: int=100) -> pd.DataFrame:
@@ -30,10 +31,10 @@ def log_binned_statistics(x: pd.Series, y: pd.Series, *,
 
     # Calculate statistics
     binned_averages = [b.median() for b in binned]
-    binned_stds = [b.std() for b in binned]
+    binned_diffs = [metrics.MAD(b, b.median()) for b in binned]
 
     # Wrap into dataframe
-    binned = pd.DataFrame(index=bins, data={"median": binned_averages, "std": binned_stds})
+    binned = pd.DataFrame(index=bins, data={"median": binned_averages, "mad": binned_diffs})
     return binned
 
 
