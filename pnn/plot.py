@@ -125,7 +125,7 @@ def plot_performance_scatter(results: pd.DataFrame, *,
 ## Performance metrics - lollipop plot
 _lollipop_metrics = [c.mdsa, c.sspb, c.r_squared]
 def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
-                                      groups: Iterable[c.Parameter]=c.iops_main, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_lollipop_metrics, splits: Iterable[c.Parameter]=c.splits,
+                                      groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_lollipop_metrics, splits: Iterable[c.Parameter]=c.splits,
                                       saveto: Path | str=c.save_path/"performance_lolliplot_vertical.png") -> None:
     """
     Plot some number of DataFrames containing performance metric statistics.
@@ -138,7 +138,7 @@ def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
     n_members = len(groupmembers)
     n_rows = len(metrics)
     n_cols = len(splits)
-    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(14, 8), sharex=True, sharey="row", squeeze=False)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(16, 8), sharex=True, sharey="row", squeeze=False)
 
     # Plot results; must be done in a loop because there is no Pandas lollipop function
     for ax_row, metric in zip(axs, metrics):
@@ -160,7 +160,7 @@ def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
 
     # Label variables
     axs[0, 0].set_xticks(np.arange(n_groups))
-    axs[0, 0].set_xticklabels([p.label for p in groups])
+    axs[0, 0].set_xticklabels([p.label_2lines for p in groups])
 
     # Label y-axes
     for ax, metric in zip(axs[:, 0], metrics):
@@ -242,13 +242,13 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
 ## Uncertainty statistics - heatmap
 _heatmap_metrics = [c.total_unc_pct, c.ale_frac]
 def uncertainty_heatmap(results_agg: pd.DataFrame, *,
-                        variables: Iterable[c.Parameter]=c.iops_main,
+                        variables: Iterable[c.Parameter]=c.iops,
                         saveto: Path | str=c.save_path/"uncertainty_heatmap.png") -> None:
     """
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
     """
     # Generate figure
-    fig, axs = plt.subplots(nrows=2, ncols=len(c.splits), sharex=True, sharey=True, figsize=(11, 9), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
+    fig, axs = plt.subplots(nrows=2, ncols=len(c.splits), sharex=True, sharey=True, figsize=(16, 8), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
 
     # Plot data
     for ax_row, unc in zip(axs, _heatmap_metrics):
@@ -293,7 +293,7 @@ def uncertainty_heatmap(results_agg: pd.DataFrame, *,
 ## Uncertainty metrics - bar plot
 _bar_metrics = [c.sharpness, c.coverage]
 def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
-                                 groups: Iterable[c.Parameter]=c.iops_main, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_bar_metrics, splits: Iterable[c.Parameter]=c.splits,
+                                 groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_bar_metrics, splits: Iterable[c.Parameter]=c.splits,
                                  saveto: Path | str=c.save_path/"uncertainty_metrics_bar.png") -> None:
     """
     Plot some number of DataFrames containing performance metric statistics.
@@ -327,7 +327,7 @@ def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
 
     # Label variables
     axs[0, 0].set_xticks(np.arange(n_groups))
-    axs[0, 0].set_xticklabels([p.label for p in groups])
+    axs[0, 0].set_xticklabels([p.label_2lines for p in groups])
 
     # Label y-axes
     for ax, metric in zip(axs[:, 0], metrics):
@@ -384,9 +384,6 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
     axs[0, 0].set_ylim(0, 1)
 
     # Labels
-    fig.supxlabel("Estimated proportion in interval", fontweight="bold")
-    fig.supylabel("Actual proportion in interval", fontweight="bold")
-
     for ax, title in zip(axs[0], columns):
         ax.set_title(title.label)
 
@@ -395,6 +392,10 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
 
     for ax in axs[-1]:
         ax.set_xlabel(None)
+
+    fig.supxlabel("Estimated proportion in interval", fontweight="bold")
+    fig.supylabel("Actual proportion in interval", fontweight="bold")
+    fig.align_ylabels()
 
     plt.savefig(saveto)
     plt.close()

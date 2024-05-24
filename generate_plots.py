@@ -10,18 +10,12 @@ print("Read results into `results` DataFrame:")
 print(results)
 
 
-### MODEL PERFORMANCE
-# y vs y_hat scatter plots
-pnn.plot.plot_performance_scatter(results)
-print("Saved match-up (scatter) plots")
-
+### GENERATE PLOTS
 # Performance metrics and lollipop plot
 metrics = pnn.aggregate.calculate_metrics(results)
 pnn.plot.plot_performance_metrics_lollipop(metrics)
 print("Saved performance metric (lollipop) plot")
 
-
-### MODEL UNCERTAINTY
 # Average uncertainty heatmap
 uncertainty_averages = pnn.aggregate.average_uncertainty(results)
 pnn.plot.uncertainty_heatmap(uncertainty_averages)
@@ -35,6 +29,10 @@ print("Saved sharpness/coverage plot")
 calibration_curves = pnn.aggregate.calibration_curve(results)
 pnn.plot.plot_calibration_curves(calibration_curves)
 print("Saved calibration curve plot")
+
+# y vs y_hat scatter plots
+pnn.plot.plot_performance_scatter(results)
+print("Saved match-up (scatter) plots")
 
 # Log-binned uncertainty and line plot
 binned = pnn.logbins.log_binned_statistics_combined(results)

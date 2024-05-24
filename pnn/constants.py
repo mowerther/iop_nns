@@ -36,6 +36,11 @@ class Parameter:
     vmin: Optional[float] = None
     vmax: Optional[float] = None
     symmetric: bool = False
+    label_2lines: Optional[str] = None
+
+    def __post_init__(self):
+        if self.label_2lines is None:
+            self.label_2lines = self.label
 
     # Makes it possible to use the Parameter object as an index.
     def __hash__(self) -> int:
@@ -60,9 +65,9 @@ networks_fromkey = {p.name: p for p in networks}
 
 
 ### SPLIT TYPES
-random_split = Parameter("random_split", "Random split")
-wd = Parameter("wd_split", "Within-distribution split")
-ood = Parameter("ood_split", "Out-of-distribution split")
+random_split = Parameter("random_split", "Random split", label_2lines="Random\nsplit")
+wd = Parameter("wd_split", "Within-distribution split", label_2lines="Within-distribution\nsplit")
+ood = Parameter("ood_split", "Out-of-distribution split", label_2lines="Out-of-distribution\nsplit")
 
 splits = [random_split, wd, ood]
 splits_fromkey = {p.name: p for p in splits}
@@ -96,12 +101,12 @@ y_pred = "y_pred"
 _CDOM = r"\text{CDOM}"
 _NAP = r"\text{NAP}"
 _ph = r"\text{ph}"
-aCDOM_443 = Parameter("aCDOM_443", f"$a_{_CDOM}$(443)")
-aCDOM_675 = Parameter("aCDOM_675", f"$a_{_CDOM}$(675)")
-aNAP_443 = Parameter("aNAP_443", f"$a_{_NAP}$(443)")
-aNAP_675 = Parameter("aNAP_675", f"$a_{_NAP}$(675)")
-aph_443 = Parameter("aph_443", f"$a_{_ph}$(443)")
-aph_675 = Parameter("aph_675", f"$a_{_ph}$(675)")
+aCDOM_443 = Parameter("aCDOM_443", f"$a_{_CDOM}$(443)", label_2lines=f"$a_{_CDOM}$\n(443)")
+aCDOM_675 = Parameter("aCDOM_675", f"$a_{_CDOM}$(675)", label_2lines=f"$a_{_CDOM}$\n(675)")
+aNAP_443 = Parameter("aNAP_443", f"$a_{_NAP}$(443)", label_2lines=f"$a_{_NAP}$\n(443)")
+aNAP_675 = Parameter("aNAP_675", f"$a_{_NAP}$(675)", label_2lines=f"$a_{_NAP}$\n(675)")
+aph_443 = Parameter("aph_443", f"$a_{_ph}$(443)", label_2lines=f"$a_{_ph}$\n(443)")
+aph_675 = Parameter("aph_675", f"$a_{_ph}$(675)", label_2lines=f"$a_{_ph}$\n(675)")
 
 iops = [aCDOM_443, aCDOM_675, aNAP_443, aNAP_675, aph_443, aph_675]
 iops_main = [aCDOM_443, aCDOM_675, aph_443, aph_675]
