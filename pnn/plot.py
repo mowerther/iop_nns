@@ -7,6 +7,7 @@ from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
+from scipy.stats import linregress
 
 from matplotlib import pyplot as plt
 plt.style.use("default")
@@ -34,10 +35,18 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
 
     # Plot data per row
     for ax_row, uncertainty in zip(axs, rows):
-        # Plot data per panel
         for ax, iop in zip(ax_row, columns):
+            # Plot data per panel
             im = ax.scatter(df.loc[c.y_true, iop], df.loc[c.y_pred, iop], c=df.loc[uncertainty, iop],
                             alpha=0.7, cmap=uncertainty.cmap, vmin=uncertainty.vmin, vmax=uncertainty.vmax)
+
+            # Perform and plot linear regression per panel
+            # y, y_hat = np.log(df.loc[c.y_true, iop]), np.log(df.loc[c.y_pred, iop])
+            # y, y_hat = df.loc[c.y_true, iop], df.loc[c.y_pred, iop]
+            # slope, intercept = np.polyfit(y, y_hat, 1, w=1+np.log10(y))
+            # xp = np.array(lims)
+            # yp = intercept + slope * xp
+            # ax.plot(xp, yp, color="black", linestyle="--")
 
         # Color bar per row
         cb = fig.colorbar(im, ax=ax_row[-1], label=uncertainty.label)
