@@ -18,8 +18,6 @@ from . import constants as c
 
 ### FUNCTIONS
 ## Performance (matchups) - scatter plot, per algorithm/scenario combination
-# -> for appendix, just performance, not (fractional) uncertainties ?
-scatterplot_metrics = {"total_unc_pct": "Total uncertainty [%]", "ale_frac": "Aleatoric fraction"}
 def plot_performance_scatter_single(df: pd.DataFrame, *,
                                     columns: Iterable[c.Parameter]=c.iops, rows: Iterable[c.Parameter]=[c.total_unc_pct, c.ale_frac],
                                     title: Optional[str]=None,
@@ -38,7 +36,7 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
     for ax_row, uncertainty in zip(axs, rows):
         # Plot data per panel
         for ax, iop in zip(ax_row, columns):
-            im = ax.scatter(df.loc["y_true", iop], df.loc["y_pred", iop], c=df.loc[uncertainty, iop],
+            im = ax.scatter(df.loc[c.y_true, iop], df.loc[c.y_pred, iop], c=df.loc[uncertainty, iop],
                             alpha=0.7, cmap=uncertainty.cmap, vmin=uncertainty.vmin, vmax=uncertainty.vmax)
 
         # Color bar per row
@@ -71,7 +69,7 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
     # Metrics
     for ax, iop in zip(axs[0], columns):
         # Calculate
-        y, y_hat = df.loc["y_true", iop], df.loc["y_pred", iop]
+        y, y_hat = df.loc[c.y_true, iop], df.loc[c.y_pred, iop]
         r_square = f"$R^2 = {metrics.log_r_squared(y, y_hat):.2f}$"
         sspb = f"SSPB = ${metrics.sspb(y, y_hat):+.1f}$%"
         other_metrics = [f"{func.__name__} = {func(y, y_hat):.1f}%" for func in [metrics.mdsa, metrics.mape]]
