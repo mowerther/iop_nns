@@ -124,7 +124,7 @@ def bias(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
 @label("Sharpness")
 def sharpness(y_std: pd.DataFrame) -> pd.Series:
     """ Sharpness (square root of mean of variance per sample) """
-    return np.sqrt((y_std**2).mean())
+    return np.sqrt((y_std**2).median())
 
 @label("Coverage")
 def coverage(y_true: pd.DataFrame, y_pred: pd.DataFrame, y_pred_std: pd.DataFrame, *, k=1) -> pd.Series:
