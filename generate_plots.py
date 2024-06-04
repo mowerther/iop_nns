@@ -5,7 +5,7 @@ The individual results files are combined into a single DataFrame (`results`) wh
 import pnn
 
 ### LOAD DATA
-results = pnn.io.read_all_model_outputs()
+results = pnn.modeloutput.read_all_model_outputs()
 print("Read results into `results` DataFrame:")
 print(results)
 

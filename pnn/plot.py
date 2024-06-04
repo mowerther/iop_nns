@@ -7,7 +7,6 @@ from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
-from scipy.stats import linregress
 
 from matplotlib import pyplot as plt
 plt.style.use("default")

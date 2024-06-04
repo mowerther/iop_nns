@@ -1,7 +1,6 @@
 """
 Functions for reading the PNN output dataframes.
 """
-import itertools
 from pathlib import Path
 from typing import Iterable
 
