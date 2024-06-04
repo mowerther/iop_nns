@@ -59,7 +59,7 @@ def nrmse(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
 
 @label("R²")
 def r_squared(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
-    """ R² """
+    """ Coefficient of determination (R²) """
     SSres = ((y - y_hat)**2).sum()
     SStot = ((y - y.mean())**2).sum()
     R2 = 1 - SSres/SStot
@@ -68,7 +68,7 @@ def r_squared(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
 @only_positive
 @label("R² (log)")
 def log_r_squared(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
-    """ R² of the logs """
+    """ Coefficient of determination (R²) of the logarithms """
     y, y_hat = np.log10(y), np.log10(y_hat)
     return r_squared(y, y_hat)
 
