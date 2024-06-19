@@ -7,6 +7,7 @@ from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
+from scipy.special import erf
 
 from matplotlib import pyplot as plt
 plt.style.use("default")
@@ -290,6 +291,22 @@ def uncertainty_heatmap(results_agg: pd.DataFrame, *,
 
 
 ## Uncertainty metrics - bar plot
+k_to_percentage = lambda k: 100*erf(k/np.sqrt(2))
+def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=3) -> None:
+    """
+    Add horizontal lines at k=1, k=2, ... coverage.
+    """
+    for k in range(1, klim+1):
+        percentage = k_to_percentage(k)
+
+        # Plot lines
+        for ax in axs:
+            ax.axhline(percentage, color="black", linestyle="--", zorder=4)
+
+        # Add text to last panel
+        ax = axs[-1]
+        ax.text(1.01, percentage/100, f"$k = {k}$", transform=ax.transAxes, horizontalalignment="left", verticalalignment="center")
+
 _bar_metrics = [c.sharpness, c.coverage]
 def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
                                  groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_bar_metrics, splits: Iterable[c.Parameter]=c.splits,
@@ -323,6 +340,9 @@ def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
                 ax.bar(locations, values, color=color, label=label, width=bar_width, zorder=3)  # Draw points
 
             ax.grid(True, axis="y", linestyle="--", linewidth=0.5, color="black", alpha=0.4)
+
+        if metric == c.coverage:
+            add_coverage_k_lines(*ax_row)
 
     # Label variables
     axs[0, 0].set_xticks(np.arange(n_groups))
