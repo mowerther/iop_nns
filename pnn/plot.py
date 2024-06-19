@@ -376,19 +376,19 @@ def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
 
 ## Uncertainty metrics - calibration curves
 def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
-                            rows: Iterable[c.Parameter]=c.iops, columns: Iterable[c.Parameter]=c.splits, groupmembers: Iterable[c.Parameter]=c.networks,
+                            rows: Iterable[c.Parameter]=c.splits, columns: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks,
                             saveto: Path | str=c.save_path/"calibration_curves.png") -> None:
     """
     Plot calibration curves (expected vs. observed).
     """
     # Create figure
-    fig, axs = plt.subplots(nrows=len(rows), ncols=len(columns), sharex=True, sharey=True, figsize=(8, 10), layout="constrained", squeeze=False)
+    fig, axs = plt.subplots(nrows=len(rows), ncols=len(columns), sharex=True, sharey=True, figsize=(12, 6), layout="constrained", squeeze=False)
 
     # Loop and plot
     for ax_row, row_key in zip(axs, rows):
         for ax, col_key in zip(ax_row, columns):
             # Select data
-            df = calibration_curves.loc[col_key][row_key]
+            df = calibration_curves.loc[row_key][col_key]
 
             # Plot data
             for key in groupmembers:
@@ -401,6 +401,9 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
     # Limits
     axs[0, 0].set_xlim(0, 1)
     axs[0, 0].set_ylim(0, 1)
+    for ax in axs.ravel():
+        ax.set_aspect("equal")
+    axs[0, 0].locator_params(axis="both", nbins=5)  # Creates one spurious xtick that I have no idea how to deal with, but probably no one will notice
 
     # Labels
     for ax, title in zip(axs[0], columns):
