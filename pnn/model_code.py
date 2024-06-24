@@ -7,6 +7,8 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.regularizers import l2
 from sklearn.preprocessing import MinMaxScaler
 
+from pnn.metrics import MAD, mape, mdsa, sspb
+from pnn.split import mcar
 #########
 # 1. Recurrent Neural Network with Gated Recurrent Units and Monte Carlo Dropout (RNN MCD)
 #########
@@ -26,12 +28,12 @@ def build_rnn_mcd(input_shape, hidden_units=100, n_layers=5, dropout_rate=0.25, 
 
     # Adding additional GRU layers if n_layers > 1, with Dropout layers between them
     for _ in range(1, n_layers):
-        model.add(Dropout(dropout_rate)) 
+        model.add(Dropout(dropout_rate))
         model.add(GRU(hidden_units, return_sequences=True if _ < n_layers - 1 else False,
                       activation=activation, kernel_regularizer=l2(l2_reg)))
 
     # Output layer: Adjust for 6 means and 6 variances (12 outputs in total)
-    model.add(Dense(output_size * 2, activation='linear')) 
+    model.add(Dense(output_size * 2, activation='linear'))
 
     return model
 
@@ -40,9 +42,9 @@ def train_rnn_mcd(model, X_train, y_train, epochs=1000, batch_size=512, learning
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
     model.compile(optimizer=optimizer, loss=nll_loss)
     early_stopping = EarlyStopping(monitor='val_loss', patience=80, verbose=1, mode='min', restore_best_weights=True)
-    
+
     history = model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, validation_split=validation_split, callbacks=[early_stopping])
-    
+
     return model, history
 
 def predict_with_uncertainty(model, X, scaler_y, n_samples=100):
@@ -53,7 +55,7 @@ def predict_with_uncertainty(model, X, scaler_y, n_samples=100):
 
     mean_predictions_scaled = pred_samples[:, :, :6]
     raw_variances_scaled = pred_samples[:, :, 6:]
-    variances_scaled = tf.nn.softplus(raw_variances_scaled) 
+    variances_scaled = tf.nn.softplus(raw_variances_scaled)
 
     # Convert from scaled space to log space
     original_shape = mean_predictions_scaled.shape
@@ -90,8 +92,8 @@ def calculate_metrics(y_true, y_pred):
     - Tuple of metrics (obs_cor, MAPD, MAD, sspb, mdsa) for the predictions.
     """
     # Ensure y_true and y_pred are numpy arrays for element-wise operations
-    y_true = np.array(y_true)
-    y_pred = np.array(y_pred)
+    y_true = pd.DataFrame(y_true)
+    y_pred = pd.DataFrame(y_pred)
 
     # Calculate metrics assuming these functions are vectorized and can handle arrays
     # Requires definition
@@ -151,7 +153,7 @@ def train_and_evaluate_models(X_train, y_train_scaled, X_test, y_test, y_columns
         mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = predict_with_uncertainty(model, X_test, scaler_y, n_samples=100)
 
         print(f'Model {i+1}/{num_models}: Completed prediction with uncertainty.')
-        
+
         print('Completed predict with uncertainty.')
         print('Calculating metrics.')
         metrics_df = calculate_and_store_metrics(y_test, mean_preds, y_columns)
@@ -173,6 +175,9 @@ def train_and_evaluate_models(X_train, y_train_scaled, X_test, y_test, y_columns
 
 #### Execution starts here:
 # Needs the training data
+random_train_df = pd.read_csv("scenario_datasets/wd_train_set.csv")
+random_test_df = pd.read_csv("scenario_datasets/wd_test_set.csv")
+
 # Select Rrs values in 5 nm steps
 rrs_columns = [f'Rrs_{nm}' for nm in range(400, 701, 5)]
 X_train = random_train_df[rrs_columns].values
@@ -183,7 +188,7 @@ y_columns = ['aCDOM_443', 'aCDOM_675', 'aNAP_443', 'aNAP_675', 'aph_443', 'aph_6
 y_train = random_train_df[y_columns].values
 y_test = random_test_df[y_columns].values
 
-#Apply log transformation to the target variables
+# Apply log transformation to the target variables
 y_train_log = np.log(y_train)
 y_test_log = np.log(y_test)
 
@@ -206,13 +211,13 @@ n_samples_test, _ = X_test.shape  # We already know the features count
 X_test_reshaped = X_test.reshape((n_samples_test, n_timesteps, n_features_per_timestep))
 
 # Call - train 5 models
-best_model, best_model_index, mdsa_df= train_and_evaluate_models(X_train_reshaped, y_train_scaled, X_test, y_test, y_columns,scaler_y=scaler_y, input_shape = (n_timesteps, n_features_per_timestep), num_models=5)
+best_model, best_model_index, mdsa_df = train_and_evaluate_models(X_train_reshaped, y_train_scaled, X_test, y_test, y_columns,scaler_y=scaler_y, input_shape = (n_timesteps, n_features_per_timestep), num_models=5)
 
 # inspect: mdsa_df, mdsa_df.std() etc. - can also save the best_model or use it to make predictions for plotting etc.
 
 mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = predict_with_uncertainty(best_model, X_test, scaler_y, n_samples=30)
 metrics_df = calculate_and_store_metrics(y_test, mean_preds, y_columns)
-metrics_df
+print(metrics_df)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -237,7 +242,7 @@ norm = plt.Normalize(vmin=0, vmax=200)
 titles = ['aCDOM_443', 'aCDOM_675', 'aNAP_443', 'aNAP_675', 'aph_443', 'aph_675']
 
 for i, ax in enumerate(axs):
-    
+
     # Apply mask to all x-y
     x_values = y_test[:, i][mask[:, i]]
     y_values = mean_preds[:, i][mask[:, i]]
@@ -269,7 +274,7 @@ for i, ax in enumerate(axs):
 plt.tight_layout()
 
 # Add a single colorbar to the right of the subplots
-cbar_ax = fig.add_axes([1.05, 0.15, 0.05, 0.7])  
+cbar_ax = fig.add_axes([1.05, 0.15, 0.05, 0.7])
 cbar = plt.colorbar(mappable=sc, cax=cbar_ax, orientation='vertical', norm=norm)
 cbar.set_label('Uncertainty Percentage (%)')
 
