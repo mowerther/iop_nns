@@ -1,5 +1,7 @@
+cmcrameri>=1.9
 matplotlib>=3.8.2
 numpy>=1.26.2
 pandas>=2.2
-cmcrameri>=1.9
+scikit-learn>=1.4.2
+tensorflow>=2.16.1
 uncertainty-toolbox>=0.1.1
