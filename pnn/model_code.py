@@ -175,8 +175,8 @@ def train_and_evaluate_models(X_train, y_train_scaled, X_test, y_test, y_columns
 
 #### Execution starts here:
 # Needs the training data
-random_train_df = pd.read_csv("scenario_datasets/wd_train_set.csv")
-random_test_df = pd.read_csv("scenario_datasets/wd_test_set.csv")
+random_train_df = pd.read_csv("datasets_train_test/random_df_test_org.csv")
+random_test_df = pd.read_csv("datasets_train_test/random_df_test_org.csv")
 
 # Select Rrs values in 5 nm steps
 rrs_columns = [f'Rrs_{nm}' for nm in range(400, 701, 5)]
