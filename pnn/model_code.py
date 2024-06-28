@@ -155,13 +155,17 @@ def train_and_evaluate_models(X_train, y_train_scaled, X_test, y_test, y_columns
         print(f'Model {i+1}/{num_models}: Completed prediction with uncertainty.')
 
         print('Completed predict with uncertainty.')
+
+        # Temporary line for testing
+        # return model, scaler_y, mean_preds, total_var, aleatoric_var, epistemic_var, std_preds
+
         print('Calculating metrics.')
         metrics_df = calculate_and_store_metrics(y_test, mean_preds, y_columns)
 
         all_models.append(model)
         all_mdsa.append(metrics_df['mdsa'].values)
 
-        total_mdsa = metrics_df.loc[['aCDOM_443', 'aNAP_443', 'aph_443'], 'mdsa'].sum()  # Sum the mdsa of the specified variables
+        total_mdsa = metrics_df.loc[['aCDOM_443', 'aNAP_443', 'aph_443'], 'mdsa'].sum().sum()  # Sum the mdsa of the specified variables
         if total_mdsa < min_total_mdsa:
             min_total_mdsa = total_mdsa
             best_overall_model = model
@@ -212,6 +216,9 @@ X_test_reshaped = X_test.reshape((n_samples_test, n_timesteps, n_features_per_ti
 
 # Call - train 5 models
 best_model, best_model_index, mdsa_df = train_and_evaluate_models(X_train_reshaped, y_train_scaled, X_test, y_test, y_columns,scaler_y=scaler_y, input_shape = (n_timesteps, n_features_per_timestep), num_models=5)
+
+# model, scaler_y, mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = train_and_evaluate_models(X_train_reshaped, y_train_scaled, X_test, y_test, y_columns,scaler_y=scaler_y, input_shape = (n_timesteps, n_features_per_timestep), num_models=1)
+# raise Exception
 
 # inspect: mdsa_df, mdsa_df.std() etc. - can also save the best_model or use it to make predictions for plotting etc.
 
