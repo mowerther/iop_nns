@@ -1,5 +1,5 @@
 """
-Main script for loading data and generating plots.
+Script for loading data and PNN outputs and generating plots.
 The individual results files are combined into a single DataFrame (`results`) which is then used for plotting and aggregation.
 """
 import pnn
