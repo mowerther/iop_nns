@@ -41,7 +41,7 @@ def plot_full_dataset(df: pd.DataFrame, *,
     for ax, var in zip(axs.ravel(), variables):
         # Plot data
         data = df[var]
-        ax.hist(data, bins=bins, color=var.color)
+        ax.hist(data, bins=bins, color=var.color, histtype="stepfilled")
 
         # Panel settings
         ax.grid(True, linestyle="--", alpha=0.5)
