@@ -63,6 +63,60 @@ def plot_full_dataset(df: pd.DataFrame, *,
     plt.close()
 
 
+## Input data - Random/WD/OOD splits
+def plot_data_splits(*datasets: tuple[pd.DataFrame],
+                     variables: Iterable[c.Parameter]=[c.aCDOM_443, c.aNAP_443, c.aph_443], splits: Iterable[c.Parameter]=c.splits,
+                     title: Optional[str]=None,
+                     saveto: Path | str=c.save_path/"scenarios.pdf") -> None:
+    """
+    Plot the data splits (random/within-distribution/out-of-distribution).
+    Datasets are expected in alternating train/test order, e.g. train-random, test-random, train-wd, test-wd, train-ood, test-ood.
+    One column per variable (default: IOPs at 443 nm).
+    """
+    # Constants
+    lims = (1e-5, 1e1)
+    bins = np.logspace(np.log10(lims[0]), np.log10(lims[1]), 35)
+    scale = "log"
+    ncols = len(variables)
+    nrows = len(splits)
+    train_sets = datasets[::2]
+    test_sets = datasets[1::2]
+
+    # Create figure
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(14, 8), squeeze=False, layout="constrained")
+
+    # Plot data per row
+    for ax_row, split, df_train, df_test in zip(axs, splits, train_sets, test_sets):
+        for ax, var in zip(ax_row, variables):
+            # Plot data
+            ax.hist(df_train[var], bins=bins, color="black", histtype="step")
+            ax.hist(df_train[var], bins=bins, color="black", histtype="stepfilled", alpha=0.5)
+            ax.hist(df_test[var], bins=bins, color="C1", histtype="step")
+            ax.hist(df_test[var], bins=bins, color="C1", histtype="stepfilled", alpha=0.5)
+
+            # Panel settings
+            ax.grid(True, linestyle="--", alpha=0.5)
+
+
+    # Panel settings
+    axs[0, 0].set_xscale(scale)
+    axs[0, 0].set_xlim(*lims)
+
+    # Labels
+    for split, ax in zip(splits, axs[:, ncols//2]):
+        ax.set_title(split.label)
+    for var, ax in zip(variables, axs[-1]):
+        ax.set_xlabel(var.label)
+
+    fig.supxlabel("In situ value", fontweight="bold")
+    fig.supylabel("Frequency", fontweight="bold")
+
+    # Save result
+    plt.savefig(saveto, dpi=200, bbox_inches="tight")
+    plt.close()
+
+
+
 ## Performance (matchups) - scatter plot, per algorithm/scenario combination
 def plot_performance_scatter_single(df: pd.DataFrame, *,
                                     columns: Iterable[c.Parameter]=c.iops, rows: Iterable[c.Parameter]=[c.total_unc_pct, c.ale_frac],

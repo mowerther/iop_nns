@@ -19,7 +19,7 @@ def read_all_data(folder: Path | str=c.data_path) -> tuple[pd.DataFrame]:
     train_set_wd = pd.read_csv(folder/"wd_train_set_org.csv")
     test_set_wd = pd.read_csv(folder/"wd_test_set_org.csv")
 
-    train_set_ood = pd.read_csv(folder/"ood_train_set_2.csv").rename(columns=rename_org)
-    test_set_ood = pd.read_csv(folder/"ood_test_set_2.csv").rename(columns=rename_org)
+    train_set_ood = pd.read_csv(folder/"ood_train_set_2.csv").drop(columns=rename_org.values()).rename(columns=rename_org)
+    test_set_ood = pd.read_csv(folder/"ood_test_set_2.csv").drop(columns=rename_org.values()).rename(columns=rename_org)
 
     return train_set_random, test_set_random, train_set_wd, test_set_wd, train_set_ood, test_set_ood
