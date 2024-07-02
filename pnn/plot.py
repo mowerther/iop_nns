@@ -22,7 +22,7 @@ from . import constants as c
 ## Input data - full
 def plot_full_dataset(df: pd.DataFrame, *,
                       variables: Iterable[c.Parameter]=c.iops,
-                      headers: Iterable[str]=["443 nm", "675 nm"], title: Optional[str]=None,
+                      title: Optional[str]=None,
                       saveto: Path | str=c.save_path/"full_dataset.pdf") -> None:
     """
     Plot the full input dataset, with separate panels for each IOP.
@@ -53,9 +53,6 @@ def plot_full_dataset(df: pd.DataFrame, *,
     axs[0, 0].set_xlim(*lims)
 
     # Labels
-    for header, ax in zip(headers, axs[0]):
-        ax.set_title(header)
-
     fig.supxlabel("In situ value", fontweight="bold")
     fig.supylabel("Frequency", fontweight="bold")
 
