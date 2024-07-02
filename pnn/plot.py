@@ -11,7 +11,8 @@ from scipy.special import erf
 
 from matplotlib import pyplot as plt
 plt.style.use("default")
-from matplotlib import ticker
+from matplotlib import ticker, patches
+from matplotlib.colors import to_rgba
 
 from . import metrics
 from . import constants as c
@@ -64,6 +65,7 @@ def plot_full_dataset(df: pd.DataFrame, *,
 
 
 ## Input data - Random/WD/OOD splits
+traincolor, testcolor = "black", "C1"
 def plot_data_splits(*datasets: tuple[pd.DataFrame],
                      variables: Iterable[c.Parameter]=[c.aCDOM_443, c.aNAP_443, c.aph_443], splits: Iterable[c.Parameter]=c.splits,
                      title: Optional[str]=None,
@@ -83,16 +85,16 @@ def plot_data_splits(*datasets: tuple[pd.DataFrame],
     test_sets = datasets[1::2]
 
     # Create figure
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(14, 8), squeeze=False, layout="constrained")
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(14, 8), squeeze=False, layout="constrained", gridspec_kw={"hspace": 0.2})
 
     # Plot data per row
     for ax_row, split, df_train, df_test in zip(axs, splits, train_sets, test_sets):
         for ax, var in zip(ax_row, variables):
             # Plot data
-            ax.hist(df_train[var], bins=bins, color="black", histtype="step")
-            ax.hist(df_train[var], bins=bins, color="black", histtype="stepfilled", alpha=0.5)
-            ax.hist(df_test[var], bins=bins, color="C1", histtype="step")
-            ax.hist(df_test[var], bins=bins, color="C1", histtype="stepfilled", alpha=0.5)
+            ax.hist(df_train[var], bins=bins, color=traincolor, histtype="step")
+            ax.hist(df_train[var], bins=bins, color=traincolor, histtype="stepfilled", alpha=0.5)
+            ax.hist(df_test[var], bins=bins, color=testcolor, histtype="step")
+            ax.hist(df_test[var], bins=bins, color=testcolor, histtype="stepfilled", alpha=0.5)
 
             # Panel settings
             ax.grid(True, linestyle="--", alpha=0.5)
@@ -101,6 +103,11 @@ def plot_data_splits(*datasets: tuple[pd.DataFrame],
     # Panel settings
     axs[0, 0].set_xscale(scale)
     axs[0, 0].set_xlim(*lims)
+
+    # Legend
+    trainpatch = patches.Patch(facecolor=to_rgba(traincolor, 0.5), edgecolor=traincolor, label="Train")
+    testpatch = patches.Patch(facecolor=to_rgba(testcolor, 0.5), edgecolor=testcolor, label="Test")
+    axs[0, 0].legend(handles=[trainpatch, testpatch], loc="upper left", framealpha=1, edgecolor="black")
 
     # Labels
     for split, ax in zip(splits, axs[:, ncols//2]):
