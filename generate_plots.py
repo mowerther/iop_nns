@@ -2,15 +2,31 @@
 Script for loading data and PNN outputs and generating plots.
 The individual results files are combined into a single DataFrame (`results`) which is then used for plotting and aggregation.
 """
+import pandas as pd
 import pnn
 
-### LOAD DATA
+
+### INPUT DATA
+print("--- INPUT DATA ---")
+# Load split data
+train_set_random, test_set_random, train_set_wd, test_set_wd, train_set_ood, test_set_ood = pnn.data.read_all_data()
+print("Read results into 6 DataFrames")
+
+# Load full data
+data_full = pd.concat([train_set_random, test_set_random])
+print(data_full)
+
+
+raise Exception
+
+### MODEL OUTPUTS
+print("\n\n\n--- MODEL OUTPUTS ---")
+
+# Load data
 results = pnn.modeloutput.read_all_model_outputs()
 print("Read results into `results` DataFrame:")
 print(results)
 
-
-### GENERATE PLOTS
 # Performance metrics and lollipop plot
 metrics = pnn.aggregate.calculate_metrics(results)
 pnn.plot.plot_performance_metrics_lollipop(metrics)

@@ -11,6 +11,7 @@ from cmcrameri.cm import managua
 
 
 ### FILENAMES
+data_path = Path("datasets_train_test/")
 pred_path = Path("pnn_model_estimates/")
 save_path = Path("manuscript_figures/")
 supplementary_path = save_path/"supplementary/"

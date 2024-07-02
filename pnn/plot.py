@@ -18,6 +18,9 @@ from . import constants as c
 
 
 ### FUNCTIONS
+## Input data - full
+
+
 ## Performance (matchups) - scatter plot, per algorithm/scenario combination
 def plot_performance_scatter_single(df: pd.DataFrame, *,
                                     columns: Iterable[c.Parameter]=c.iops, rows: Iterable[c.Parameter]=[c.total_unc_pct, c.ale_frac],
