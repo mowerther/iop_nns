@@ -16,8 +16,9 @@ print("Read results into 6 DataFrames")
 data_full = pd.concat([train_set_random, test_set_random])
 print(data_full)
 
+# Plot full data
+pnn.plot.plot_full_dataset(data_full)
 
-raise Exception
 
 ### MODEL OUTPUTS
 print("\n\n\n--- MODEL OUTPUTS ---")

@@ -19,6 +19,48 @@ from . import constants as c
 
 ### FUNCTIONS
 ## Input data - full
+def plot_full_dataset(df: pd.DataFrame, *,
+                      variables: Iterable[c.Parameter]=c.iops,
+                      headers: Iterable[str]=["443 nm", "675 nm"], title: Optional[str]=None,
+                      saveto: Path | str=c.save_path/"full_dataset.pdf") -> None:
+    """
+    Plot the full input dataset, with separate panels for each IOP.
+    """
+    # Constants
+    lims = (1e-5, 1e1)
+    bins = np.logspace(np.log10(lims[0]), np.log10(lims[1]), 50)
+    scale = "log"
+    ncols = 2
+    nrows = len(variables) // ncols
+
+    # Create figure
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(12, 6), squeeze=False, layout="constrained")
+
+    # Plot data per row
+    for ax, var in zip(axs.ravel(), variables):
+        # Plot data
+        data = df[var]
+        ax.hist(data, bins=bins, color=var.color)
+
+        # Panel settings
+        ax.grid(True, linestyle="--", alpha=0.5)
+        ax.text(0.05, 0.90, var.label, transform=ax.transAxes, horizontalalignment="left", verticalalignment="top", fontsize=12, color="black", bbox={"facecolor": "white", "edgecolor": "black", "boxstyle": "round"})
+
+
+    # Panel settings
+    axs[0, 0].set_xscale(scale)
+    axs[0, 0].set_xlim(*lims)
+
+    # Labels
+    for header, ax in zip(headers, axs[0]):
+        ax.set_title(header)
+
+    fig.supxlabel("In situ value", fontweight="bold")
+    fig.supylabel("Frequency", fontweight="bold")
+
+    # Save result
+    plt.savefig(saveto, dpi=200, bbox_inches="tight")
+    plt.close()
 
 
 ## Performance (matchups) - scatter plot, per algorithm/scenario combination
