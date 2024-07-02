@@ -23,7 +23,7 @@ print("Saved full data plot")
 # Plot split data
 pnn.plot.plot_data_splits(train_set_random, test_set_random, train_set_wd, test_set_wd, train_set_ood, test_set_ood)
 print("Saved data splits plot")
-raise Exception
+
 
 ### MODEL OUTPUTS
 print("\n\n\n--- MODEL OUTPUTS ---")
