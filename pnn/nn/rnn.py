@@ -1,3 +1,6 @@
+"""
+Recurrent Neural Network with Gated Recurrent Units and Monte Carlo Dropout (RNN MCD).
+"""
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -5,19 +8,30 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import GRU, Dense, Dropout, Input
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.regularizers import l2
-from sklearn.preprocessing import MinMaxScaler
 
-from pnn.metrics import MAD, mape, mdsa, sspb
-from pnn.split import mcar
-#########
-# 1. Recurrent Neural Network with Gated Recurrent Units and Monte Carlo Dropout (RNN MCD)
-#########
+from .common import nll_loss
+from ..metrics import MAD, mape, mdsa, sspb
 
-def nll_loss(y_true, y_pred):
-    mean = y_pred[:, :6]
-    var = tf.nn.softplus(y_pred[:, 6:])
-    return tf.reduce_mean(0.5 * (tf.math.log(var) + (tf.square(y_true - mean) / var) + tf.math.log(2 * np.pi)))
 
+### DATA HANDLING
+def reshape_data(X_train: np.ndarray, X_test: np.ndarray, *, n_features_per_timestep: int=1) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Reshape data for the RNN, adding a timestep axis.
+    """
+    # Calculate the number of wavelength steps and features
+    n_samples_train, n_features = X_train.shape
+    n_samples_test, _ = X_test.shape  # We already know the features count
+
+    n_timesteps = n_features // n_features_per_timestep  # Here: One wavelength per step
+
+    # Reshape data
+    X_train_reshaped = X_train.reshape((n_samples_train, n_timesteps, n_features_per_timestep))
+    X_test_reshaped = X_test.reshape((n_samples_test, n_timesteps, n_features_per_timestep))
+
+    return X_train_reshaped, X_test_reshaped
+
+
+### ARCHITECTURE
 def build_rnn_mcd(input_shape, hidden_units=100, n_layers=5, dropout_rate=0.25, l2_reg=1e-3, output_size=6, activation='tanh'):
     model = Sequential()
     model.add(Input(shape=input_shape))
@@ -37,7 +51,8 @@ def build_rnn_mcd(input_shape, hidden_units=100, n_layers=5, dropout_rate=0.25, 
 
     return model
 
-# Train the RNN
+
+### TRAINING
 def train_rnn_mcd(model, X_train, y_train, epochs=1000, batch_size=512, learning_rate=0.001, validation_split=0.1):
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
     model.compile(optimizer=optimizer, loss=nll_loss)
@@ -47,6 +62,8 @@ def train_rnn_mcd(model, X_train, y_train, epochs=1000, batch_size=512, learning
 
     return model, history
 
+
+### APPLICATION
 def predict_with_uncertainty(model, X, scaler_y, n_samples=100):
 
     # Generate predictions in scaled space
@@ -178,111 +195,76 @@ def train_and_evaluate_models(X_train, y_train_scaled, X_test, y_test, y_columns
     return best_overall_model, best_model_index, mdsa_df
 
 #### Execution starts here:
-# Needs the training data
-random_train_df = pd.read_csv("datasets_train_test/random_df_test_org.csv")
-random_test_df = pd.read_csv("datasets_train_test/random_df_test_org.csv")
+if __name__ == "__main__":
+    # Call - train 5 models
+    best_model, best_model_index, mdsa_df = train_and_evaluate_models(X_train_reshaped, y_train_scaled, X_test, y_test, y_columns,scaler_y=scaler_y, input_shape = (n_timesteps, n_features_per_timestep), num_models=5)
 
-# Select Rrs values in 5 nm steps
-rrs_columns = [f'Rrs_{nm}' for nm in range(400, 701, 5)]
-X_train = random_train_df[rrs_columns].values
-X_test = random_test_df[rrs_columns].values
+    # model, scaler_y, mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = train_and_evaluate_models(X_train_reshaped, y_train_scaled, X_test, y_test, y_columns,scaler_y=scaler_y, input_shape = (n_timesteps, n_features_per_timestep), num_models=1)
+    # raise Exception
 
-# Extracting target variables
-y_columns = ['aCDOM_443', 'aCDOM_675', 'aNAP_443', 'aNAP_675', 'aph_443', 'aph_675']
-y_train = random_train_df[y_columns].values
-y_test = random_test_df[y_columns].values
+    # inspect: mdsa_df, mdsa_df.std() etc. - can also save the best_model or use it to make predictions for plotting etc.
 
-# Apply log transformation to the target variables
-y_train_log = np.log(y_train)
-y_test_log = np.log(y_test)
+    mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = predict_with_uncertainty(best_model, X_test, scaler_y, n_samples=30)
+    metrics_df = calculate_and_store_metrics(y_test, mean_preds, y_columns)
+    print(metrics_df)
 
-#Apply Min-Max scaling to log-transformed target variables
-scaler_y = MinMaxScaler(feature_range=(-1, 1))
-y_train_scaled = scaler_y.fit_transform(y_train_log)
-y_test_scaled = scaler_y.transform(y_test_log)
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from scipy.stats import linregress
 
-# Calculate the number of wavelength steps and features
-n_samples, n_features = X_train.shape
-n_timesteps = 61  # From 400 nm to 700 nm in 5 nm steps
-n_features_per_timestep = 1  #One wavelength per step
+    # Calculate percentage uncertainties relative to the mean predictions
+    percent_total_uncertainty = (np.sqrt(total_var) / mean_preds) * 100
+    percent_aleatoric_uncertainty = (np.sqrt(aleatoric_var) / mean_preds) * 100
+    percent_epistemic_uncertainty = (np.sqrt(epistemic_var) / mean_preds) * 100
 
-# For X_train
-n_samples_train, n_features = X_train.shape
-X_train_reshaped = X_train.reshape((n_samples_train, n_timesteps, n_features_per_timestep))
+    # Create subplots: 2 rows, 3 columns
+    fig, axs = plt.subplots(2, 3, figsize=(15, 10))
+    axs = axs.flatten()
 
-# For X_test
-n_samples_test, _ = X_test.shape  # We already know the features count
-X_test_reshaped = X_test.reshape((n_samples_test, n_timesteps, n_features_per_timestep))
+    # Apply the mask for values greater than 10^-4
+    mask = (y_test > 1e-4) & (mean_preds > 1e-4)
 
-# Call - train 5 models
-best_model, best_model_index, mdsa_df = train_and_evaluate_models(X_train_reshaped, y_train_scaled, X_test, y_test, y_columns,scaler_y=scaler_y, input_shape = (n_timesteps, n_features_per_timestep), num_models=5)
+    # Normalize the uncertainty values for the colormap within the range [0, 200]
+    norm = plt.Normalize(vmin=0, vmax=200)
 
-# model, scaler_y, mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = train_and_evaluate_models(X_train_reshaped, y_train_scaled, X_test, y_test, y_columns,scaler_y=scaler_y, input_shape = (n_timesteps, n_features_per_timestep), num_models=1)
-# raise Exception
+    # Titles
+    titles = ['aCDOM_443', 'aCDOM_675', 'aNAP_443', 'aNAP_675', 'aph_443', 'aph_675']
 
-# inspect: mdsa_df, mdsa_df.std() etc. - can also save the best_model or use it to make predictions for plotting etc.
+    for i, ax in enumerate(axs):
 
-mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = predict_with_uncertainty(best_model, X_test, scaler_y, n_samples=30)
-metrics_df = calculate_and_store_metrics(y_test, mean_preds, y_columns)
-print(metrics_df)
+        # Apply mask to all x-y
+        x_values = y_test[:, i][mask[:, i]]
+        y_values = mean_preds[:, i][mask[:, i]]
+        color_values = percent_total_uncertainty[:, i][mask[:, i]]  # Use the corresponding uncertainties
 
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.stats import linregress
+        # scatter
+        sc = ax.scatter(x_values, y_values, c=color_values, cmap='cividis', norm=norm, alpha=0.6)
 
-# Calculate percentage uncertainties relative to the mean predictions
-percent_total_uncertainty = (np.sqrt(total_var) / mean_preds) * 100
-percent_aleatoric_uncertainty = (np.sqrt(aleatoric_var) / mean_preds) * 100
-percent_epistemic_uncertainty = (np.sqrt(epistemic_var) / mean_preds) * 100
+        # old lin reg
+        slope, intercept, r_value, p_value, std_err = linregress(np.log(x_values), np.log(y_values))
+        x_reg = np.linspace(min(x_values), max(x_values), 500)
+        y_reg = np.exp(intercept + slope*np.log(x_reg))
+        ax.plot(x_reg, y_reg, color='grey', label=f'Regression (R²={r_value**2:.2f})')
 
-# Create subplots: 2 rows, 3 columns
-fig, axs = plt.subplots(2, 3, figsize=(15, 10))
-axs = axs.flatten()
-
-# Apply the mask for values greater than 10^-4
-mask = (y_test > 1e-4) & (mean_preds > 1e-4)
-
-# Normalize the uncertainty values for the colormap within the range [0, 200]
-norm = plt.Normalize(vmin=0, vmax=200)
-
-# Titles
-titles = ['aCDOM_443', 'aCDOM_675', 'aNAP_443', 'aNAP_675', 'aph_443', 'aph_675']
-
-for i, ax in enumerate(axs):
-
-    # Apply mask to all x-y
-    x_values = y_test[:, i][mask[:, i]]
-    y_values = mean_preds[:, i][mask[:, i]]
-    color_values = percent_total_uncertainty[:, i][mask[:, i]]  # Use the corresponding uncertainties
-
-    # scatter
-    sc = ax.scatter(x_values, y_values, c=color_values, cmap='cividis', norm=norm, alpha=0.6)
-
-    # old lin reg
-    slope, intercept, r_value, p_value, std_err = linregress(np.log(x_values), np.log(y_values))
-    x_reg = np.linspace(min(x_values), max(x_values), 500)
-    y_reg = np.exp(intercept + slope*np.log(x_reg))
-    ax.plot(x_reg, y_reg, color='grey', label=f'Regression (R²={r_value**2:.2f})')
-
-    # 1:1 Line
-    limits = [min(ax.get_xlim()[0], ax.get_ylim()[0]), max(ax.get_xlim()[1], ax.get_ylim()[1])]
-    ax.plot(limits, limits, ls='--', color='black')
+        # 1:1 Line
+        limits = [min(ax.get_xlim()[0], ax.get_ylim()[0]), max(ax.get_xlim()[1], ax.get_ylim()[1])]
+        ax.plot(limits, limits, ls='--', color='black')
 
 
-    ax.set_title(titles[i])
-    ax.set_xlabel('Actual')
-    ax.set_ylabel('Predicted')
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    ax.set_xlim(1e-3, 10)
-    ax.set_ylim(1e-3, 10)
-    ax.grid(True, ls='--', alpha=0.5)
+        ax.set_title(titles[i])
+        ax.set_xlabel('Actual')
+        ax.set_ylabel('Predicted')
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.set_xlim(1e-3, 10)
+        ax.set_ylim(1e-3, 10)
+        ax.grid(True, ls='--', alpha=0.5)
 
-plt.tight_layout()
+    plt.tight_layout()
 
-# Add a single colorbar to the right of the subplots
-cbar_ax = fig.add_axes([1.05, 0.15, 0.05, 0.7])
-cbar = plt.colorbar(mappable=sc, cax=cbar_ax, orientation='vertical', norm=norm)
-cbar.set_label('Uncertainty Percentage (%)')
+    # Add a single colorbar to the right of the subplots
+    cbar_ax = fig.add_axes([1.05, 0.15, 0.05, 0.7])
+    cbar = plt.colorbar(mappable=sc, cax=cbar_ax, orientation='vertical', norm=norm)
+    cbar.set_label('Uncertainty Percentage (%)')
 
-plt.show()
+    plt.show()
