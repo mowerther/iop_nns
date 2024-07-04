@@ -110,6 +110,8 @@ aph_443 = Parameter("aph_443", f"$a_{_ph}$(443)", label_2lines=f"$a_{_ph}$\n(443
 aph_675 = Parameter("aph_675", f"$a_{_ph}$(675)", label_2lines=f"$a_{_ph}$\n(675)", color="darkgreen")
 
 iops = [aCDOM_443, aCDOM_675, aNAP_443, aNAP_675, aph_443, aph_675]
+iops_443 = [aCDOM_443, aNAP_443, aph_443]
+iops_675 = [aCDOM_675, aNAP_675, aph_675]
 
 
 ### METRICS

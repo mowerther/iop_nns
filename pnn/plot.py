@@ -67,7 +67,7 @@ def plot_full_dataset(df: pd.DataFrame, *,
 ## Input data - Random/WD/OOD splits
 traincolor, testcolor = "black", "C1"
 def plot_data_splits(*datasets: tuple[pd.DataFrame],
-                     variables: Iterable[c.Parameter]=[c.aCDOM_443, c.aNAP_443, c.aph_443], splits: Iterable[c.Parameter]=c.splits,
+                     variables: Iterable[c.Parameter]=c.iops_443, splits: Iterable[c.Parameter]=c.splits,
                      title: Optional[str]=None,
                      saveto: Path | str=c.save_path/"scenarios.pdf") -> None:
     """
