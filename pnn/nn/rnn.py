@@ -6,7 +6,7 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.layers import GRU, Dense, Dropout, Input
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, History
 from tensorflow.keras.regularizers import l2
 from sklearn.preprocessing import MinMaxScaler
 
@@ -60,7 +60,7 @@ def build_rnn_mcd(input_shape: tuple, *, output_size: int=6,
 
 ### TRAINING
 def train_rnn_mcd(model: Model, X_train: np.ndarray, y_train: np.ndarray, *,
-                  epochs: int=1000, batch_size: int=512, learning_rate: float=0.001, validation_split: float=0.1) -> tuple[Model, np.ndarray]:
+                  epochs: int=1000, batch_size: int=512, learning_rate: float=0.001, validation_split: float=0.1) -> tuple[Model, History]:
     """
     Train an RNN Model on the provided X and y data, with early stopping.
     """
