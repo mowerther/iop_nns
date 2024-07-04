@@ -53,7 +53,7 @@ def build_rnn_mcd(input_shape: tuple, *, output_size: int=6,
                       activation=activation, kernel_regularizer=l2(l2_reg)))
 
     # Output layer: Adjust for 6 means and 6 variances (12 outputs in total)
-    model.add(Dense(output_size * 2, activation='linear'))
+    model.add(Dense(output_size * 2, activation="linear"))
 
     return model
 
@@ -91,12 +91,17 @@ def build_and_train_rnn_mcd(X_train: np.ndarray, y_train: np.ndarray) -> Model:
 
 
 ### APPLICATION
+@tf.function  # 4x Speed-up
+def predict_with_dropout(model, inputs, enable_dropout=True):
+    return model(inputs, training=enable_dropout)  # `training=True` just turns the dropout on, it does not affect the model parameters
+
+
 def predict_with_uncertainty(model: Model, X: np.ndarray, scaler_y: MinMaxScaler, *, n_samples=100):
     """
     Use the given model to predict y values for given X values, including the rescaling back to regular units.
     """
     # Generate predictions in scaled space
-    pred_samples = [model.predict(X, batch_size=32, verbose=0) for _ in range(n_samples)]
+    pred_samples = [predict_with_dropout(model, X, enable_dropout=True).numpy() for _ in range(n_samples)]
     pred_samples = np.array(pred_samples)
 
     N = scaler_y.n_features_in_  # Number of predicted values

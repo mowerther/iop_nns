@@ -26,3 +26,6 @@ X_train_reshaped, X_test_reshaped = pnn.nn.rnn.reshape_data(X_train, X_test)
 ### RNN TRAINING
 model = pnn.nn.rnn.build_and_train_rnn_mcd(X_train_reshaped, y_train_scaled)
 print("Trained model")
+
+# Testing
+mean_predictions, total_variance, aleatoric_variance, epistemic_variance, std_devs = pnn.nn.rnn.predict_with_uncertainty(model, X_test, scaler_y)
