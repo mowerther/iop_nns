@@ -22,3 +22,4 @@ X_train_reshaped, X_test_reshaped = pnn.nn.rnn.reshape_data(X_train, X_test)
 
 
 ### RNN TRAINING
+model = pnn.nn.rnn.build_and_train_rnn_mcd(X_train_reshaped, y_train_scaled)
