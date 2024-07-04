@@ -8,7 +8,7 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
 
-from .. import constants as c
+from .. import constants as c, metrics as m
 
 ### DATA HANDLING
 def extract_inputs_outputs(data: pd.DataFrame, *,
@@ -76,3 +76,31 @@ def nll_loss(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
     var = tf.nn.softplus(y_pred[:, N:])
 
     return tf.reduce_mean(0.5 * (tf.math.log(var) + (tf.square(y_true - mean) / var) + tf.math.log(2 * np.pi)))
+
+
+
+### ASSESSMENT
+def calculate_metrics(y_true, y_pred, *, columns: Iterable[str]=c.iops_names) -> pd.DataFrame:
+    """
+    Calculate the mean absolute percentage error (MAPE) and other metrics between true and predicted values.
+
+    Args:
+    - y_true: Actual values (numpy array).
+    - y_pred: Predicted values (numpy array).
+
+    Returns:
+    - DataFrame of metrics (MAPD, MAD, sspb, mdsa) for the predictions.
+    """
+    # Ensure y_true and y_pred are numpy arrays for element-wise operations
+    y_true = pd.DataFrame(y_true, columns=columns)
+    y_pred = pd.DataFrame(y_pred, columns=columns)
+
+    # Calculate metrics
+    metrics_combined = {"MAPE": m.mape(y_true, y_pred),
+                        "MAD": m.MAD(y_true, y_pred),
+                        "SSPB": m.sspb(y_true, y_pred),
+                        "MdSA": m.mdsa(y_true, y_pred)}
+
+    metrics_combined = pd.DataFrame(metrics_combined)
+
+    return metrics_combined

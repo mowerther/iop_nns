@@ -11,7 +11,6 @@ from tensorflow.keras.regularizers import l2
 from sklearn.preprocessing import MinMaxScaler
 
 from .common import nll_loss, inverse_scale_y
-from ..metrics import MAD, mape, mdsa, sspb
 
 
 ### DATA HANDLING
@@ -122,58 +121,6 @@ def predict_with_uncertainty(model: Model, X: np.ndarray, scaler_y: MinMaxScaler
 
     return mean_predictions, total_variance, aleatoric_variance, epistemic_variance, std_devs
 
-def calculate_metrics(y_true, y_pred):
-    """
-    Calculate the mean absolute percentage error (MAPE) and other metrics between true and predicted values.
-
-    Args:
-    - y_true: Actual values (numpy array).
-    - y_pred: Predicted values (numpy array).
-
-    Returns:
-    - Tuple of metrics (obs_cor, MAPD, MAD, sspb, mdsa) for the predictions.
-    """
-    # Ensure y_true and y_pred are numpy arrays for element-wise operations
-    y_true = pd.DataFrame(y_true)
-    y_pred = pd.DataFrame(y_pred)
-
-    # Calculate metrics assuming these functions are vectorized and can handle arrays
-    # Requires definition
-    mapd_values = mape(y_true, y_pred)
-    mad_values = MAD(y_true, y_pred)
-    sspb_values = sspb(y_true, y_pred)
-    mdsa_values = mdsa(y_true, y_pred)
-
-    # obs_cor is a scalar, all other values should be vectors of the same length as y_true/pred has columns
-    obs_cor = len(y_pred)
-
-    return obs_cor, mapd_values, mad_values, sspb_values, mdsa_values
-
-# Calculate metrics for each target variable and store them in a DataFrame
-def calculate_and_store_metrics(y_test, mean_preds, y_columns):
-    # Initialize a dictionary to hold the metrics
-    metrics_dict = {'obs_cor': []}
-    # Initialize keys for each metric with empty lists
-    for metric_name in ['MAPD', 'MAD', 'sspb', 'mdsa']:
-        metrics_dict[metric_name] = []
-
-    # Calculate metrics for each target variable
-    for i in range(y_test.shape[1]):
-        y_true = y_test[:, i]
-        y_pred = mean_preds[:, i]
-        obs_cor, mapd, mad, sspb, mdsa = calculate_metrics(y_true, y_pred)
-
-        # Append the scalar metrics
-        metrics_dict['obs_cor'].append(obs_cor)
-        metrics_dict['MAPD'].append(mapd)  # Assuming mapd is a scalar
-        metrics_dict['MAD'].append(mad)    # Assuming mad is a scalar
-        metrics_dict['sspb'].append(sspb)  # Assuming sspb is a scalar
-        metrics_dict['mdsa'].append(mdsa)  # Assuming mdsa is a scalar
-
-    # Create a DataFrame from the dictionary
-    metrics_df = pd.DataFrame(metrics_dict, index=y_columns)
-
-    return metrics_df
 
 def train_and_evaluate_models(X_train, y_train_scaled, X_test, y_test, y_columns, scaler_y,
                               input_shape, num_models=5):
