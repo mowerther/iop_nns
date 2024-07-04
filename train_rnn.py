@@ -16,7 +16,7 @@ X_train, y_train = pnn.nn.extract_inputs_outputs(data_train)
 X_test, y_test = pnn.nn.extract_inputs_outputs(data_test)
 
 # Rescale y data (log, minmax)
-y_train_scaled, y_test_scaled = pnn.nn.scale_y(y_train, y_test)
+y_train_scaled, y_test_scaled, scaler_y = pnn.nn.scale_y(y_train, y_test)
 print("Rescaled data")
 
 # RNN: reshape data

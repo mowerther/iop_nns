@@ -36,7 +36,31 @@ def scale_y(y_train: np.ndarray, y_test: np.ndarray, *,
     y_train_scaled = scaler_y.fit_transform(y_train_log)
     y_test_scaled = scaler_y.transform(y_test_log)
 
-    return y_train_scaled, y_test_scaled
+    return y_train_scaled, y_test_scaled, scaler_y
+
+
+def inverse_scale_y(mean_scaled: np.ndarray, variance_scaled: np.ndarray, scaler_y: MinMaxScaler) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Go back from log-minmax-scaled space to real units.
+    """
+    # Setup
+    N = scaler_y.n_features_in_  # Number of predicted values
+    original_shape = mean_scaled.shape
+
+    # Convert from scaled space to log space: Means
+    mean_scaled = mean_scaled.reshape(-1, N)
+    mean_log = scaler_y.inverse_transform(mean_scaled)
+    mean_log = mean_log.reshape(original_shape)
+
+    # Convert from scaled space to log space: Variance
+    scaling_factor = (scaler_y.data_max_ - scaler_y.data_min_) / 2
+    variance_log = variance_scaled * (scaling_factor**2)  # Uncertainty propagation for linear equations
+
+    # Convert from log space to the original space, i.e. actual IOPs in [m^-1]
+    mean = np.exp(mean_log)  # Geometric mean / median
+    variance = np.exp(2*mean_log + variance_log) * (np.exp(variance_log) - 1)  # Arithmetic variance
+
+    return mean, variance
 
 
 ### TRAINING

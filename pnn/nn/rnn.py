@@ -8,8 +8,9 @@ from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.layers import GRU, Dense, Dropout, Input
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.regularizers import l2
+from sklearn.preprocessing import MinMaxScaler
 
-from .common import nll_loss
+from .common import nll_loss, inverse_scale_y
 from ..metrics import MAD, mape, mdsa, sspb
 
 
@@ -90,36 +91,29 @@ def build_and_train_rnn_mcd(X_train: np.ndarray, y_train: np.ndarray) -> Model:
 
 
 ### APPLICATION
-def predict_with_uncertainty(model, X, scaler_y, n_samples=100):
-
+def predict_with_uncertainty(model: Model, X: np.ndarray, scaler_y: MinMaxScaler, *, n_samples=100):
+    """
+    Use the given model to predict y values for given X values, including the rescaling back to regular units.
+    """
     # Generate predictions in scaled space
     pred_samples = [model.predict(X, batch_size=32, verbose=0) for _ in range(n_samples)]
     pred_samples = np.array(pred_samples)
 
-    mean_predictions_scaled = pred_samples[:, :, :6]
-    raw_variances_scaled = pred_samples[:, :, 6:]
-    variances_scaled = tf.nn.softplus(raw_variances_scaled)
+    N = scaler_y.n_features_in_  # Number of predicted values
+    mean_predictions_scaled = pred_samples[..., :N]
+    raw_variances_scaled = pred_samples[..., N:]
+    variance_predictions_scaled = tf.nn.softplus(raw_variances_scaled)
 
     # Convert from scaled space to log space
-    original_shape = mean_predictions_scaled.shape
-    mean_predictions_scaled = mean_predictions_scaled.reshape(-1, 6)
-    mean_predictions_log = scaler_y.inverse_transform(mean_predictions_scaled)
-    mean_predictions_log = mean_predictions_log.reshape(original_shape)
-
-    scaling_factor = (scaler_y.data_max_ - scaler_y.data_min_) / 2  # Inverse of the log
-    variances_log = variances_scaled * (scaling_factor**2)  # Uncertainty propagation for linear equations
-
-    # Convert from log space to the original space, i.e. actual IOPs in [m^-1]
-    mean_predictions = np.exp(mean_predictions_log)  # Geometric mean / median
-    variances = np.exp(2*mean_predictions_log + variances_log) * (np.exp(variances_log) - 1)  # Arithmetic variance
+    mean_predictions, variance_predictions = inverse_scale_y(mean_predictions_scaled, variance_predictions_scaled, scaler_y)
 
     # Calculate aleatoric and epistemic variance in the original space
-    aleatoric_variance = np.mean(variances, axis=0)
+    aleatoric_variance = np.mean(variance_predictions, axis=0)
     epistemic_variance = np.var(mean_predictions, axis=0)
     total_variance = aleatoric_variance + epistemic_variance
     std_devs = np.sqrt(total_variance)
 
-    mean_predictions = np.mean(mean_predictions, axis=0)
+    mean_predictions = np.mean(mean_predictions, axis=0)  # Average over n_samples
 
     return mean_predictions, total_variance, aleatoric_variance, epistemic_variance, std_devs
 
