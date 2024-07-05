@@ -63,6 +63,7 @@ def inverse_scale_y(mean_scaled: np.ndarray, variance_scaled: np.ndarray, scaler
     return mean, variance
 
 
+
 ### TRAINING
 def nll_loss(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
     """
@@ -96,10 +97,10 @@ def calculate_metrics(y_true, y_pred, *, columns: Iterable[str]=c.iops_names) ->
     y_pred = pd.DataFrame(y_pred, columns=columns)
 
     # Calculate metrics
-    metrics_combined = {"MAPE": m.mape(y_true, y_pred),
-                        "MAD": m.MAD(y_true, y_pred),
+    metrics_combined = {"MdSA": m.mdsa(y_true, y_pred),
                         "SSPB": m.sspb(y_true, y_pred),
-                        "MdSA": m.mdsa(y_true, y_pred),
+                        "MAD": m.MAD(y_true, y_pred),
+                        "MAPE": m.mape(y_true, y_pred),
                         "r_squared": m.r_squared(y_true, y_pred),
                         "log_r_squared": m.log_r_squared(y_true, y_pred),}
 

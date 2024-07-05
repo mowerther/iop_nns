@@ -27,6 +27,16 @@ X_train_reshaped, X_test_reshaped = pnn.nn.rnn.reshape_data(X_train, X_test)
 best_model, model_metrics = pnn.nn.rnn.train_and_evaluate_models(X_train_reshaped, y_train_scaled, X_test_reshaped, y_test, scaler_y)
 print("Trained models.")
 
+# Sanity check
+mdsa_all = model_metrics[["MdSA"]].unstack()
+print()
+print("MdSA values for all models:")
+print(mdsa_all.to_string())
+print()
+
+# Save model to file
+pass
+
 # Save metrics to file
 pass
 
@@ -40,5 +50,8 @@ pass
 
 # Sanity check
 mean_metrics = pnn.nn.calculate_metrics(y_test, mean_predictions)
+print()
 print("Mean prediction metrics for best-performing model:")
 print(mean_metrics)
+print("(Note that these may differ from the overall table due to dropout randomisation)")
+print()

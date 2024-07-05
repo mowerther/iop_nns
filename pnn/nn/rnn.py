@@ -161,7 +161,7 @@ def train_and_evaluate_models(X_train: np.ndarray, y_train_scaled: np.ndarray, X
 
         print("\n\n")
 
-    all_metrics = pd.concat({i+1: df for i, df in enumerate(all_metrics)}).reorder_levels((1, 0))  # Probably not the most efficient way
+    all_metrics = pd.concat({i+1: df for i, df in enumerate(all_metrics)}, names=["model", "variable"])
 
     return best_overall_model, all_metrics
 
