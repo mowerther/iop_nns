@@ -69,3 +69,6 @@ print()
 print("Mean prediction metrics for best-performing model:")
 print(mean_metrics)
 print("(Note that these may differ from the overall table due to dropout randomisation)")
+
+pnn.nn.scatterplot(y_test, mean_predictions)
+pnn.nn.uncertainty_histogram(mean_predictions, total_variance, aleatoric_variance, epistemic_variance)

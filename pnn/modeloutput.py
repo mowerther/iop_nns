@@ -51,9 +51,9 @@ def calculate_aleatoric_fraction(df: pd.DataFrame, *,
                                  aleatoric_key: str=c.ale_var, total_key: str=c.total_var,
                                  fraction_key: str=c.ale_frac.name) -> pd.DataFrame:
     """
-    Calculate what fraction of the total variance consists of aleatoric variance.
+    Calculate what fraction (in %) of the total variance consists of aleatoric variance.
     """
-    fraction = df.loc[aleatoric_key] / df.loc[total_key]
+    fraction = df.loc[aleatoric_key] / df.loc[total_key] * 100
     result = pd.concat({fraction_key: fraction}, names=["category"])
     return result
 
