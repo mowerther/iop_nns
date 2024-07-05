@@ -1,6 +1,8 @@
 """
 Recurrent Neural Network with Gated Recurrent Units and Monte Carlo Dropout (RNN MCD).
 """
+from typing import Iterable
+
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -10,7 +12,8 @@ from tensorflow.keras.callbacks import EarlyStopping, History
 from tensorflow.keras.regularizers import l2
 from sklearn.preprocessing import MinMaxScaler
 
-from .common import nll_loss, inverse_scale_y
+from .common import calculate_metrics, inverse_scale_y, nll_loss
+from .. import constants as c
 
 
 ### DATA HANDLING
@@ -37,6 +40,7 @@ def build_rnn_mcd(input_shape: tuple, *, output_size: int=6,
     """
     Construct an RNN with MCD based on the input parameters.
     To do: use functools.partial for GRU?
+    To do: relu or tanh?
     """
     model = Sequential()
     model.add(Input(shape=input_shape))
@@ -122,64 +126,47 @@ def predict_with_uncertainty(model: Model, X: np.ndarray, scaler_y: MinMaxScaler
     return mean_predictions, total_variance, aleatoric_variance, epistemic_variance, std_devs
 
 
-def train_and_evaluate_models(X_train, y_train_scaled, X_test, y_test, y_columns, scaler_y,
-                              input_shape, num_models=5):
-
-    all_models = []
-    all_mdsa = []
+def train_and_evaluate_models(X_train: np.ndarray, y_train_scaled: np.ndarray, X_test: np.ndarray, y_test: np.ndarray, scaler_y: MinMaxScaler, *,
+                              n_models: int=10, n_samples: int=100, mdsa_columns: Iterable[str]=c.iops_443) -> tuple[Model, pd.DataFrame]:
+    """
+    Train and evaluate a model, `n_models` times, then pick the best one based on the MdSA from a comparison on the testing data.
+    Returns the best model and a DataFrame with the metrics of all models, for comparison purposes.
+    """
+    all_models, all_metrics = [], []
 
     best_overall_model = None
-    min_total_mdsa = float('inf')
-    best_model_index = -1
+    best_mdsa = np.inf
 
-    for i in range(num_models):
-        # activation: relu here, but I think it should be actually tanh.
-        model = build_rnn_mcd(input_shape, activation='relu')
-        # Train the model
-        model, history = train_rnn_mcd(model, X_train, y_train_scaled)
+    for i in range(n_models):
+        label = f"{i+1}/{n_models}"
 
-        print('Calculating mean_preds.')
-        mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = predict_with_uncertainty(model, X_test, scaler_y, n_samples=100)
-
-        print(f'Model {i+1}/{num_models}: Completed prediction with uncertainty.')
-
-        print('Completed predict with uncertainty.')
-
-        # Temporary line for testing
-        # return model, scaler_y, mean_preds, total_var, aleatoric_var, epistemic_var, std_preds
-
-        print('Calculating metrics.')
-        metrics_df = calculate_and_store_metrics(y_test, mean_preds, y_columns)
-
+        # Train model
+        model = build_and_train_rnn_mcd(X_train, y_train_scaled)
         all_models.append(model)
-        all_mdsa.append(metrics_df['mdsa'].values)
+        print(f"Model {label}: Finished training.")
 
-        total_mdsa = metrics_df.loc[['aCDOM_443', 'aNAP_443', 'aph_443'], 'mdsa'].sum().sum()  # Sum the mdsa of the specified variables
-        if total_mdsa < min_total_mdsa:
-            min_total_mdsa = total_mdsa
+        # Assess model
+        mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = predict_with_uncertainty(model, X_test, scaler_y, n_samples=n_samples)
+        print(f"Model {label}: Finished prediction.")
+
+        metrics_df = calculate_metrics(y_test, mean_preds)
+        all_metrics.append(metrics_df)
+        print(f"Model {label}: Calculated performance metrics.")
+
+        evaluation_mdsa = metrics_df.loc[mdsa_columns, "MdSA"].mean()  # Average the MdSA of the specified variables
+        if evaluation_mdsa < best_mdsa:
+            best_mdsa = evaluation_mdsa
             best_overall_model = model
-            best_model_index = i
+            print(f"Model {label} is the new best model (mean MdSA: {evaluation_mdsa:.0f}%).")
 
-    mdsa_df = pd.DataFrame(all_mdsa, columns=y_columns)
+        print("\n\n")
 
-    print(f'The best model index is: {best_model_index}')
+    all_metrics = pd.concat({i+1: df for i, df in enumerate(all_metrics)}).reorder_levels((1, 0))  # Probably not the most efficient way
 
-    return best_overall_model, best_model_index, mdsa_df
+    return best_overall_model, all_metrics
 
 #### Execution starts here:
 if __name__ == "__main__":
-    # Call - train 5 models
-    best_model, best_model_index, mdsa_df = train_and_evaluate_models(X_train_reshaped, y_train_scaled, X_test, y_test, y_columns,scaler_y=scaler_y, input_shape = (n_timesteps, n_features_per_timestep), num_models=5)
-
-    # model, scaler_y, mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = train_and_evaluate_models(X_train_reshaped, y_train_scaled, X_test, y_test, y_columns,scaler_y=scaler_y, input_shape = (n_timesteps, n_features_per_timestep), num_models=1)
-    # raise Exception
-
-    # inspect: mdsa_df, mdsa_df.std() etc. - can also save the best_model or use it to make predictions for plotting etc.
-
-    mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = predict_with_uncertainty(best_model, X_test, scaler_y, n_samples=30)
-    metrics_df = calculate_and_store_metrics(y_test, mean_preds, y_columns)
-    print(metrics_df)
-
     import matplotlib.pyplot as plt
     import numpy as np
     from scipy.stats import linregress
