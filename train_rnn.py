@@ -44,11 +44,11 @@ mdsa_all = model_metrics[["MdSA"]].unstack()
 print()
 print("MdSA values for all models:")
 print(mdsa_all.to_string())
-print()
 
 # Save metrics to file
 saveto_metrics = pnn.pred_path/f"{tag}_metrics_10_networks.csv"
 model_metrics.to_csv(saveto_metrics)
+print()
 print(f"All model metrics saved to {saveto_metrics.absolute()}")
 
 
@@ -58,7 +58,8 @@ mean_predictions, total_variance, aleatoric_variance, epistemic_variance, std_de
 
 # Save predictions to file
 saveto_preds = pnn.pred_path/f"{tag}_preds.csv"
-pass
+pnn.modeloutput.save_model_outputs(y_test, mean_predictions, total_variance, aleatoric_variance, epistemic_variance, saveto_preds)
+print()
 print(f"Best model predictions saved to {saveto_preds.absolute()}")
 
 # Sanity check
@@ -67,4 +68,3 @@ print()
 print("Mean prediction metrics for best-performing model:")
 print(mean_metrics)
 print("(Note that these may differ from the overall table due to dropout randomisation)")
-print()
