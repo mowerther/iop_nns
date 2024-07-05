@@ -7,7 +7,8 @@ import pandas as pd
 
 from . import constants as c
 
-rename_org = {"org_aph_443": "aph_443", "org_anap_443": "aNAP_443", "org_acdom_443": "aCDOM_443"}
+rename_org = {"org_aph_443": "aph_443", "org_anap_443": "aNAP_443", "org_acdom_443": "aCDOM_443",
+              "org_aph_675": "aph_675", "org_anap_675": "aNAP_675", "org_acdom_675": "aCDOM_675",}
 def read_all_data(folder: Path | str=c.data_path) -> tuple[pd.DataFrame]:
     """
     Read all split data from a given folder into a number of DataFrames.
