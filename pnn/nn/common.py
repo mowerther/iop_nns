@@ -65,6 +65,7 @@ def inverse_scale_y(mean_scaled: np.ndarray, variance_scaled: np.ndarray, scaler
 
 
 ### TRAINING
+@tf.keras.utils.register_keras_serializable()  # Enables saving/loading models with this custom loss function
 def nll_loss(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
     """
     Negative Log Likelihood (NLL) loss function.
