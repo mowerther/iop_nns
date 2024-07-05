@@ -25,7 +25,7 @@ X_train_reshaped, X_test_reshaped = pnn.nn.rnn.reshape_data(X_train, X_test)
 ### TRAINING
 # Train multiple models and select the best one
 best_model, model_metrics = pnn.nn.rnn.train_and_evaluate_models(X_train_reshaped, y_train_scaled, X_test_reshaped, y_test, scaler_y)
-print("Trained model.")
+print("Trained models.")
 
 # Save metrics to file
 pass
