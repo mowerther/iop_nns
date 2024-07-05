@@ -85,8 +85,8 @@ epi_unc = Parameter("epi_unc", f"Epistemic uncertainty [{m1}]", cmap_aleatoric_f
 epi_unc_pct = Parameter("epi_unc_pct", "Epistemic uncertainty [%]", cmap_aleatoric_fraction.colors[2], vmin=0, vmax=20)
 
 total_var = Parameter("total_var", f"Total variance [{m2}]", "black", vmin=0)
-total_unc = Parameter("std_dev", f"Total uncertainty [{m1}]", "black", vmin=0)
-total_unc_pct = Parameter("std_dev_pct", "Total uncertainty [%]", "black", vmin=0, vmax=100)
+total_unc = Parameter("total_unc", f"Total uncertainty [{m1}]", "black", vmin=0)
+total_unc_pct = Parameter("total_unc_pct", "Total uncertainty [%]", "black", vmin=0, vmax=100)
 
 ale_frac = Parameter("ale_frac", "Aleatoric fraction", cmap=cmap_aleatoric_fraction, vmin=0, vmax=1)
 

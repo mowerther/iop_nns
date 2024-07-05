@@ -13,8 +13,9 @@ test_sets = [test_set_random, test_set_wd, test_set_ood]
 print("Loaded data.")
 
 # Select scenario - will be a for-loop soon
-scenario = pnn.splits[0]
-data_train, data_test = train_set_random, test_set_random
+j = 0
+scenario = pnn.splits[j]
+data_train, data_test = train_sets[j], test_sets[j]
 tag = f"{nn_type}_{scenario}"
 
 # Select Rrs values in 5 nm steps, IOP columns

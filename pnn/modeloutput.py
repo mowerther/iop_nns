@@ -14,7 +14,7 @@ LEVEL_ORDER_SINGLE = ["category", "instance"]
 
 
 ### LOADING / PROCESSING DATA
-def variance_to_uncertainty(df: pd.DataFrame, *, input_keys: Iterable[str]=[c.ale_var, c.epi_var]) -> pd.DataFrame:
+def variance_to_uncertainty(df: pd.DataFrame, *, input_keys: Iterable[str]=c.uncertainties) -> pd.DataFrame:
     """
     Calculate the uncertainty corresponding to variances in the given dataframe.
     Default: aleatoric (ale_var -> ale_unc) and epistemic (epi_var -> epi_unc).
@@ -26,7 +26,7 @@ def variance_to_uncertainty(df: pd.DataFrame, *, input_keys: Iterable[str]=[c.al
 
 
 def calculate_percentage_uncertainty(df: pd.DataFrame, *,
-                                     reference_key: str=c.y_pred, uncertainty_keys: Iterable[str]=[c.total_unc, c.ale_unc, c.epi_unc]) -> pd.DataFrame:
+                                     reference_key: str=c.y_pred, uncertainty_keys: Iterable[str]=c.uncertainties) -> pd.DataFrame:
     """
     Calculates the percentage uncertainty (total, aleatoric, epistemic) relative to the scaled prediction.
 
@@ -66,11 +66,11 @@ def save_model_outputs(y_true: np.ndarray, mean_predictions: np.ndarray, total_v
     # Combine data
     data_combined = {c.y_true: y_true,
                      c.y_pred: mean_predictions,
-                     c.total_var.name: total_variance,
-                     c.ale_var.name: aleatoric_variance,
-                     c.epi_var.name: epistemic_variance,}
+                     c.total_var: total_variance,
+                     c.ale_var: aleatoric_variance,
+                     c.epi_var: epistemic_variance,}
 
-    data_combined = {key: pd.DataFrame(arr, columns=columns) for key, arr in data_combined.items()}
+    data_combined = {str(key): pd.DataFrame(arr, columns=columns) for key, arr in data_combined.items()}
     data_combined = pd.concat(data_combined, names=LEVEL_ORDER_SINGLE)
 
     # Save
