@@ -1,9 +1,17 @@
 """
-Script for loading data and training a Recurrent Neural Network (RNN).
+Script for loading data and training a neural network.
 Trains N networks, evaluates them, and saves their outputs.
+
+Selects the type of network from the first argument: [bnn_mcd, rnn]
+Example:
+    python train_nn.py bnn_mcd
 """
+from sys import argv
 import pnn
-nn_type = pnn.rnn
+
+# Select NN type
+nn_type = argv[1]
+nn = pnn.nn.select_nn(nn_type)
 
 ### LOAD DATA
 # Load from file
@@ -27,7 +35,7 @@ for scenario, data_train, data_test in zip(pnn.splits, train_sets, test_sets):
 
     ### TRAINING
     # Train multiple models and select the best one
-    best_model, model_metrics = pnn.nn.rnn.train_and_evaluate_models(X_train, y_train_scaled, X_test, y_test, scaler_y)
+    best_model, model_metrics = nn.train_and_evaluate_models(X_train, y_train_scaled, X_test, y_test, scaler_y)
     print("Trained models.")
 
     # Save model to file
@@ -50,7 +58,7 @@ for scenario, data_train, data_test in zip(pnn.splits, train_sets, test_sets):
 
     ### ASSESSMENT
     # Apply model to test data
-    mean_predictions, total_variance, aleatoric_variance, epistemic_variance = pnn.nn.rnn.predict_with_uncertainty(best_model, X_test, scaler_y)
+    mean_predictions, total_variance, aleatoric_variance, epistemic_variance = nn.predict_with_uncertainty(best_model, X_test, scaler_y)
 
     # Save predictions to file
     saveto_preds = pnn.pred_path/f"{tag}_preds.csv"

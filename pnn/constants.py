@@ -57,8 +57,8 @@ class Parameter:
 
 ### NETWORKS
 mdn = Parameter("mdn", "MDN", "#994455")
-bnn_dropconnect = Parameter("bnn_dropcon", "BNN DC", "#997700")
-bnn_mcd = Parameter("bnn_mcd", "BNN MCD", "#6699CC")
+bnn_dropconnect = Parameter("bnn_dropcon", "BNN-DC", "#997700")
+bnn_mcd = Parameter("bnn_mcd", "BNN-MCD", "#6699CC")
 ensemble = Parameter("ens_nn", "ENN", "#EE99AA")
 rnn = Parameter("rnn", "RNN", "#EECC66")
 
