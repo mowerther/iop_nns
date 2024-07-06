@@ -50,7 +50,7 @@ for scenario, data_train, data_test in zip(pnn.splits, train_sets, test_sets):
 
     ### ASSESSMENT
     # Apply model to test data
-    mean_predictions, total_variance, aleatoric_variance, epistemic_variance, std_devs = pnn.nn.rnn.predict_with_uncertainty(best_model, X_test, scaler_y)
+    mean_predictions, total_variance, aleatoric_variance, epistemic_variance = pnn.nn.rnn.predict_with_uncertainty(best_model, X_test, scaler_y)
 
     # Save predictions to file
     saveto_preds = pnn.pred_path/f"{tag}_preds.csv"

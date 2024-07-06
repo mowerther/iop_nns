@@ -1,2 +1,2 @@
-from . import rnn
+from . import bnn_mcd, rnn
 from .common import *

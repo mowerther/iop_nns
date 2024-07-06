@@ -1,12 +1,14 @@
 """
 Functions etc. to be shared between network architectures, e.g. loss functions.
 """
-from typing import Iterable, Optional
+from typing import Callable, Iterable, Optional
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from matplotlib import pyplot as plt
+from tensorflow.keras.callbacks import EarlyStopping, History
+from tensorflow.keras.models import Model
 from sklearn.preprocessing import MinMaxScaler
 
 from .. import constants as c, metrics as m, modeloutput as mo
@@ -79,6 +81,108 @@ def nll_loss(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
     var = tf.nn.softplus(y_pred[:, N:])
 
     return tf.reduce_mean(0.5 * (tf.math.log(var) + (tf.square(y_true - mean) / var) + tf.math.log(2 * np.pi)))
+
+
+def _train_general(model: Model, X_train: np.ndarray, y_train: np.ndarray, *,
+                   epochs: int=1000, batch_size: int=32, learning_rate: float=0.001, validation_split: float=0.1) -> tuple[Model, History]:
+    """
+    Train a general Model on the provided X and y data, with early stopping.
+    """
+    # Setup
+    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+    early_stopping = EarlyStopping(monitor="val_loss", patience=80, verbose=1, mode="min", restore_best_weights=True)
+
+    # Training
+    model.compile(optimizer=optimizer, loss=nll_loss)
+    history = model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, validation_split=validation_split, callbacks=[early_stopping])
+
+    return model, history
+
+
+def _build_and_train_general(build: Callable, train: Callable, X_train: np.ndarray, y_train: np.ndarray) -> Model:
+    """
+    Build and train a model on the provided X and y data, with early stopping.
+    Convenience function combining the build and train functions.
+    """
+    # Setup
+    input_shape = X_train.shape[1:]
+    output_size = y_train.shape[-1]
+
+    model = build(input_shape, output_size=output_size)
+    model, history = train(model, X_train, y_train)
+
+    return model
+
+
+### APPLICATION
+@tf.function  # 4x Speed-up
+def predict_with_dropout(model: Model, inputs: np.ndarray, *, enable_dropout=True):
+    return model(inputs, training=enable_dropout)  # `training=True` just turns the dropout on, it does not affect the model parameters
+
+
+def _predict_with_uncertainty_general(predict_samples: Callable, model: Model, X: np.ndarray, scaler_y: MinMaxScaler, *, n_samples=100):
+    """
+    Use the given model to predict y values for given X values, including the rescaling back to regular units.
+    """
+    # Generate predictions in scaled space
+    pred_samples = predict_samples(model, X, n_samples=n_samples)
+
+    N = scaler_y.n_features_in_  # Number of predicted values
+    mean_predictions_scaled = pred_samples[..., :N]
+    raw_variances_scaled = pred_samples[..., N:]
+    variance_predictions_scaled = tf.nn.softplus(raw_variances_scaled)
+
+    # Convert from scaled space to log space
+    mean_predictions, variance_predictions = inverse_scale_y(mean_predictions_scaled, variance_predictions_scaled, scaler_y)
+
+    # Calculate aleatoric and epistemic variance in the original space
+    aleatoric_variance = np.mean(variance_predictions, axis=0)
+    epistemic_variance = np.var(mean_predictions, axis=0)
+    total_variance = aleatoric_variance + epistemic_variance
+
+    mean_predictions = np.mean(mean_predictions, axis=0)  # Average over n_samples
+
+    return mean_predictions, total_variance, aleatoric_variance, epistemic_variance
+
+
+def _train_and_evaluate_models_general(build_and_train: Callable, predict_with_uncertainty: Callable, X_train: np.ndarray, y_train_scaled: np.ndarray, X_test: np.ndarray, y_test: np.ndarray, scaler_y: MinMaxScaler, *,
+                                       n_models: int=10, mdsa_columns: Iterable[str]=c.iops_443, **predict_kwargs) -> tuple[Model, pd.DataFrame]:
+    """
+    Train and evaluate a model, `n_models` times, then pick the best one based on the MdSA from a comparison on the testing data.
+    Returns the best model and a DataFrame with the metrics of all models, for comparison purposes.
+    """
+    all_models, all_metrics = [], []
+
+    best_overall_model = None
+    best_mdsa = np.inf
+
+    for i in range(n_models):
+        label = f"{i+1}/{n_models}"
+
+        # Train model
+        model = build_and_train(X_train, y_train_scaled)
+        all_models.append(model)
+        print(f"Model {label}: Finished training.")
+
+        # Assess model
+        mean_preds, total_var, aleatoric_var, epistemic_var = predict_with_uncertainty(model, X_test, scaler_y, **predict_kwargs)
+        print(f"Model {label}: Finished prediction.")
+
+        metrics_df = calculate_metrics(y_test, mean_preds)
+        all_metrics.append(metrics_df)
+        print(f"Model {label}: Calculated performance metrics.")
+
+        evaluation_mdsa = metrics_df.loc[mdsa_columns, "MdSA"].mean()  # Average the MdSA of the specified variables
+        if evaluation_mdsa < best_mdsa:
+            best_mdsa = evaluation_mdsa
+            best_overall_model = model
+            print(f"Model {label} is the new best model (mean MdSA: {evaluation_mdsa:.0f}%).")
+
+        print("\n\n")
+
+    all_metrics = pd.concat({i+1: df for i, df in enumerate(all_metrics)}, names=["model", "variable"])
+
+    return best_overall_model, all_metrics
 
 
 
