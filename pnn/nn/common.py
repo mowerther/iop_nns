@@ -147,7 +147,8 @@ def scatterplot(y_true: np.ndarray, mean_predictions: np.ndarray, *, labels: Ite
     plt.close()
 
 
-def uncertainty_histogram(mean_predictions: np.ndarray, total_variance: np.ndarray, aleatoric_variance: np.ndarray, epistemic_variance: np.ndarray) -> None:
+def uncertainty_histogram(mean_predictions: np.ndarray, total_variance: np.ndarray, aleatoric_variance: np.ndarray, epistemic_variance: np.ndarray, *,
+                          title: Optional[str]=None) -> None:
     """
     Make a quick histogram of the various uncertainties to check them.
     Not saved to file.
