@@ -1,7 +1,7 @@
 """
 Recurrent Neural Network with Gated Recurrent Units and Monte Carlo Dropout (RNN MCD).
 """
-from typing import Iterable
+from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
@@ -17,21 +17,23 @@ from .. import constants as c
 
 
 ### DATA HANDLING
-def reshape_data(X_train: np.ndarray, X_test: np.ndarray, *, n_features_per_timestep: int=1) -> tuple[np.ndarray, np.ndarray]:
+def reshape_data(X_train: np.ndarray, *, X_test: Optional[np.ndarray]=None, n_features_per_timestep: int=1) -> tuple[np.ndarray, np.ndarray]:
     """
     Reshape data for the RNN, adding a timestep axis.
     """
     # Calculate the number of wavelength steps and features
     n_samples_train, n_features = X_train.shape
-    n_samples_test, _ = X_test.shape  # We already know the features count
-
     n_timesteps = n_features // n_features_per_timestep  # Here: One wavelength per step
 
     # Reshape data
     X_train_reshaped = X_train.reshape((n_samples_train, n_timesteps, n_features_per_timestep))
-    X_test_reshaped = X_test.reshape((n_samples_test, n_timesteps, n_features_per_timestep))
+    if X_test is not None:
+        n_samples_test, _ = X_test.shape  # We already know the features count
+        X_test_reshaped = X_test.reshape((n_samples_test, n_timesteps, n_features_per_timestep))
 
-    return X_train_reshaped, X_test_reshaped
+        return X_train_reshaped, X_test_reshaped
+    else:
+        return X_train_reshaped
 
 
 ### ARCHITECTURE
@@ -84,6 +86,7 @@ def build_and_train_rnn_mcd(X_train: np.ndarray, y_train: np.ndarray) -> Model:
     Convenience function combining the build and train functions.
     """
     # Setup
+    X_train = reshape_data(X_train)
     input_shape = X_train.shape[1:]
     output_size = y_train.shape[-1]
 

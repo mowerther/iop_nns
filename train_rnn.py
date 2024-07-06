@@ -13,7 +13,7 @@ test_sets = [test_set_random, test_set_wd, test_set_ood]
 print("Loaded data.")
 
 # Select scenario - will be a for-loop soon
-j = 0
+j = 2
 scenario = pnn.splits[j]
 data_train, data_test = train_sets[j], test_sets[j]
 tag = f"{nn_type}_{scenario}"
@@ -25,10 +25,6 @@ X_test, y_test = pnn.nn.extract_inputs_outputs(data_test)
 # Rescale y data (log, minmax)
 y_train_scaled, y_test_scaled, scaler_y = pnn.nn.scale_y(y_train, y_test)
 print("Rescaled data.")
-
-# RNN: reshape data
-X_train_reshaped, X_test_reshaped = pnn.nn.rnn.reshape_data(X_train, X_test)
-
 
 ### TRAINING
 # Train multiple models and select the best one
@@ -70,5 +66,5 @@ print("Mean prediction metrics for best-performing model:")
 print(mean_metrics)
 print("(Note that these may differ from the overall table due to dropout randomisation)")
 
-pnn.nn.scatterplot(y_test, mean_predictions)
-pnn.nn.uncertainty_histogram(mean_predictions, total_variance, aleatoric_variance, epistemic_variance)
+pnn.nn.scatterplot(y_test, mean_predictions, title=tag)
+pnn.nn.uncertainty_histogram(mean_predictions, total_variance, aleatoric_variance, epistemic_variance, title=tag)

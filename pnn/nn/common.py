@@ -1,7 +1,7 @@
 """
 Functions etc. to be shared between network architectures, e.g. loss functions.
 """
-from typing import Iterable
+from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
@@ -111,7 +111,7 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray, *, columns: Iterab
     return metrics_combined
 
 
-def scatterplot(y_true: np.ndarray, mean_predictions: np.ndarray, *, labels: Iterable[str]=c.iops) -> None:
+def scatterplot(y_true: np.ndarray, mean_predictions: np.ndarray, *, labels: Iterable[str]=c.iops, title: Optional[str]=None) -> None:
     """
     Make a quick scatter plot of the different variables.
     Not saved to file.
@@ -140,6 +140,7 @@ def scatterplot(y_true: np.ndarray, mean_predictions: np.ndarray, *, labels: Ite
     axs[0].set_yscale(scale)
     axs[0].set_xlim(*lims)
     axs[0].set_ylim(*lims)
+    fig.suptitle(title)
 
     # Show
     plt.show()
@@ -171,6 +172,7 @@ def uncertainty_histogram(mean_predictions: np.ndarray, total_variance: np.ndarr
     axs[1].set_xlabel(c.total_unc_pct.label)
     axs[2].set_xlabel(c.ale_unc_pct.label)
     axs[3].set_xlabel(c.epi_unc_pct.label)
+    fig.suptitle(title)
 
     # Show
     plt.show()
