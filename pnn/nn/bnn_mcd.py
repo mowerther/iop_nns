@@ -17,7 +17,7 @@ from .. import constants as c
 
 ### ARCHITECTURE
 def build(input_shape: tuple, *, output_size: int=6,
-          hidden_units: int=50, n_layers: int=5, dropout_rate: float=0.25, l2_reg: float=1e-3, activation="relu") -> Model:
+          hidden_units: int=100, n_layers: int=5, dropout_rate: float=0.25, l2_reg: float=1e-3, activation="relu") -> Model:
     """
     Construct a BNN with MCD based on the input parameters.
     """
