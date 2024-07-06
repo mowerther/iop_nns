@@ -2,7 +2,7 @@
 Script for loading data and training a neural network.
 Trains N networks, evaluates them, and saves their outputs.
 
-Selects the type of network from the first argument: [bnn_mcd, rnn]
+Selects the type of network from the first argument: [bnn_dc, bnn_mcd, rnn]
 Example:
     python train_nn.py bnn_mcd
 """
