@@ -56,9 +56,10 @@ class BasePNN:
 
 
     def train(self, X_train: np.ndarray, y_train: np.ndarray, *,
-              epochs: int=1000, batch_size: int=32, learning_rate: float=0.001, validation_split: float=0.1) -> None:
+              epochs: int=1000, batch_size: int=32, learning_rate: float=0.001, validation_split: float=0.1, **kwargs) -> None:
         """
         Train on the provided X and y data, with early stopping.
+        **kwargs are passed to self.model.fit.
         """
         # Setup
         optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
@@ -66,7 +67,7 @@ class BasePNN:
 
         # Training
         self.model.compile(optimizer=optimizer, loss=nll_loss)
-        history = self.model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, validation_split=validation_split, callbacks=[early_stopping])
+        history = self.model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, validation_split=validation_split, callbacks=[early_stopping], **kwargs)
 
 
     @classmethod
