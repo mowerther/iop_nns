@@ -128,7 +128,7 @@ def plot_data_splits(*datasets: tuple[pd.DataFrame],
 def plot_performance_scatter_single(df: pd.DataFrame, *,
                                     columns: Iterable[c.Parameter]=c.iops, rows: Iterable[c.Parameter]=[c.total_unc_pct, c.ale_frac],
                                     title: Optional[str]=None,
-                                    saveto: Path | str="scatterplot.png") -> None:
+                                    saveto: Path | str="scatterplot.pdf") -> None:
     """
     Plot one DataFrame with y, y_hat, with total uncertainty (top) or aleatoric fraction (bottom) as colour.
     """
@@ -144,15 +144,7 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
         for ax, iop in zip(ax_row, columns):
             # Plot data per panel
             im = ax.scatter(df.loc[c.y_true, iop], df.loc[c.y_pred, iop], c=df.loc[uncertainty, iop],
-                            alpha=0.7, cmap=uncertainty.cmap, vmin=uncertainty.vmin, vmax=uncertainty.vmax)
-
-            # Perform and plot linear regression per panel
-            # y, y_hat = np.log(df.loc[c.y_true, iop]), np.log(df.loc[c.y_pred, iop])
-            # y, y_hat = df.loc[c.y_true, iop], df.loc[c.y_pred, iop]
-            # slope, intercept = np.polyfit(y, y_hat, 1, w=1+np.log10(y))
-            # xp = np.array(lims)
-            # yp = intercept + slope * xp
-            # ax.plot(xp, yp, color="black", linestyle="--")
+                            rasterized=True, alpha=0.7, cmap=uncertainty.cmap, vmin=uncertainty.vmin, vmax=uncertainty.vmax)
 
         # Color bar per row
         cb = fig.colorbar(im, ax=ax_row[-1], label=uncertainty.label)
@@ -164,22 +156,6 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
         # ax.set_aspect("equal")
         ax.axline((0, 0), slope=1, color="black")
         ax.grid(True, color="black", alpha=0.5, linestyle="--")
-
-    # Regression
-    # slope, intercept, r_value, p_value, std_err = linregress(np.log(x_values), np.log(y_values))
-
-    # # Set x_reg to span the entire x-axis range of the plot
-    # # x_reg = np.linspace(*ax.get_xlim(), 500)
-    # # y_reg = np.exp(intercept + slope * np.log(x_reg))
-    # limits = [min(ax.get_xlim()[0], ax.get_ylim()[0]), 10, 10]
-    # ax.plot(limits, limits, ls='--', color='black')
-
-    # if row in [0,1,2,3,4,5]:
-    #     x_reg = np.logspace(-3, 1, 500)  # Generates 500 points between 10^-3 and 10^1
-    #     y_reg = np.exp(intercept + slope * np.log(x_reg))
-
-    #     ax.plot(x_reg, y_reg, color='grey', label=f'R²={r_value**2:.2f}')
-    #     ax.legend(loc='upper left')
 
     # Metrics
     for ax, iop in zip(axs[0], columns):
@@ -212,7 +188,7 @@ def plot_performance_scatter_single(df: pd.DataFrame, *,
 
 _scatter_levels = ["split", "network"]
 def plot_performance_scatter(results: pd.DataFrame, *,
-                             saveto: Path | str=c.supplementary_path/"scatterplot.png", **kwargs) -> None:
+                             saveto: Path | str=c.supplementary_path/"scatterplot.pdf", **kwargs) -> None:
     """
     Plot many DataFrames with y, y_hat, with total uncertainty (top) or aleatoric fraction (bottom) as colour.
     """
@@ -232,7 +208,7 @@ def plot_performance_scatter(results: pd.DataFrame, *,
 _lollipop_metrics = [c.mdsa, c.sspb, c.r_squared]
 def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
                                       groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_lollipop_metrics, splits: Iterable[c.Parameter]=c.splits,
-                                      saveto: Path | str=c.save_path/"performance_lolliplot_vertical.png") -> None:
+                                      saveto: Path | str=c.save_path/"performance_lolliplot_vertical.pdf") -> None:
     """
     Plot some number of DataFrames containing performance metric statistics.
     """
@@ -313,7 +289,7 @@ def plot_log_binned_statistics_line(binned: pd.DataFrame, ax: plt.Axes, *,
     ax.grid(True, ls="--")
 
 def plot_log_binned_statistics(binned: pd.DataFrame, *,
-                               saveto: Path | str=c.supplementary_path/"uncertainty_line.png") -> None:
+                               saveto: Path | str=c.supplementary_path/"uncertainty_line.pdf") -> None:
     """
     Plot log-binned statistics from a main DataFrame.
     """
@@ -349,7 +325,7 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
 _heatmap_metrics = [c.total_unc_pct, c.ale_frac]
 def uncertainty_heatmap(results_agg: pd.DataFrame, *,
                         variables: Iterable[c.Parameter]=c.iops,
-                        saveto: Path | str=c.save_path/"uncertainty_heatmap.png") -> None:
+                        saveto: Path | str=c.save_path/"uncertainty_heatmap.pdf") -> None:
     """
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
     """
@@ -416,7 +392,7 @@ def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=3) -> None:
 _bar_metrics = [c.sharpness, c.coverage]
 def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
                                  groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_bar_metrics, splits: Iterable[c.Parameter]=c.splits,
-                                 saveto: Path | str=c.save_path/"uncertainty_metrics_bar.png") -> None:
+                                 saveto: Path | str=c.save_path/"uncertainty_metrics_bar.pdf") -> None:
     """
     Plot some number of DataFrames containing performance metric statistics.
     """
@@ -483,7 +459,7 @@ def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
 ## Uncertainty metrics - calibration curves
 def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
                             rows: Iterable[c.Parameter]=c.splits, columns: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks,
-                            saveto: Path | str=c.save_path/"calibration_curves.png") -> None:
+                            saveto: Path | str=c.save_path/"calibration_curves.pdf") -> None:
     """
     Plot calibration curves (expected vs. observed).
     """
