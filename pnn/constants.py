@@ -90,6 +90,7 @@ total_unc_pct = Parameter("total_unc_pct", "Total uncertainty [%]", "black", vmi
 
 ale_frac = Parameter("ale_frac", "Aleatoric fraction [%]", cmap=cmap_aleatoric_fraction, vmin=0, vmax=100)
 
+variances = [total_var, ale_var, epi_var]
 uncertainties = [total_unc, ale_unc, epi_unc]
 relative_uncertainties = [total_unc_pct, ale_unc_pct, epi_unc_pct]
 

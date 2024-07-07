@@ -14,7 +14,7 @@ LEVEL_ORDER_SINGLE = ["category", "instance"]
 
 
 ### LOADING / PROCESSING DATA
-def variance_to_uncertainty(df: pd.DataFrame, *, input_keys: Iterable[str]=c.uncertainties) -> pd.DataFrame:
+def variance_to_uncertainty(df: pd.DataFrame, *, input_keys: Iterable[str]=c.variances) -> pd.DataFrame:
     """
     Calculate the uncertainty corresponding to variances in the given dataframe.
     Default: aleatoric (ale_var -> ale_unc) and epistemic (epi_var -> epi_unc).
