@@ -1,20 +1,14 @@
 """
 Recurrent Neural Network with Gated Recurrent Units and Monte Carlo Dropout (RNN MCD).
 """
-from functools import partial
-from typing import Iterable, Optional
+from typing import Optional, Self
 
 import numpy as np
-import pandas as pd
-import tensorflow as tf
-from tensorflow.keras.callbacks import EarlyStopping, History
 from tensorflow.keras.layers import GRU, Dense, Dropout, Input
-from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.models import Sequential
 from tensorflow.keras.regularizers import l2
-from sklearn.preprocessing import MinMaxScaler
 
-from .common import calculate_metrics, inverse_scale_y, nll_loss, predict_with_dropout
-from .common import _train_general, _build_and_train_general, _predict_with_uncertainty_general, _train_and_evaluate_models_general
+from .pnn_base import DropoutPNN
 from .. import constants as c
 
 
@@ -39,57 +33,43 @@ def reshape_data(X_train: np.ndarray, *, X_test: Optional[np.ndarray]=None, n_fe
 
 
 ### ARCHITECTURE
-def build(input_shape: tuple, *, output_size: int=6,
-          hidden_units: int=100, n_layers: int=5, dropout_rate: float=0.25, l2_reg: float=1e-3, activation="tanh") -> Model:
-    """
-    Construct an RNN with MCD based on the input parameters.
-    To do: use functools.partial for GRU?
-    To do: relu or tanh?
-    """
-    model = Sequential()
-    model.add(Input(shape=input_shape))
+class RNN_MCD(DropoutPNN):
+    ### CONFIGURATION
+    name = c.rnn
 
-    # Add the first recurrent layer with input shape
-    model.add(GRU(hidden_units, return_sequences=(n_layers > 1),
-                  activation=activation, kernel_regularizer=l2(l2_reg)))
+    ### CREATION
+    @classmethod
+    def build(cls, input_shape: tuple, output_size: int, *,
+              hidden_units: int=100, n_layers: int=5, dropout_rate: float=0.25, l2_reg: float=1e-3, activation="tanh") -> Self:
+        """
+        Construct an RNN with MCD based on the input hyperparameters.
+        To do: relu or tanh?
+        """
+        model = Sequential()
+        model.add(Input(shape=input_shape))
 
-    # Add additional GRU layers if n_layers > 1, with Dropout layers between them
-    for i in range(1, n_layers):
-        model.add(Dropout(dropout_rate))
-        model.add(GRU(hidden_units, return_sequences=(i < n_layers-1),
+        # Add the first recurrent layer with input shape
+        model.add(GRU(hidden_units, return_sequences=(n_layers > 1),
                       activation=activation, kernel_regularizer=l2(l2_reg)))
 
-    # Output layer: Adjust for 6 means and 6 variances (12 outputs in total)
-    model.add(Dense(output_size * 2, activation="linear"))
+        # Add additional GRU layers if n_layers > 1, with Dropout layers between them
+        for i in range(1, n_layers):
+            model.add(Dropout(dropout_rate))
+            model.add(GRU(hidden_units, return_sequences=(i < n_layers-1),
+                          activation=activation, kernel_regularizer=l2(l2_reg)))
 
-    return model
+        # Output layer: Adjust for 6 means and 6 variances (12 outputs in total)
+        model.add(Dense(output_size * 2, activation="linear"))
 
-
-### TRAINING
-train = partial(_train_general, epochs=1000, batch_size=512)
-
-
-def build_and_train(X_train: np.ndarray, y_train: np.ndarray) -> Model:
-    """
-    Build and train an RNN model on the provided X and y data.
-    Same as the general function, but reshapes the data for the RNN specifically.
-    """
-    # Setup
-    X_train = reshape_data(X_train)
-
-    model = _build_and_train_general(build, train, X_train, y_train)
-    return model
+        return cls(model)
 
 
-### APPLICATION
-def predict_samples(model: Model, X: np.ndarray, *, n_samples: int=100) -> np.ndarray:
-    """
-    Predict y values for given X values using the RNN.
-    """
-    pred_samples = [predict_with_dropout(model, X, enable_dropout=True).numpy() for _ in range(n_samples)]
-    pred_samples = np.array(pred_samples)
-    return pred_samples
-
-
-predict_with_uncertainty = partial(_predict_with_uncertainty_general, predict_samples)
-train_and_evaluate_models = partial(_train_and_evaluate_models_general, build_and_train, predict_with_uncertainty)
+    @classmethod
+    def build_and_train(cls, X_train: np.ndarray, y_train: np.ndarray, *args, batch_size: int=32, **kwargs) -> Self:
+        """
+        Build and train a model on the provided X and y data, with early stopping.
+        Reshapes the data for the RNN first.
+        Note: trains a lot slower with the same hyperparameters; increasing the batch_size makes it faster, but we keep it the same here for consistency in the results.
+        """
+        X_train_reshaped = reshape_data(X_train)
+        return super().build_and_train(X_train_reshaped, y_train, *args, batch_size=batch_size, **kwargs)

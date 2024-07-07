@@ -9,9 +9,9 @@ Example:
 from sys import argv
 import pnn
 
-# Select NN type
+# Select NN class
 nn_type = argv[1]
-nn = pnn.nn.select_nn(nn_type)
+NN = pnn.nn.select_nn(nn_type)
 
 ### LOAD DATA
 # Load from file
@@ -26,16 +26,16 @@ for scenario, data_train, data_test in zip(pnn.splits, train_sets, test_sets):
     print(f"\n\n\n   --- Now running: {tag} ---")
 
     # Select Rrs values in 5 nm steps, IOP columns
-    X_train, y_train = pnn.nn.extract_inputs_outputs(data_train)
-    X_test, y_test = pnn.nn.extract_inputs_outputs(data_test)
+    X_train, y_train = pnn.data.extract_inputs_outputs(data_train)
+    X_test, y_test = pnn.data.extract_inputs_outputs(data_test)
 
     # Rescale y data (log, minmax)
-    y_train_scaled, y_test_scaled, scaler_y = pnn.nn.scale_y(y_train, y_test)
+    y_train_scaled, y_test_scaled, scaler_y = pnn.data.scale_y(y_train, y_test)
     print("Rescaled data.")
 
     ### TRAINING
     # Train multiple models and select the best one
-    best_model, model_metrics = nn.train_and_evaluate_models(X_train, y_train_scaled, X_test, y_test, scaler_y)
+    best_model, model_metrics = pnn.nn.train_and_evaluate_models(NN, X_train, y_train_scaled, X_test, y_test, scaler_y)
     print("Trained models.")
 
     # Save model to file
@@ -58,7 +58,7 @@ for scenario, data_train, data_test in zip(pnn.splits, train_sets, test_sets):
 
     ### ASSESSMENT
     # Apply model to test data
-    mean_predictions, total_variance, aleatoric_variance, epistemic_variance = nn.predict_with_uncertainty(best_model, X_test, scaler_y)
+    mean_predictions, total_variance, aleatoric_variance, epistemic_variance = best_model.predict_with_uncertainty(X_test, scaler_y)
 
     # Save predictions to file
     saveto_preds = pnn.pred_path/f"{tag}_preds.csv"
