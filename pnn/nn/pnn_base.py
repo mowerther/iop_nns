@@ -142,7 +142,7 @@ class DropoutPNN(BasePNN):
 
     def _predict_samples(self, X: np.ndarray, *, n_samples: int=100) -> np.ndarray:
         """
-        Predict y values for given X values using the BNN-MCD.
+        Predict y values for given X values using dropout/dropconnect.
         """
         pred_samples = [self._predict_with_dropout(X).numpy() for _ in range(n_samples)]
         pred_samples = np.array(pred_samples)
