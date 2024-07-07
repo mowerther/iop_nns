@@ -12,6 +12,7 @@ from cmcrameri.cm import managua
 
 ### FILENAMES
 data_path = Path("datasets_train_test/")
+model_path = Path("pnn_tf_models/")
 pred_path = Path("pnn_model_estimates/")
 save_path = Path("manuscript_figures/")
 supplementary_path = save_path/"supplementary/"
@@ -56,12 +57,12 @@ class Parameter:
 
 ### NETWORKS
 mdn = Parameter("mdn", "MDN", "#994455")
-bnn_dropconnect = Parameter("bnn_dropcon", "BNN DC", "#997700")
-bnn_mcd = Parameter("bnn_mcd", "BNN MCD", "#6699CC")
+bnn_dc = Parameter("bnn_dc", "BNN-DC", "#997700")
+bnn_mcd = Parameter("bnn_mcd", "BNN-MCD", "#6699CC")
 ensemble = Parameter("ens_nn", "ENN", "#EE99AA")
 rnn = Parameter("rnn", "RNN", "#EECC66")
 
-networks = [mdn, bnn_dropconnect, bnn_mcd, ensemble, rnn]
+networks = [mdn, bnn_dc, bnn_mcd, ensemble, rnn]
 networks_fromkey = {p.name: p for p in networks}
 
 
@@ -77,18 +78,19 @@ splits_fromkey = {p.name: p for p in splits}
 ### UNCERTAINTY TYPES
 ale_var = Parameter("ale_var", f"Aleatoric variance [{m2}]", cmap_aleatoric_fraction.colors[-3], vmin=0)
 ale_unc = Parameter("ale_unc", f"Aleatoric uncertainty [{m1}]", cmap_aleatoric_fraction.colors[-3], vmin=0)
-ale_unc_pct = Parameter("ale_unc_pct", "Aleatoric uncertainty [%]", cmap_aleatoric_fraction.colors[-3], vmin=0, vmax=20)
+ale_unc_pct = Parameter("ale_unc_pct", "Aleatoric uncertainty [%]", cmap_aleatoric_fraction.colors[-3], vmin=0, vmax=100)
 
 epi_var = Parameter("epi_var", f"Epistemic variance [{m2}]", cmap_aleatoric_fraction.colors[2], vmin=0)
 epi_unc = Parameter("epi_unc", f"Epistemic uncertainty [{m1}]", cmap_aleatoric_fraction.colors[2], vmin=0)
-epi_unc_pct = Parameter("epi_unc_pct", "Epistemic uncertainty [%]", cmap_aleatoric_fraction.colors[2], vmin=0, vmax=20)
+epi_unc_pct = Parameter("epi_unc_pct", "Epistemic uncertainty [%]", cmap_aleatoric_fraction.colors[2], vmin=0, vmax=100)
 
 total_var = Parameter("total_var", f"Total variance [{m2}]", "black", vmin=0)
-total_unc = Parameter("std_dev", f"Total uncertainty [{m1}]", "black", vmin=0)
-total_unc_pct = Parameter("std_dev_pct", "Total uncertainty [%]", "black", vmin=0, vmax=100)
+total_unc = Parameter("total_unc", f"Total uncertainty [{m1}]", "black", vmin=0)
+total_unc_pct = Parameter("total_unc_pct", "Total uncertainty [%]", "black", vmin=0, vmax=200)
 
-ale_frac = Parameter("ale_frac", "Aleatoric fraction", cmap=cmap_aleatoric_fraction, vmin=0, vmax=1)
+ale_frac = Parameter("ale_frac", "Aleatoric fraction [%]", cmap=cmap_aleatoric_fraction, vmin=0, vmax=100)
 
+variances = [total_var, ale_var, epi_var]
 uncertainties = [total_unc, ale_unc, epi_unc]
 relative_uncertainties = [total_unc_pct, ale_unc_pct, epi_unc_pct]
 
@@ -110,6 +112,9 @@ aph_443 = Parameter("aph_443", f"$a_{_ph}$(443)", label_2lines=f"$a_{_ph}$\n(443
 aph_675 = Parameter("aph_675", f"$a_{_ph}$(675)", label_2lines=f"$a_{_ph}$\n(675)", color="darkgreen")
 
 iops = [aCDOM_443, aCDOM_675, aNAP_443, aNAP_675, aph_443, aph_675]
+iops_names = [iop.name for iop in iops]
+iops_443 = [aCDOM_443, aNAP_443, aph_443]
+iops_675 = [aCDOM_675, aNAP_675, aph_675]
 
 
 ### METRICS

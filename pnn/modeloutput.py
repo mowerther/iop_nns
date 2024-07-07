@@ -10,19 +10,11 @@ import pandas as pd
 from . import constants as c
 
 LEVEL_ORDER = ["category", "split", "network", "instance"]
+LEVEL_ORDER_SINGLE = ["category", "instance"]
 
 
 ### LOADING / PROCESSING DATA
-def reorganise_df(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Reorganise an input dataframe so that "Category" and "Instance" become a multi-index.
-    """
-    df = df.set_index(["Category", "Instance"])
-    df.index.rename({"Category": "category", "Instance": "instance"}, inplace=True)
-    return df
-
-
-def variance_to_uncertainty(df: pd.DataFrame, *, input_keys: Iterable[str]=[c.ale_var, c.epi_var]) -> pd.DataFrame:
+def variance_to_uncertainty(df: pd.DataFrame, *, input_keys: Iterable[str]=c.variances) -> pd.DataFrame:
     """
     Calculate the uncertainty corresponding to variances in the given dataframe.
     Default: aleatoric (ale_var -> ale_unc) and epistemic (epi_var -> epi_unc).
@@ -34,7 +26,7 @@ def variance_to_uncertainty(df: pd.DataFrame, *, input_keys: Iterable[str]=[c.al
 
 
 def calculate_percentage_uncertainty(df: pd.DataFrame, *,
-                                     reference_key: str=c.y_pred, uncertainty_keys: Iterable[str]=[c.total_unc, c.ale_unc, c.epi_unc]) -> pd.DataFrame:
+                                     reference_key: str=c.y_pred, uncertainty_keys: Iterable[str]=c.uncertainties) -> pd.DataFrame:
     """
     Calculates the percentage uncertainty (total, aleatoric, epistemic) relative to the scaled prediction.
 
@@ -59,19 +51,37 @@ def calculate_aleatoric_fraction(df: pd.DataFrame, *,
                                  aleatoric_key: str=c.ale_var, total_key: str=c.total_var,
                                  fraction_key: str=c.ale_frac.name) -> pd.DataFrame:
     """
-    Calculate what fraction of the total variance consists of aleatoric variance.
+    Calculate what fraction (in %) of the total variance consists of aleatoric variance.
     """
-    fraction = df.loc[aleatoric_key] / df.loc[total_key]
+    fraction = df.loc[aleatoric_key] / df.loc[total_key] * 100
     result = pd.concat({fraction_key: fraction}, names=["category"])
     return result
+
+
+def save_model_outputs(y_true: np.ndarray, mean_predictions: np.ndarray, total_variance: np.ndarray, aleatoric_variance: np.ndarray, epistemic_variance: np.ndarray, filename: Path | str, *,
+                       columns=c.iops) -> None:
+    """
+    Collate the true values and model outputs into a DataFrame and save it to file.
+    """
+    # Combine data
+    data_combined = {c.y_true: y_true,
+                     c.y_pred: mean_predictions,
+                     c.total_var: total_variance,
+                     c.ale_var: aleatoric_variance,
+                     c.epi_var: epistemic_variance,}
+
+    data_combined = {str(key): pd.DataFrame(arr, columns=columns) for key, arr in data_combined.items()}
+    data_combined = pd.concat(data_combined, names=LEVEL_ORDER_SINGLE)
+
+    # Save
+    data_combined.to_csv(filename)
 
 
 def read_model_outputs(filename: Path | str) -> pd.DataFrame:
     """
     Read data from a dataframe and process it.
     """
-    df = pd.read_csv(filename)
-    df = reorganise_df(df)
+    df = pd.read_csv(filename, index_col=LEVEL_ORDER_SINGLE)
     return df
 
 
