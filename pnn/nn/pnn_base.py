@@ -119,7 +119,7 @@ class BasePNN:
         raw_variances_scaled = pred_samples[..., N:]
         variance_predictions_scaled = tf.nn.softplus(raw_variances_scaled)
 
-        # Convert from scaled space to log space
+        # Convert from scaled space to real units
         mean_predictions, variance_predictions = inverse_scale_y(mean_predictions_scaled, variance_predictions_scaled, scaler_y)
 
         # Calculate aleatoric and epistemic variance in the original space
