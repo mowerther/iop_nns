@@ -111,10 +111,10 @@ aNAP_675 = Parameter("aNAP_675", f"$a_{_NAP}$(675)", label_2lines=f"$a_{_NAP}$\n
 aph_443 = Parameter("aph_443", f"$a_{_ph}$(443)", label_2lines=f"$a_{_ph}$\n(443)", color="darkgreen")
 aph_675 = Parameter("aph_675", f"$a_{_ph}$(675)", label_2lines=f"$a_{_ph}$\n(675)", color="darkgreen")
 
-iops = [aCDOM_443, aCDOM_675, aNAP_443, aNAP_675, aph_443, aph_675]
+iops = [aph_443, aph_675, aCDOM_443, aCDOM_675, aNAP_443, aNAP_675]
 iops_names = [iop.name for iop in iops]
-iops_443 = [aCDOM_443, aNAP_443, aph_443]
-iops_675 = [aCDOM_675, aNAP_675, aph_675]
+iops_443 = [iop for iop in iops if "443" in iop.name]
+iops_675 = [iop for iop in iops if "675" in iop.name]
 
 
 ### METRICS
