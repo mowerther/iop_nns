@@ -56,13 +56,13 @@ class Parameter:
 
 
 ### NETWORKS
-mdn = Parameter("mdn", "MDN", "#994455")
 bnn_dc = Parameter("bnn_dc", "BNN-DC", "#997700")
 bnn_mcd = Parameter("bnn_mcd", "BNN-MCD", "#6699CC")
-ensemble = Parameter("ens_nn", "ENN", "#EE99AA")
+ensemble = Parameter("ens_nn", "ENS-NN", "#EE99AA")
 rnn = Parameter("rnn", "RNN", "#EECC66")
+mdn = Parameter("mdn", "MDN", "#994455")
 
-networks = [mdn, bnn_dc, bnn_mcd, ensemble, rnn]
+networks = [bnn_mcd, bnn_dc, mdn, ensemble, rnn]
 networks_fromkey = {p.name: p for p in networks}
 
 
