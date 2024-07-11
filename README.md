@@ -7,4 +7,6 @@ We evaluated the generalization ability of PNNs across optimal conditions with s
 ## Scripts
 [train_nn.py](train_nn.py) - Train a PNN of choice (out of `bnn_dc`, `bnn_mcd`, `ens_nn`, `mdn`, `rnn`).
 
+[plot_calibration_example.py](plot_calibration_example.py) - Generate the figure explaining uncertainty calibration.
+
 [generate_plots.py](generate_plots.py) - Generate figures relating to the input data and to the PNN model outputs.
