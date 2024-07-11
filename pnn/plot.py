@@ -82,7 +82,7 @@ def plot_data_splits(*datasets: tuple[pd.DataFrame],
     test_sets = datasets[1::2]
 
     # Create figure
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(14, 8), squeeze=False, layout="constrained", gridspec_kw={"hspace": 0.2})
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(12, 7), squeeze=False, layout="constrained", gridspec_kw={"hspace": 0.15})
 
     # Plot data per row
     for ax_row, split, df_train, df_test in zip(axs, splits, train_sets, test_sets):
@@ -217,7 +217,7 @@ def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
     n_members = len(groupmembers)
     n_rows = len(metrics)
     n_cols = len(splits)
-    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(16, 8), sharex=True, sharey="row", squeeze=False)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(12, 7), sharex=True, sharey="row", squeeze=False)
 
     # Plot results; must be done in a loop because there is no Pandas lollipop function
     for ax_row, metric in zip(axs, metrics):
@@ -327,7 +327,7 @@ def uncertainty_heatmap(results_agg: pd.DataFrame, *,
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
     """
     # Generate figure
-    fig, axs = plt.subplots(nrows=2, ncols=len(c.splits), sharex=True, sharey=True, figsize=(16, 8), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
+    fig, axs = plt.subplots(nrows=2, ncols=len(c.splits), sharex=True, sharey=True, figsize=(12, 6), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
 
     # Plot data
     for ax_row, unc in zip(axs, _heatmap_metrics):
@@ -343,7 +343,7 @@ def uncertainty_heatmap(results_agg: pd.DataFrame, *,
             # Plot individual values
             for i, x in enumerate(c.networks):
                 for j, y in enumerate(variables):
-                    ax.text(j, i, f"{df.iloc[i, j]:.2f}", ha="center", va="center", color="w")
+                    ax.text(j, i, f"{df.iloc[i, j]:.0f}", ha="center", va="center", color="w")
 
         # Color bar per row
         cb = fig.colorbar(im, ax=ax_row, fraction=0.1, pad=0.01, shrink=1)
@@ -401,7 +401,7 @@ def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
     n_members = len(groupmembers)
     n_rows = len(metrics)
     n_cols = len(splits)
-    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(14, 8), sharex=True, sharey="row", squeeze=False)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(12, 7), sharex=True, sharey="row", squeeze=False)
 
     # Plot results
     for ax_row, metric in zip(axs, metrics):
