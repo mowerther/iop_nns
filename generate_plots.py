@@ -47,10 +47,15 @@ print("Saved uncertainty heatmap plot")
 pnn.plot.plot_coverage(metrics)
 print("Saved coverage plot")
 
+# Miscalibration area
+miscalibration_areas = pnn.aggregate.miscalibration_area(results)
+
 # Calibration curves
 calibration_curves = pnn.aggregate.calibration_curve(results)
 pnn.plot.plot_calibration_curves(calibration_curves)
 print("Saved calibration curve plot")
+
+raise Exception
 
 # y vs y_hat scatter plots
 pnn.plot.plot_performance_scatter(results)

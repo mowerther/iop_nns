@@ -11,6 +11,8 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
+from . import constants as c
+
 ####
 # recalibration procedure
 ####
@@ -53,6 +55,23 @@ def fit_recalibration_functions(y_true: np.ndarray, predicted_mean: np.ndarray, 
     """
     recalibrators = [fit_recalibration_function_single(y_true[:, i], predicted_mean[:, i], total_variance[:, i]) for i in range(y_true.shape[1])]
     return recalibrators
+
+
+def calibration_curve_single(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate the calibration curve for a single DataFrame with predicted mean, predicted uncertainty (std), and reference ("true") values.
+    To do: Output Series rather than DataFrame.
+    """
+    expected, observed = uct.get_proportion_lists_vectorized(df.loc[c.y_pred].to_numpy(), df.loc[c.total_unc].to_numpy(), df.loc[c.y_true].to_numpy())
+    observed = pd.DataFrame(index=expected, data=observed).rename_axis("expected")
+    return observed
+
+
+def miscalibration_area_single(df: pd.DataFrame) -> float:
+    """
+    Calculate the miscalibration area for a single DataFrame with predicted mean, predicted uncertainty (std), and reference ("true") values.
+    """
+    return uct.miscalibration_area(df.loc[c.y_pred].to_numpy(), df.loc[c.total_unc].to_numpy(), df.loc[c.y_true].to_numpy())
 
 
 # titles = ['aCDOM_443', 'aCDOM_675', 'aNAP_443', 'aNAP_675', 'aph_443', 'aph_675']

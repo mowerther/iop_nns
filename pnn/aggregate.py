@@ -8,6 +8,7 @@ import pandas as pd
 import uncertainty_toolbox as uct
 
 from . import constants as c, metrics
+from .recalibration import calibration_curve_single, miscalibration_area_single
 
 ### CONSTANTS
 split_network = ["split", "network"]  # Aggregation levels
@@ -72,15 +73,12 @@ def average_uncertainty(results: pd.DataFrame) -> pd.DataFrame:
     return results_agg
 
 
-# Calibration curves
-def _calibration_curve_single(df: pd.DataFrame) -> pd.DataFrame:
-    expected, observed = uct.get_proportion_lists_vectorized(df.loc[c.y_pred].to_numpy(), df.loc[c.total_unc].to_numpy(), df.loc[c.y_true].to_numpy())
-    observed = pd.DataFrame(index=expected, data=observed).rename_axis("expected")
-    return observed
-
-
+# Recalibration
 def _calibration_curve_pernetwork(df: pd.DataFrame, *, columns=c.iops) -> pd.DataFrame:
-    observed = {key.name: _calibration_curve_single(df[key]) for key in columns}
+    """
+    Apply calibration_curve_single to the columns of a DataFrame - by default the IOPs for a single split/network combination.
+    """
+    observed = {key.name: calibration_curve_single(df[key]) for key in columns}
     observed = pd.concat(observed, axis=1)
     observed.columns = observed.columns.droplevel(1)
     return observed
@@ -92,3 +90,20 @@ def calibration_curve(results: pd.DataFrame) -> pd.DataFrame:
     """
     observed = results.groupby(level=split_network).apply(_calibration_curve_pernetwork)
     return observed
+
+
+def _miscalibration_area_pernetwork(df: pd.DataFrame, *, columns=c.iops) -> pd.Series:
+    """
+    Apply miscalibration_area_single to the columns of a DataFrame - by default the IOPs for a single split/network combination.
+    """
+    miscalibration_areas = {key.name: miscalibration_area_single(df[key]) for key in columns}
+    miscalibration_areas = pd.Series(miscalibration_areas)
+    return miscalibration_areas
+
+
+def miscalibration_area(results: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate the miscalibration area for each combination of split, network, and IOP.
+    """
+    miscalibration_areas = results.groupby(level=split_network).apply(_miscalibration_area_pernetwork)
+    return miscalibration_areas
