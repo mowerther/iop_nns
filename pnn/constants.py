@@ -56,13 +56,13 @@ class Parameter:
 
 
 ### NETWORKS
-mdn = Parameter("mdn", "MDN", "#994455")
 bnn_dc = Parameter("bnn_dc", "BNN-DC", "#997700")
 bnn_mcd = Parameter("bnn_mcd", "BNN-MCD", "#6699CC")
-ensemble = Parameter("ens_nn", "ENN", "#EE99AA")
+ensemble = Parameter("ens_nn", "ENS-NN", "#EE99AA")
 rnn = Parameter("rnn", "RNN", "#EECC66")
+mdn = Parameter("mdn", "MDN", "#994455")
 
-networks = [mdn, bnn_dc, bnn_mcd, ensemble, rnn]
+networks = [bnn_mcd, bnn_dc, mdn, ensemble, rnn]
 networks_fromkey = {p.name: p for p in networks}
 
 
@@ -101,20 +101,20 @@ y_pred = "y_pred"
 
 
 ### IOPs
+_ph = r"\text{ph}"
 _CDOM = r"\text{CDOM}"
 _NAP = r"\text{NAP}"
-_ph = r"\text{ph}"
-aCDOM_443 = Parameter("aCDOM_443", f"$a_{_CDOM}$(443)", label_2lines=f"$a_{_CDOM}$\n(443)", color="darkgoldenrod")
-aCDOM_675 = Parameter("aCDOM_675", f"$a_{_CDOM}$(675)", label_2lines=f"$a_{_CDOM}$\n(675)", color="darkgoldenrod")
-aNAP_443 = Parameter("aNAP_443", f"$a_{_NAP}$(443)", label_2lines=f"$a_{_NAP}$\n(443)", color="chocolate")
-aNAP_675 = Parameter("aNAP_675", f"$a_{_NAP}$(675)", label_2lines=f"$a_{_NAP}$\n(675)", color="chocolate")
 aph_443 = Parameter("aph_443", f"$a_{_ph}$(443)", label_2lines=f"$a_{_ph}$\n(443)", color="darkgreen")
 aph_675 = Parameter("aph_675", f"$a_{_ph}$(675)", label_2lines=f"$a_{_ph}$\n(675)", color="darkgreen")
+aCDOM_443 = Parameter("aCDOM_443", f"$a_{_CDOM}$(443)", label_2lines=f"$a_{_CDOM}$\n(443)", color="darkgoldenrod")
+aCDOM_675 = Parameter("aCDOM_675", f"$a_{_CDOM}$(675)", label_2lines=f"$a_{_CDOM}$\n(675)", color="darkgoldenrod")
+aNAP_443 = Parameter("aNAP_443", f"$a_{_NAP}$(443)", label_2lines=f"$a_{_NAP}$\n(443)", color="saddlebrown")
+aNAP_675 = Parameter("aNAP_675", f"$a_{_NAP}$(675)", label_2lines=f"$a_{_NAP}$\n(675)", color="saddlebrown")
 
-iops = [aCDOM_443, aCDOM_675, aNAP_443, aNAP_675, aph_443, aph_675]
+iops = [aph_443, aph_675, aCDOM_443, aCDOM_675, aNAP_443, aNAP_675]
 iops_names = [iop.name for iop in iops]
-iops_443 = [aCDOM_443, aNAP_443, aph_443]
-iops_675 = [aCDOM_675, aNAP_675, aph_675]
+iops_443 = [iop for iop in iops if "443" in iop.name]
+iops_675 = [iop for iop in iops if "675" in iop.name]
 
 
 ### METRICS
