@@ -510,5 +510,5 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
     fig.supylabel("Expected proportion in interval", fontweight="bold")
     fig.align_ylabels()
 
-    plt.savefig(saveto)
+    plt.savefig(saveto, bbox_inches="tight")
     plt.close()
