@@ -5,12 +5,23 @@ Trains N networks, evaluates them, and saves their outputs.
 Selects the type of network from the first argument: [bnn_dc, bnn_mcd, ens_nn, mdn, rnn]
 Example:
     python train_nn.py bnn_mcd
+
+Optionally, use the -c flag to enable recalibration.
+Example:
+    python train_nn.py bnn_mcd -c
 """
-from sys import argv
 import pnn
 
+### Parse command line arguments
+import argparse
+parser = argparse.ArgumentParser("Load and plot the results from a previous PCSE ensemble run.")
+parser.add_argument("nn_type", help="PNN architecture to use")
+parser.add_argument("-c", "--recalibrate", help="apply recalibration", action="store_true")
+args = parser.parse_args()
+nn_type = args.nn_type
+RECALIBRATE = args.recalibrate
+
 # Select NN class
-nn_type = argv[1]
 NN = pnn.nn.select_nn(nn_type)
 
 ### LOAD DATA
@@ -20,9 +31,17 @@ train_sets = [train_set_random, train_set_wd, train_set_ood]
 test_sets = [test_set_random, test_set_wd, test_set_ood]
 print("Loaded data.")
 
+# Split data if recalibrating
+if RECALIBRATE:
+    train_sets, calibration_sets = pnn.recalibration.split(train_sets)
+else:
+    calibration_sets = [None] * len(train_sets)
+
 # Loop over different data-split scenarios
-for scenario, data_train, data_test in zip(pnn.splits, train_sets, test_sets):
+for scenario, data_train, data_test, data_cal in zip(pnn.splits, train_sets, test_sets, calibration_sets):
     tag = f"{nn_type}_{scenario}"
+    if RECALIBRATE:
+        tag += "_recal"
     print(f"\n\n\n   --- Now running: {tag} ---")
 
     # Select Rrs values in 5 nm steps, IOP columns
@@ -37,6 +56,12 @@ for scenario, data_train, data_test in zip(pnn.splits, train_sets, test_sets):
     # Train multiple models and select the best one
     best_model, model_metrics = pnn.nn.train_and_evaluate_models(NN, X_train, y_train_scaled, X_test, y_test, scaler_y)
     print("Trained models.")
+
+    # Optional: Train recalibration
+    if RECALIBRATE:
+        X_cal, y_cal = pnn.data.extract_inputs_outputs(data_cal)
+        mean_predictions_cal, total_variance_cal, *_ = best_model.predict_with_uncertainty(X_cal, scaler_y)
+        recalibrator = pnn.recalibration.fit_recalibration_functions(y_cal, mean_predictions_cal, total_variance_cal)
 
     # Save model to file
     saveto_model = pnn.model_path/f"{tag}_best.keras"
