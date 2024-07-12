@@ -1,5 +1,5 @@
 """
-Various plotting functions.
+Functions relating to outputs, such as plots and tables.
 """
 import itertools
 from pathlib import Path
@@ -329,9 +329,9 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
 
 ## Uncertainty statistics - heatmap
 _heatmap_metrics = [c.total_unc_pct, c.ale_frac]
-def uncertainty_heatmap(results_agg: pd.DataFrame, *,
-                        variables: Iterable[c.Parameter]=c.iops,
-                        saveto: Path | str=c.save_path/"uncertainty_heatmap.pdf") -> None:
+def plot_uncertainty_heatmap(results_agg: pd.DataFrame, *,
+                             variables: Iterable[c.Parameter]=c.iops,
+                             saveto: Path | str=c.save_path/"uncertainty_heatmap.pdf") -> None:
     """
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
     """

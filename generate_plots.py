@@ -17,11 +17,11 @@ data_full = pd.concat([train_set_random, test_set_random])
 print(data_full)
 
 # Plot full data
-pnn.plot.plot_full_dataset(data_full)
+pnn.output.plot_full_dataset(data_full)
 print("Saved full data plot")
 
 # Plot split data
-pnn.plot.plot_data_splits(train_set_random, test_set_random, train_set_wd, test_set_wd, train_set_ood, test_set_ood)
+pnn.output.plot_data_splits(train_set_random, test_set_random, train_set_wd, test_set_wd, train_set_ood, test_set_ood)
 print("Saved data splits plot")
 
 
@@ -35,16 +35,16 @@ print(results)
 
 # Performance metrics and lollipop plot
 metrics = pnn.aggregate.calculate_metrics(results)
-pnn.plot.plot_performance_metrics_lollipop(metrics)
+pnn.output.plot_performance_metrics_lollipop(metrics)
 print("Saved performance metric (lollipop) plot")
 
 # Average uncertainty heatmap
 uncertainty_averages = pnn.aggregate.average_uncertainty(results)
-pnn.plot.uncertainty_heatmap(uncertainty_averages)
+pnn.output.plot_uncertainty_heatmap(uncertainty_averages)
 print("Saved uncertainty heatmap plot")
 
 # Coverage plot
-pnn.plot.plot_coverage(metrics)
+pnn.output.plot_coverage(metrics)
 print("Saved coverage plot")
 
 # Miscalibration area
@@ -52,16 +52,16 @@ miscalibration_areas = pnn.aggregate.miscalibration_area(results)
 
 # Calibration curves
 calibration_curves = pnn.aggregate.calibration_curve(results)
-pnn.plot.plot_calibration_curves(calibration_curves)
+pnn.output.plot_calibration_curves(calibration_curves)
 print("Saved calibration curve plot")
 
 raise Exception
 
 # y vs y_hat scatter plots
-pnn.plot.plot_performance_scatter(results)
+pnn.output.plot_performance_scatter(results)
 print("Saved match-up (scatter) plots")
 
 # Log-binned uncertainty and line plot
 binned = pnn.logbins.log_binned_statistics_combined(results)
-pnn.plot.plot_log_binned_statistics(binned)
+pnn.output.plot_log_binned_statistics(binned)
 print("Saved log-binned uncertainty (line) plot")
