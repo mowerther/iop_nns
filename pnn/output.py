@@ -461,6 +461,21 @@ def plot_coverage(data: pd.DataFrame, *,
     plt.close()
 
 
+## Uncertainty metrics - miscalibration area
+def table_miscalibration_area(areas: pd.DataFrame, *, saveto: Path | str=c.save_path/"miscalibration_area.csv") -> None:
+    """
+    Reorder the miscalibration area table and save it to file.
+    To do: fully automate.
+    """
+    areas = areas.reorder_levels(["network", "split"])
+    areas.sort_index(inplace=True)
+    areas.sort_index(key=lambda x: x.map({model: i for i, model in enumerate(c.networks)}))
+    areas.rename(index={model.name: model.label for model in c.networks}, level="network", inplace=True)
+    areas.rename(index={split.name: split.label for split in c.splits}, level="split", inplace=True)
+
+    areas.to_csv(saveto)
+
+
 ## Uncertainty metrics - calibration curves
 def _plot_calibration_single(ax: plt.Axes, data: pd.Series, **kwargs) -> None:
     """

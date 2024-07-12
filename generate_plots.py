@@ -49,6 +49,8 @@ print("Saved coverage plot")
 
 # Miscalibration area
 miscalibration_areas = pnn.aggregate.miscalibration_area(results)
+pnn.output.table_miscalibration_area(miscalibration_areas)
+print("Saved miscalibration area table")
 
 # Calibration curves
 calibration_curves = pnn.aggregate.calibration_curve(results)
