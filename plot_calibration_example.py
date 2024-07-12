@@ -172,7 +172,7 @@ def custom_plot_intervals_ordered(
     ax: Union[plt.Axes, None] = None,
     title: Union[str, None] = "Average calibration",
     xlabel: Union[str, None] = "Index (Ordered by Observed Value)",
-    ylabel: Union[str, None] = "Index (Ordered by Reference Value)") -> plt.Axes:
+    ylabel: Union[str, None] = "Index (Ordered by Estimated Value)") -> plt.Axes:
     """Custom version of plot_intervals_ordered with modified colors and customizable labels."""
     if ax is None:
         fig, ax = plt.subplots(figsize=(5, 5))
@@ -187,7 +187,7 @@ def custom_plot_intervals_ordered(
     # errorbar and scatter are separate to allow for transparent errorbars
     ax.plot(xs, y_true, linewidth=3, c="orange", label="Reference values", zorder=0)
     ax.errorbar(xs, y_pred, intervals, fmt="none", ecolor="black", alpha=0.5, lw=0.7, zorder=1)
-    ax.scatter(xs, y_pred,  c="black", s=15, label="Estimated values", zorder=2)
+    ax.scatter(xs, y_pred,  c="black", s=15, label="PNN estimates", zorder=2)
 
     #ax.legend(loc="lower right")
 
@@ -215,12 +215,12 @@ def custom_plot_calibration(
     ax: Union[plt.Axes, None] = None,
     prop_type: str = "interval",
     title: Union[str, None] = "Ordered prediction intervals",
-    xlabel: Union[str, None] = "Predicted proportion in interval",
+    xlabel: Union[str, None] = "Expected proportion in interval",
     ylabel: Union[str, None] = "Observed proportion in interval"
 ) -> plt.Axes:
     """
     Custom version of plot_calibration with modified colors and customizable labels.
-    Note that the reference ("observed") and NN prediction ("predicted") axes have been flipped for clarity.
+    Note that the reference ("observed") and PNN prediction ("predicted") axes have been flipped for clarity.
     """
     if ax is None:
         fig, ax = plt.subplots(figsize=(5, 5))
@@ -273,7 +273,7 @@ def custom_plot_calibration(
     )
     return ax
 
-def make_plots(pred_mean_list, pred_std_list, plot_save_str="scenarios"):
+def make_plots(pred_mean_list, pred_std_list, *, saveto=save_path/"calibration_example.pdf"):
     """Make set of plots for each scenario with improved layout and manual scenario title placement."""
     ylims = [0, 10]
     n_subset = 50
@@ -310,9 +310,9 @@ def make_plots(pred_mean_list, pred_std_list, plot_save_str="scenarios"):
     axs[0, 0].set_title("Ordered estimation intervals")
     axs[0, 1].set_title("Average calibration")
     axs[-1, 0].set_xlabel("Index (ordered by reference value)")
-    axs[-1, 1].set_xlabel("Reference proportion in interval")
-    axs[1, 0].set_ylabel("NN predicted value")
-    axs[1, 1].set_ylabel("NN predicted proportion in interval")
+    axs[-1, 1].set_xlabel("Observed proportion in interval")
+    axs[1, 0].set_ylabel("PNN estimate")
+    axs[1, 1].set_ylabel("Expected proportion in interval")
     axs[1, 1].yaxis.set_label_position("right")
 
     for ax in axs.ravel():
@@ -326,7 +326,7 @@ def make_plots(pred_mean_list, pred_std_list, plot_save_str="scenarios"):
     for ax in axs.flatten():
         ax.tick_params(axis="both", which="major", labelsize=10)
 
-    plt.savefig(save_path/"calibration_example.pdf", bbox_inches="tight")
+    plt.savefig(saveto, bbox_inches="tight")
 
 # Usage
 pred_mean_list = [f] * 3  # Same mean for all scenarios

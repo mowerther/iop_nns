@@ -494,8 +494,8 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
     for ax in axs[-1]:
         ax.set_xlabel(None)
 
-    fig.supxlabel("Estimated proportion in interval", fontweight="bold")
-    fig.supylabel("Actual proportion in interval", fontweight="bold")
+    fig.supxlabel("Expected proportion in interval", fontweight="bold")
+    fig.supylabel("Observed proportion in interval", fontweight="bold")
     fig.align_ylabels()
 
     plt.savefig(saveto)
