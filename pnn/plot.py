@@ -454,6 +454,14 @@ def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
 
 
 ## Uncertainty metrics - calibration curves
+def _plot_calibration_single(ax: plt.Axes, data: pd.Series, **kwargs) -> None:
+    """
+    Plot a single calibration curve.
+    Accounts for the desired order (expected on the y axis, observed on the x axis).
+    """
+    ax.plot(data.array, data.index, **kwargs)
+
+
 def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
                             rows: Iterable[c.Parameter]=c.splits, columns: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks,
                             saveto: Path | str=c.save_path/"calibration_curves.pdf") -> None:
@@ -471,7 +479,7 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
 
             # Plot data
             for key in groupmembers:
-                df.loc[key].plot(ax=ax, c=key.color, lw=3)
+                _plot_calibration_single(ax, df.loc[key], c=key.color, lw=3)
 
             # Plot diagonal
             ax.axline((0, 0), slope=1, c="black")
@@ -494,8 +502,8 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
     for ax in axs[-1]:
         ax.set_xlabel(None)
 
-    fig.supxlabel("Expected proportion in interval", fontweight="bold")
-    fig.supylabel("Observed proportion in interval", fontweight="bold")
+    fig.supxlabel("Observed proportion in interval", fontweight="bold")
+    fig.supylabel("Expected proportion in interval", fontweight="bold")
     fig.align_ylabels()
 
     plt.savefig(saveto)
