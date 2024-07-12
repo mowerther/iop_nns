@@ -269,7 +269,7 @@ def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
 
     # Plot legend outside the subplots
     handles, labels = ax.get_legend_handles_labels()
-    fig.legend(handles, labels, loc="center left", bbox_to_anchor=(1, 0.5))
+    fig.legend(handles, labels, loc="center left", bbox_to_anchor=(1, 0.5), framealpha=1, edgecolor="black")
 
     plt.tight_layout()
     plt.savefig(saveto, dpi=200, bbox_inches="tight")
@@ -403,12 +403,11 @@ def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=3) -> None:
         ax = axs[-1]
         ax.text(1.01, percentage/100, f"$k = {k}$", transform=ax.transAxes, horizontalalignment="left", verticalalignment="center")
 
-_bar_metrics = [c.sharpness, c.coverage]
-def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
-                                 groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_bar_metrics, splits: Iterable[c.Parameter]=c.splits,
-                                 saveto: Path | str=c.save_path/"uncertainty_metrics_bar.pdf") -> None:
+def plot_coverage(data: pd.DataFrame, *,
+                  groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, splits: Iterable[c.Parameter]=c.splits,
+                  saveto: Path | str=c.save_path/"uncertainty_coverage.pdf") -> None:
     """
-    Plot some number of DataFrames containing performance metric statistics.
+    Bar plot showing the coverage factor (pre-calculated).
     """
     # Constants
     bar_width = 0.15
@@ -416,16 +415,16 @@ def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
     # Generate figure ; rows are metrics, columns are split types
     n_groups = len(groups)
     n_members = len(groupmembers)
-    n_rows = len(metrics)
+    n_rows = 1
     n_cols = len(splits)
-    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(12, 7), sharex=True, sharey="row", squeeze=False)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(11, 4), sharex=True, sharey="row", squeeze=False)
 
     # Plot results
-    for ax_row, metric in zip(axs, metrics):
+    for ax_row in axs:
         for ax, split in zip(ax_row, splits):
             for member_idx, member in enumerate(groupmembers):
                 # Select data
-                df = data.loc[split, member, metric]
+                df = data.loc[split, member, c.coverage]
                 values = df[groups]
 
                 color = member.color
@@ -437,25 +436,18 @@ def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
 
             ax.grid(True, axis="y", linestyle="--", linewidth=0.5, color="black", alpha=0.4)
 
-        if metric == c.coverage:
-            add_coverage_k_lines(*ax_row)
+        add_coverage_k_lines(*ax_row)
 
     # Label variables
     axs[0, 0].set_xticks(np.arange(n_groups))
     axs[0, 0].set_xticklabels([p.label_2lines for p in groups])
 
     # Label y-axes
-    for ax, metric in zip(axs[:, 0], metrics):
-        ax.set_ylabel(metric.label, fontsize=12)
+    axs[0, 0].set_ylabel(c.coverage.label, fontsize=12)
     fig.align_ylabels()
 
-    # y-axis limits; currently hardcoded
-    for ax, metric in zip(axs[:, 0], metrics):
-        if metric.symmetric:
-            maxvalue = np.abs(ax.get_ylim()).max()
-            ax.set_ylim(-maxvalue, maxvalue)
-        else:
-            ax.set_ylim(metric.vmin, metric.vmax)
+    # y-axis limits
+    axs[0, 0].set_ylim(c.coverage.vmin, c.coverage.vmax)
 
     # Titles
     for ax, split in zip(axs[0], splits):
@@ -465,7 +457,7 @@ def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
     _add_legend_below_figure(fig, groupmembers)
 
     plt.tight_layout()
-    plt.savefig(saveto, dpi=200, bbox_inches="tight")
+    plt.savefig(saveto, bbox_inches="tight")
     plt.close()
 
 

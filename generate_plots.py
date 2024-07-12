@@ -43,9 +43,9 @@ uncertainty_averages = pnn.aggregate.average_uncertainty(results)
 pnn.plot.uncertainty_heatmap(uncertainty_averages)
 print("Saved uncertainty heatmap plot")
 
-# Sharpness/Coverage plot
-pnn.plot.plot_uncertainty_metrics_bar(metrics)
-print("Saved sharpness/coverage plot")
+# Coverage plot
+pnn.plot.plot_coverage(metrics)
+print("Saved coverage plot")
 
 # Calibration curves
 calibration_curves = pnn.aggregate.calibration_curve(results)
