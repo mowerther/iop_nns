@@ -12,7 +12,7 @@ from scipy.special import erf
 from matplotlib import pyplot as plt
 plt.style.use("default")
 from matplotlib import ticker, patches
-from matplotlib.colors import to_rgba
+from matplotlib.colors import Normalize, to_rgba
 
 from . import metrics
 from . import constants as c
@@ -336,7 +336,7 @@ def uncertainty_heatmap(results_agg: pd.DataFrame, *,
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
     """
     # Generate figure
-    fig, axs = plt.subplots(nrows=2, ncols=len(c.splits), sharex=True, sharey=True, figsize=(12, 6), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
+    fig, axs = plt.subplots(nrows=2, ncols=len(c.splits), sharex=True, sharey=True, figsize=(11, 6), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
 
     # Plot data
     for ax_row, unc in zip(axs, _heatmap_metrics):
@@ -350,12 +350,20 @@ def uncertainty_heatmap(results_agg: pd.DataFrame, *,
             im = ax.imshow(df, cmap=unc.cmap, vmin=unc.vmin, vmax=unc.vmax)
 
             # Plot individual values
+            norm = Normalize(unc.vmin, unc.vmax)
             for i, x in enumerate(c.networks):
                 for j, y in enumerate(variables):
-                    ax.text(j, i, f"{df.iloc[i, j]:.0f}", ha="center", va="center", color="w")
+                    # Ensure text is visible
+                    value = df.iloc[i, j]
+                    facecolor = unc.cmap(norm(value))
+                    facecolor_brightness = 0.3 * facecolor[0] + 0.6 * facecolor[1] + 0.1 * facecolor[2]
+                    textcolor = "w" if facecolor_brightness < 0.7 else "k"
+
+                    # Show text
+                    ax.text(j, i, f"{value:.0f}", ha="center", va="center", color=textcolor)
 
         # Color bar per row
-        cb = fig.colorbar(im, ax=ax_row, fraction=0.1, pad=0.01, shrink=1)
+        cb = fig.colorbar(im, ax=ax_row, fraction=0.1, pad=0.01, shrink=1, extend="max" if unc is c.total_unc_pct else "neither")
         cb.set_label(label=unc.label, weight="bold")
         cb.locator = ticker.MaxNLocator(nbins=6)
         cb.update_ticks()
