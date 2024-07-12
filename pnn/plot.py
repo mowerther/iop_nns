@@ -18,6 +18,15 @@ from . import metrics
 from . import constants as c
 
 
+### HELPER FUNCTIONS
+def _add_legend_below_figure(fig: plt.Figure, items: Iterable[c.Parameter], **kwargs) -> None:
+    """
+    Add a legend below the subplots, with a patch for each item.
+    """
+    legend_content = [patches.Patch(color=key.color, label=key.label, **kwargs) for key in items]
+    fig.legend(handles=legend_content, loc="upper center", bbox_to_anchor=(0.5, 0), ncols=len(items), framealpha=1, edgecolor="black")
+
+
 ### FUNCTIONS
 ## Input data - full
 def plot_full_dataset(df: pd.DataFrame, *,
@@ -445,8 +454,7 @@ def plot_uncertainty_metrics_bar(data: pd.DataFrame, *,
         ax.set_title(split.label)
 
     # Plot legend outside the subplots
-    handles, labels = ax.get_legend_handles_labels()
-    fig.legend(handles, labels, loc='center left', bbox_to_anchor=(1, 0.5))
+    _add_legend_below_figure(fig, groupmembers)
 
     plt.tight_layout()
     plt.savefig(saveto, dpi=200, bbox_inches="tight")
@@ -493,8 +501,7 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
     axs[0, 0].locator_params(axis="both", nbins=5)  # Creates one spurious xtick that I have no idea how to deal with, but probably no one will notice
 
     # Plot legend outside the subplots
-    legend_content = [patches.Patch(color=key.color, lw=3, label=key.label) for key in groupmembers]
-    fig.legend(handles=legend_content, loc="upper center", bbox_to_anchor=(0.5, 0), ncols=len(groupmembers), framealpha=1, edgecolor="black")
+    _add_legend_below_figure(fig, groupmembers)
 
     # Labels
     for ax, title in zip(axs[0], columns):
