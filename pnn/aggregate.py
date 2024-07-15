@@ -62,6 +62,9 @@ def calculate_metrics(df: pd.DataFrame) -> pd.DataFrame:
     df_metrics = pd.concat(df_metrics, names=["metric"])
     df_metrics = df_metrics.reorder_levels([*split_network, "metric"])
 
+    # Sort
+    df_metrics = df_metrics[c.iops]
+
     return df_metrics
 
 

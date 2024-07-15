@@ -113,4 +113,7 @@ def read_all_model_outputs(folder: Path | str=c.pred_path, *,
     # Put it all together
     results = pd.concat([results, df_percent, df_aleatoric_fraction])
     results = results.sort_index()
+
+    # Sort
+    results = results[c.iops]
     return results
