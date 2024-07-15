@@ -12,21 +12,6 @@ from sklearn.preprocessing import MinMaxScaler
 
 from . import constants as c
 
-####
-# recalibration procedure
-####
-
-# 1. train the model using X_train, y_train_scaled
-# 2. apply the trained model to the test dataset:
-    # mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = predict_with_uncertainty(model, X_test, scaler_y, n_samples=100)
-# 3. apply the trainedmodel to the recalibration dataset:
-    # cal_mean_preds, cal_total_var, cal_aleatoric_var, cal_epistemic_var, cal_std_preds = predict_with_uncertainty(model, X_recalib, scaler_y, n_samples=100)
-# All per individual target IOP:
-# 4. Obtain expected (model) and obs proportions (in situ) from recalibration dataset
-# 5. Fit an isotonic regression recalibration model with exp_props, obs_props
-# 6. Obtain the recalibrated exp_props and obs_props from the test dataset (org_ in the script) using the previously fitted recalibration model
-# 7. Calculate before and after recalibration metrics and plot
-
 ### DATA HANDLING
 def split(training_data: Iterable[pd.DataFrame], *, recalibration_fraction=0.2) -> tuple[list[pd.DataFrame], list[pd.DataFrame]]:
     """
@@ -88,12 +73,3 @@ def calibration_curve_single(df: pd.DataFrame) -> pd.DataFrame:
     expected, observed = uct.get_proportion_lists_vectorized(df.loc[c.y_pred].to_numpy(), df.loc[c.total_unc].to_numpy(), df.loc[c.y_true].to_numpy())
     observed = pd.DataFrame(index=expected, data=observed).rename_axis("expected")
     return observed
-
-
-
-### METRICS
-def miscalibration_area_single(df: pd.DataFrame) -> float:
-    """
-    Calculate the miscalibration area for a single DataFrame with predicted mean, predicted uncertainty (std), and reference ("true") values.
-    """
-    return uct.miscalibration_area(df.loc[c.y_pred].to_numpy(), df.loc[c.total_unc].to_numpy(), df.loc[c.y_true].to_numpy())

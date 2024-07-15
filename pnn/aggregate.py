@@ -8,7 +8,7 @@ import pandas as pd
 import uncertainty_toolbox as uct
 
 from . import constants as c, metrics
-from .recalibration import calibration_curve_single, miscalibration_area_single
+from .recalibration import calibration_curve_single
 
 ### CONSTANTS
 split_network = ["split", "network"]  # Aggregation levels
@@ -36,6 +36,7 @@ mape = metric_to_groupby(metrics.mape, c.y_true, c.y_pred)
 log_r_squared = metric_to_groupby(metrics.log_r_squared, c.y_true, c.y_pred)
 interval_sharpness = metric_to_groupby(metrics.interval_sharpness, c.y_true, c.y_pred, c.total_unc)
 coverage = metric_to_groupby(metrics.coverage, c.y_true, c.y_pred, c.total_unc)
+miscalibration_area = metric_to_groupby(metrics.miscalibration_area, c.y_true, c.y_pred, c.total_unc)
 
 
 ### FUNCTIONS
@@ -54,6 +55,7 @@ def calculate_metrics(df: pd.DataFrame) -> pd.DataFrame:
                   "r_squared": df.apply(log_r_squared),
                   "sharpness": df.apply(interval_sharpness),
                   "coverage": df.apply(coverage),
+                  "miscalibration area": df.apply(miscalibration_area),
                   }
 
     # Reorganise results
@@ -90,20 +92,3 @@ def calibration_curve(results: pd.DataFrame) -> pd.DataFrame:
     """
     observed = results.groupby(level=split_network).apply(_calibration_curve_pernetwork)
     return observed
-
-
-def _miscalibration_area_pernetwork(df: pd.DataFrame, *, columns=c.iops) -> pd.Series:
-    """
-    Apply miscalibration_area_single to the columns of a DataFrame - by default the IOPs for a single split/network combination.
-    """
-    miscalibration_areas = {key.name: miscalibration_area_single(df[key]) for key in columns}
-    miscalibration_areas = pd.Series(miscalibration_areas)
-    return miscalibration_areas
-
-
-def miscalibration_area(results: pd.DataFrame) -> pd.DataFrame:
-    """
-    Calculate the miscalibration area for each combination of split, network, and IOP.
-    """
-    miscalibration_areas = results.groupby(level=split_network).apply(_miscalibration_area_pernetwork)
-    return miscalibration_areas

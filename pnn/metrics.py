@@ -7,6 +7,7 @@ from typing import Callable, Iterable
 
 import numpy as np
 import pandas as pd
+import uncertainty_toolbox as uct
 
 ### HELPER DECORATOR FUNCTIONS
 def only_positive(func: Callable) -> Callable:
@@ -39,7 +40,7 @@ def label(name: str) -> Callable:
     return helper
 
 
-### METRICS
+### ACCURACY
 @label("RMSE")
 def rmse(y: pd.DataFrame, y_hat: pd.DataFrame, **kwargs) -> pd.Series:
 	""" Root Mean Squared Error """
@@ -121,6 +122,7 @@ def bias(y: pd.DataFrame, y_hat: pd.DataFrame, **kwargs) -> pd.Series:
 	return (y_hat - y).mean(**kwargs)
 
 
+### UNCERTAINTY
 @label("Sharpness")
 def sharpness(y_std: pd.DataFrame, **kwargs) -> pd.Series:
     """ Sharpness (square root of mean of variance per sample) """
@@ -152,3 +154,12 @@ def interval_sharpness(y_true: pd.DataFrame, y_pred: pd.DataFrame, y_pred_std: p
     ISbar = ISnorm.mean(**kwargs)
 
     return ISbar
+
+@label("Miscalibration area")
+def miscalibration_area(y_true: pd.DataFrame, y_pred: pd.DataFrame, y_pred_std: pd.DataFrame) -> pd.Series:
+    """
+    Calculate the miscalibration area for a single DataFrame with predicted mean, predicted uncertainty (std), and reference ("true") values.
+    """
+    MA = {col: uct.miscalibration_area(y_pred[col].to_numpy(), y_pred_std[col].to_numpy(), y_true[col].to_numpy()) for col in y_pred}
+    MA = pd.Series(MA)
+    return MA

@@ -462,11 +462,12 @@ def plot_coverage(data: pd.DataFrame, *,
 
 
 ## Uncertainty metrics - miscalibration area
-def table_miscalibration_area(areas: pd.DataFrame, *, saveto: Path | str=c.save_path/"miscalibration_area.csv") -> None:
+def table_miscalibration_area(df: pd.DataFrame, *, saveto: Path | str=c.save_path/"miscalibration_area.csv") -> None:
     """
     Reorder the miscalibration area table and save it to file.
     To do: fully automate.
     """
+    areas = df.loc[:, :, "miscalibration area"]
     areas = areas.reorder_levels(["network", "split"])
     areas.sort_index(inplace=True)
     areas.sort_index(key=lambda x: x.map({model: i for i, model in enumerate(c.networks)}))
