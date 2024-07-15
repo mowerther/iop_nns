@@ -5,4 +5,6 @@ from .bnn_mcd import BNN_MCD
 from .ens import Ensemble
 from .mdn import MDN
 from .rnn import RNN_MCD
+
+from .recalibration import RecalibratedPNN, recalibrate_pnn
 from ._select import select_nn

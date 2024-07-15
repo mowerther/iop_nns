@@ -60,8 +60,7 @@ for scenario, data_train, data_test, data_cal in zip(pnn.splits, train_sets, tes
     # Optional: Train recalibration
     if RECALIBRATE:
         X_cal, y_cal = pnn.data.extract_inputs_outputs(data_cal)
-        mean_predictions_cal, total_variance_cal, *_ = best_model.predict_with_uncertainty(X_cal, scaler_y)
-        recalibrator = pnn.recalibration.fit_recalibration_functions(y_cal, mean_predictions_cal, total_variance_cal)
+        best_model = pnn.nn.recalibrate_pnn(best_model, X_cal, y_cal, scaler_y)
 
     # Save model to file
     saveto_model = pnn.model_path/f"{tag}_best.keras"
