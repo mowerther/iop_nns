@@ -73,75 +73,29 @@ def miscalibration_area_single(df: pd.DataFrame) -> float:
     """
     return uct.miscalibration_area(df.loc[c.y_pred].to_numpy(), df.loc[c.total_unc].to_numpy(), df.loc[c.y_true].to_numpy())
 
+# Interval Sharpness (IS)
 
-# titles = ['aCDOM_443', 'aCDOM_675', 'aNAP_443', 'aNAP_675', 'aph_443', 'aph_675']
-# for tit, var_idx in zip(titles, range(6)):  # Per IOP
-#     cal_pred_mean = cal_mean_preds[:, var_idx]
-#     cal_pred_std = cal_std_preds[:, var_idx]
-#     cal_actual_values = y_recalib[:, var_idx]
+def calculate_is(y, L_alpha, U_alpha):
 
-#     org_mean_preds = mean_preds[:, var_idx]
-#     org_std_preds = std_preds[:, var_idx]
-#     org_y_test = y_test[:, var_idx]
+    alpha = U_alpha - L_alpha
+    if y < L_alpha:
+        return alpha + 2 * (L_alpha - y)
+    elif L_alpha <= y <= U_alpha:
+        return alpha
+    else:  # y > U_alpha
+        return alpha + 2 * (y - U_alpha)
 
-#     # prepare with recalibrated data, fit a model on the recalibrated data
-#     exp_props, obs_props = uct.get_proportion_lists_vectorized(cal_pred_mean, cal_pred_std, cal_actual_values)
-#     calib_model = uct.iso_recal(exp_props, obs_props)
+def normalize_is(IS_values):
 
-#     # then adjust the props on the test data with the recal model from recalibrated data
-#     recal_exp_props, recal_obs_props = uct.get_proportion_lists_vectorized(org_mean_preds, org_std_preds, org_y_test, recal_model=calib_model)
+    min_IS = np.min(IS_values)
+    max_IS = np.max(IS_values)
+    return (IS_values - min_IS) / (max_IS - min_IS)
 
-#     # plot with and without the recal data
-#     mace = uct.mean_absolute_calibration_error(org_mean_preds, org_std_preds, org_y_test, recal_model=None)
-#     rmsce = uct.root_mean_squared_calibration_error(org_mean_preds, org_std_preds, org_y_test, recal_model=None)
-#     ma = uct.miscalibration_area(org_mean_preds, org_std_preds, org_y_test, recal_model=None)
-#     print("Before Recalibration:  ", end="")
-#     print("MACE: {:.5f}, RMSCE: {:.5f}, MA: {:.5f}".format(mace, rmsce, ma))
+def calculate_average_is(y_true, L_alpha, U_alpha):
 
-#     mace = uct.mean_absolute_calibration_error(org_mean_preds, org_std_preds, org_y_test, recal_model=calib_model)
-#     rmsce = uct.root_mean_squared_calibration_error(org_mean_preds, org_std_preds, org_y_test, recal_model=calib_model)
-#     ma = uct.miscalibration_area(org_mean_preds, org_std_preds, org_y_test, recal_model=calib_model)
-#     print("After Recalibration:  ", end="")
-#     print("MACE: {:.5f}, RMSCE: {:.5f}, MA: {:.5f}".format(mace, rmsce, ma))
+    IS_values = np.array([calculate_is(y, L, U) for y, L, U in zip(y_true, L_alpha, U_alpha)])
+    IS_normalized = normalize_is(IS_values)
+    return np.mean(IS_normalized)
 
-#     ax = axes[var_idx]
-#     ax.plot(exp_props, obs_props, label='Before Recalibration', marker='o')
-#     ax.plot(recal_exp_props, recal_obs_props, label='After Recalibration', marker='x')
-#     ax.plot([0, 1], [0, 1], 'k--', label='1:1 Line')
-#     ax.set_title(tit)
-#     ax.set_xlabel('Expected Proportions')
-#     ax.set_ylabel('Observed Proportions')
-#     ax.legend()
-
-# # Test set predictions
-# mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = predict_with_uncertainty(model, X_test, scaler_y, n_samples=100)
-
-# # Predictions with trained model on recalib data
-# cal_mean_preds, cal_total_var, cal_aleatoric_var, cal_epistemic_var, cal_std_preds = predict_with_uncertainty(model, X_recalib, scaler_y, n_samples=100)
-
-# # Fit recal models
-# calib_models = []
-# for var_idx in range(6):
-#     cal_pred_mean = cal_mean_preds[:, var_idx]
-#     cal_pred_std = cal_std_preds[:, var_idx]
-#     cal_actual_values = y_recalib[:, var_idx]
-
-#     exp_props, obs_props = uct.get_proportion_lists_vectorized(cal_pred_mean, cal_pred_std, cal_actual_values)
-#     calib_model = uct.iso_recal(exp_props, obs_props)
-#     calib_models.append(calib_model)
-
-# for var_idx in range(6):
-#     # Test set preds, std, insitu/true
-#     test_variable_mean_preds = mean_preds[:, var_idx]
-#     test_variable_std_preds = std_preds[:, var_idx]
-#     test_variable_y_test = y_test[:, var_idx]
-
-#     # compute the expected and observed proportions using the recalibration model per variable
-#     recal_exp_props, recal_obs_props = uct.get_proportion_lists_vectorized(
-#         test_variable_mean_preds, test_variable_std_preds, test_variable_y_test, recal_model=calib_models[var_idx]
-#     )
-#     # Transform the test set standard deviations using the fitted isotonic regression model per variable
-#     test_recal_total_std = calib_models[var_idx].transform(test_variable_std_preds)
-#     # Calculate recalibrated total variances by squaring the recalibrated standard deviations per variable, but may not be necessary
-#     test_recal_total_var = np.zeros_like(total_var)
-#     test_recal_total_var[:, var_idx] = test_recal_total_std**2
+# req. y_true, lower and upper prediction intervals
+avg_is = calculate_average_is(y_true, L_alpha, U_alpha)
