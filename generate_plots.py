@@ -57,8 +57,6 @@ calibration_curves = pnn.aggregate.calibration_curve(results)
 pnn.output.plot_calibration_curves(calibration_curves)
 print("Saved calibration curve plot")
 
-raise Exception
-
 # y vs y_hat scatter plots
 pnn.output.plot_performance_scatter(results)
 print("Saved match-up (scatter) plots")
