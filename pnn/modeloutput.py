@@ -85,12 +85,18 @@ def read_model_outputs(filename: Path | str) -> pd.DataFrame:
     return df
 
 
-def read_all_model_outputs(folder: Path | str=c.pred_path) -> pd.DataFrame:
+def read_all_model_outputs(folder: Path | str=c.pred_path, *,
+                           use_recalibration_data=False) -> pd.DataFrame:
     """
     Read all data from a given folder into one big dataframe.
     """
+    # Setup
+    filename_base = "preds"
+    if use_recalibration_data:
+        filename_base = "recal_" + filename_base
+
     # Read data
-    results = {split.name: pd.concat({network.name: read_model_outputs(folder/f"{network.name}_{split.name}_preds.csv") for network in c.networks}, names=["network"]) for split in c.splits}
+    results = {split.name: pd.concat({network.name: read_model_outputs(folder/f"{network.name}_{split.name}_{filename_base}.csv") for network in c.networks}, names=["network"]) for split in c.splits}
     results = pd.concat(results, names=["split"])
 
     # Reorder

@@ -14,7 +14,7 @@ import pnn
 
 ### Parse command line arguments
 import argparse
-parser = argparse.ArgumentParser("Load and plot the results from a previous PCSE ensemble run.")
+parser = argparse.ArgumentParser("Script for loading data and training a neural network.")
 parser.add_argument("nn_type", help="PNN architecture to use")
 parser.add_argument("-c", "--recalibrate", help="apply recalibration", action="store_true")
 args = parser.parse_args()
