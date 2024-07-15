@@ -34,7 +34,7 @@ sspb = metric_to_groupby(metrics.sspb, c.y_true, c.y_pred)
 mdsa = metric_to_groupby(metrics.mdsa, c.y_true, c.y_pred)
 mape = metric_to_groupby(metrics.mape, c.y_true, c.y_pred)
 log_r_squared = metric_to_groupby(metrics.log_r_squared, c.y_true, c.y_pred)
-sharpness = metric_to_groupby(metrics.sharpness, c.total_unc)
+interval_sharpness = metric_to_groupby(metrics.interval_sharpness, c.y_true, c.y_pred, c.total_unc)
 coverage = metric_to_groupby(metrics.coverage, c.y_true, c.y_pred, c.total_unc)
 
 
@@ -52,7 +52,7 @@ def calculate_metrics(df: pd.DataFrame) -> pd.DataFrame:
                   "mdsa": df.apply(mdsa),
                   "mape": df.apply(mape),
                   "r_squared": df.apply(log_r_squared),
-                  "sharpness": df.apply(sharpness),
+                  "sharpness": df.apply(interval_sharpness),
                   "coverage": df.apply(coverage),
                   }
 

@@ -134,3 +134,21 @@ def coverage(y_true: pd.DataFrame, y_pred: pd.DataFrame, y_pred_std: pd.DataFram
     within_bounds = (y_true >= lower_bounds) & (y_true <= upper_bounds)
     coverage_factors = within_bounds.mean(**kwargs) * 100  # [%]
     return coverage_factors
+
+@label("Interval sharpness")
+def interval_sharpness(y_true: pd.DataFrame, y_pred: pd.DataFrame, y_pred_std: pd.DataFrame, *, alpha: float=0.31731050787, **kwargs) -> pd.Series:
+    """ Interval sharpness (how narrow are the prediction ranges?) """
+    lower, upper = y_pred - y_pred_std, y_pred + y_pred_std
+
+    # Calculate individual IS
+    IS = alpha * (upper - lower)
+    IS[y_true < lower] += 2 * (lower - y_true)
+    IS[y_true > upper] += 2 * (y_true - upper)
+
+    # Normalise
+    ISnorm = (IS - IS.min(**kwargs)) / (IS.max(**kwargs) - IS.min(**kwargs))
+
+    # Take mean
+    ISbar = ISnorm.mean(**kwargs)
+
+    return ISbar

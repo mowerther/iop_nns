@@ -97,29 +97,3 @@ def miscalibration_area_single(df: pd.DataFrame) -> float:
     Calculate the miscalibration area for a single DataFrame with predicted mean, predicted uncertainty (std), and reference ("true") values.
     """
     return uct.miscalibration_area(df.loc[c.y_pred].to_numpy(), df.loc[c.total_unc].to_numpy(), df.loc[c.y_true].to_numpy())
-
-# Interval Sharpness (IS)
-def calculate_is(y, L_alpha, U_alpha):
-
-    alpha = U_alpha - L_alpha
-    if y < L_alpha:
-        return alpha + 2 * (L_alpha - y)
-    elif L_alpha <= y <= U_alpha:
-        return alpha
-    else:  # y > U_alpha
-        return alpha + 2 * (y - U_alpha)
-
-def normalize_is(IS_values):
-
-    min_IS = np.min(IS_values)
-    max_IS = np.max(IS_values)
-    return (IS_values - min_IS) / (max_IS - min_IS)
-
-def calculate_average_is(y_true, L_alpha, U_alpha):
-
-    IS_values = np.array([calculate_is(y, L, U) for y, L, U in zip(y_true, L_alpha, U_alpha)])
-    IS_normalized = normalize_is(IS_values)
-    return np.mean(IS_normalized)
-
-# req. y_true, lower and upper prediction intervals
-# avg_is = calculate_average_is(y_true, L_alpha, U_alpha)
