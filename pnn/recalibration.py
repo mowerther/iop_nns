@@ -112,3 +112,36 @@ def miscalibration_area_single(df: pd.DataFrame) -> float:
 #     ax.set_xlabel('Expected Proportions')
 #     ax.set_ylabel('Observed Proportions')
 #     ax.legend()
+
+# Test set predictions
+mean_preds, total_var, aleatoric_var, epistemic_var, std_preds = predict_with_uncertainty(model, X_test, scaler_y, n_samples=100)
+
+# Predictions with trained model on recalib data
+cal_mean_preds, cal_total_var, cal_aleatoric_var, cal_epistemic_var, cal_std_preds = predict_with_uncertainty(model, X_recalib, scaler_y, n_samples=100)
+
+# Fit recal models
+calib_models = []
+for var_idx in range(6):
+    cal_pred_mean = cal_mean_preds[:, var_idx]
+    cal_pred_std = cal_std_preds[:, var_idx]
+    cal_actual_values = y_recalib[:, var_idx]
+
+    exp_props, obs_props = uct.get_proportion_lists_vectorized(cal_pred_mean, cal_pred_std, cal_actual_values)
+    calib_model = uct.iso_recal(exp_props, obs_props)
+    calib_models.append(calib_model)
+
+for var_idx in range(6):
+    # Test set preds, std, insitu/true
+    test_variable_mean_preds = mean_preds[:, var_idx]
+    test_variable_std_preds = std_preds[:, var_idx]
+    test_variable_y_test = y_test[:, var_idx]
+
+    # compute the expected and observed proportions using the recalibration model per variable
+    recal_exp_props, recal_obs_props = uct.get_proportion_lists_vectorized(
+        test_variable_mean_preds, test_variable_std_preds, test_variable_y_test, recal_model=calib_models[var_idx]
+    )
+    # Transform the test set standard deviations using the fitted isotonic regression model per variable
+    test_recal_total_std = calib_models[var_idx].transform(test_variable_std_preds)
+    # Calculate recalibrated total variances by squaring the recalibrated standard deviations per variable, but may not be necessary
+    test_recal_total_var = np.zeros_like(total_var)
+    test_recal_total_var[:, var_idx] = test_recal_total_std**2
