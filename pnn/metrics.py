@@ -40,97 +40,97 @@ def label(name: str) -> Callable:
 
 
 ### METRICS
-@label('RMSE')
-def rmse(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
+@label("RMSE")
+def rmse(y: pd.DataFrame, y_hat: pd.DataFrame, **kwargs) -> pd.Series:
 	""" Root Mean Squared Error """
-	return np.sqrt(((y - y_hat)**2).mean())
+	return np.sqrt(((y - y_hat)**2).mean(**kwargs))
 
 @only_positive
-@label('RMSLE')
-def rmsle(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
+@label("RMSLE")
+def rmsle(y: pd.DataFrame, y_hat: pd.DataFrame, **kwargs) -> pd.Series:
     """ Root Mean Squared Logarithmic Error """
     y, y_hat = np.log(1 + y), np.log(1 + y_hat)
-    return rmse(y, y_hat)
+    return rmse(y, y_hat, **kwargs)
 
-@label('NRMSE')
-def nrmse(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
+@label("NRMSE")
+def nrmse(y: pd.DataFrame, y_hat: pd.DataFrame, **kwargs) -> pd.Series:
 	""" Normalized Root Mean Squared Error """
-	return rmse(y, y_hat) / y.mean()
+	return rmse(y, y_hat) / y.mean(**kwargs)
 
 @label("R²")
-def r_squared(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
+def r_squared(y: pd.DataFrame, y_hat: pd.DataFrame, **kwargs) -> pd.Series:
     """ Coefficient of determination (R²) """
-    SSres = ((y - y_hat)**2).sum()
-    SStot = ((y - y.mean())**2).sum()
+    SSres = ((y - y_hat)**2).sum(**kwargs)
+    SStot = ((y - y.mean())**2).sum(**kwargs)
     R2 = 1 - SSres/SStot
     return R2
 
 @only_positive
 @label("R² (log)")
-def log_r_squared(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
+def log_r_squared(y: pd.DataFrame, y_hat: pd.DataFrame, **kwargs) -> pd.Series:
     """ Coefficient of determination (R²) of the logarithms """
     y, y_hat = np.log10(y), np.log10(y_hat)
-    return r_squared(y, y_hat)
+    return r_squared(y, y_hat, **kwargs)
 
 @label("MAD")
-def MAD(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
+def MAD(y: pd.DataFrame, y_hat: pd.DataFrame, **kwargs) -> pd.Series:
     """ Median Absolute Deviation """
-    return (y_hat - y).abs().median()
+    return (y_hat - y).abs().median(**kwargs)
 
 @label("MdAPE")
-def mape(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
+def mape(y: pd.DataFrame, y_hat: pd.DataFrame, **kwargs) -> pd.Series:
     """ Mean Absolute Percentage Error """
-    med = np.abs( (y - y_hat) / y).median()
+    med = np.abs( (y - y_hat) / y).median(**kwargs)
     MAPE = 100 * med
     return MAPE
 
 @only_positive
 @label("MSA")
-def msa(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
+def msa(y: pd.DataFrame, y_hat: pd.DataFrame, **kwargs) -> pd.Series:
     """ Mean Symmetric Accuracy """
     # https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2017SW001669
-    m = np.abs(np.log(y_hat / y)).mean()
+    m = np.abs(np.log(y_hat / y)).mean(**kwargs)
     MSA = 100 * (np.exp(m) - 1)
     return MSA
 
 @only_positive
 @label("MdSA")
-def mdsa(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
+def mdsa(y: pd.DataFrame, y_hat: pd.DataFrame, **kwargs) -> pd.Series:
     """
     Median Symmetric Accuracy
     https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2017SW001669
     """
-    med = np.abs(np.log(y_hat / y)).median()
+    med = np.abs(np.log(y_hat / y)).median(**kwargs)
     MDSA = 100 * (np.exp(med) - 1)
     return MDSA
 
 # @only_positive
 @label("SSPB")
-def sspb(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
+def sspb(y: pd.DataFrame, y_hat: pd.DataFrame, **kwargs) -> pd.Series:
     """
     Symmetric Signed Percentage Bias
     https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2017SW001669
     """
-    med = np.log(y_hat / y).median()
+    med = np.log(y_hat / y).median(**kwargs)
     SSPB = 100 * np.sign(med) * (np.exp(np.abs(med)) - 1)
     return SSPB
 
 @label("Bias")
-def bias(y: pd.DataFrame, y_hat: pd.DataFrame) -> pd.Series:
+def bias(y: pd.DataFrame, y_hat: pd.DataFrame, **kwargs) -> pd.Series:
 	""" Bias (mean difference) """
-	return (y_hat - y).mean()
+	return (y_hat - y).mean(**kwargs)
 
 
 @label("Sharpness")
-def sharpness(y_std: pd.DataFrame) -> pd.Series:
+def sharpness(y_std: pd.DataFrame, **kwargs) -> pd.Series:
     """ Sharpness (square root of mean of variance per sample) """
-    return np.sqrt((y_std**2).median())
+    return np.sqrt((y_std**2).median(**kwargs))
 
 @label("Coverage")
-def coverage(y_true: pd.DataFrame, y_pred: pd.DataFrame, y_pred_std: pd.DataFrame, *, k=1) -> pd.Series:
+def coverage(y_true: pd.DataFrame, y_pred: pd.DataFrame, y_pred_std: pd.DataFrame, *, k=1, **kwargs) -> pd.Series:
     """ Coverage factor (how often does the true value fall within the predicted range?) """
     lower_bounds = y_pred - k * y_pred_std
     upper_bounds = y_pred + k * y_pred_std
     within_bounds = (y_true >= lower_bounds) & (y_true <= upper_bounds)
-    coverage_factors = within_bounds.mean() * 100  # [%]
+    coverage_factors = within_bounds.mean(**kwargs) * 100  # [%]
     return coverage_factors
