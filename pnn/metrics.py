@@ -137,10 +137,14 @@ def coverage(y_true: pd.DataFrame, y_pred: pd.DataFrame, y_pred_std: pd.DataFram
     coverage_factors = within_bounds.mean(**kwargs) * 100  # [%]
     return coverage_factors
 
+def _std_to_bounds(mean: pd.DataFrame, std: pd.DataFrame) -> pd.DataFrame:
+    """ Get lower and upper bounds from the mean and standard deviation. """
+    return mean - std, mean + std
+
 @label("Interval sharpness")
 def interval_sharpness(y_true: pd.DataFrame, y_pred: pd.DataFrame, y_pred_std: pd.DataFrame, *, alpha: float=0.31731050787, **kwargs) -> pd.Series:
-    """ Interval sharpness (how narrow are the prediction ranges?) """
-    lower, upper = y_pred - y_pred_std, y_pred + y_pred_std
+    """ Interval sharpness (how often are the true values within the predicted range? With additional punishment for out-of-range cases.) """
+    lower, upper = _std_to_bounds(y_pred, y_pred_std)
 
     # Calculate individual IS
     IS = alpha * (upper - lower)
@@ -154,6 +158,7 @@ def interval_sharpness(y_true: pd.DataFrame, y_pred: pd.DataFrame, y_pred_std: p
     ISbar = ISnorm.mean(**kwargs)
 
     return ISbar
+
 
 @label("Miscalibration area")
 def miscalibration_area(y_true: pd.DataFrame, y_pred: pd.DataFrame, y_pred_std: pd.DataFrame) -> pd.Series:
