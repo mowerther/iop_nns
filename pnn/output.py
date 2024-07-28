@@ -73,7 +73,7 @@ def plot_full_dataset(df: pd.DataFrame, *,
 ## Input data - Random/WD/OOD splits
 traincolor, testcolor = "black", "C1"
 def plot_data_splits(*datasets: tuple[pd.DataFrame],
-                     variables: Iterable[c.Parameter]=c.iops_443, splits: Iterable[c.Parameter]=c.splits,
+                     variables: Iterable[c.Parameter]=c.iops_443, splits: Iterable[c.Parameter]=c.scenarios_123,
                      title: Optional[str]=None,
                      saveto: Path | str=c.save_path/"scenarios.pdf") -> None:
     """
@@ -204,7 +204,7 @@ def plot_performance_scatter(results: pd.DataFrame, *,
     for (splitkey, networkkey), df in results.groupby(level=_scatter_levels):
         # Set up labels
         saveto_here = saveto.with_stem(f"{saveto.stem}_{networkkey}-{splitkey}")
-        split, network = c.splits_fromkey[splitkey], c.networks_fromkey[networkkey]
+        split, network = c.scenarios_123_fromkey[splitkey], c.networks_fromkey[networkkey]
 
         # Plot
         plot_performance_scatter_single(df, title=f"{network.label} {split.label}", saveto=saveto_here, **kwargs)
@@ -213,7 +213,7 @@ def plot_performance_scatter(results: pd.DataFrame, *,
 ## Performance metrics - lollipop plot
 _lollipop_metrics = [c.mdsa, c.sspb, c.r_squared]
 def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
-                                      groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_lollipop_metrics, splits: Iterable[c.Parameter]=c.splits,
+                                      groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_lollipop_metrics, splits: Iterable[c.Parameter]=c.scenarios_123,
                                       saveto: Path | str=c.save_path/"performance_lolliplot_vertical.pdf") -> None:
     """
     Plot some number of DataFrames containing performance metric statistics.
@@ -300,10 +300,10 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
     Plot log-binned statistics from a main DataFrame.
     """
     # Generate figure
-    fig, axs = plt.subplots(nrows=len(c.splits)*len(c.networks), ncols=len(c.iops), sharex=True, figsize=(15, 25), layout="constrained", squeeze=False)
+    fig, axs = plt.subplots(nrows=len(c.scenarios_123)*len(c.networks), ncols=len(c.iops), sharex=True, figsize=(15, 25), layout="constrained", squeeze=False)
 
     # Plot lines
-    for ax_row, (network, split) in zip(axs, itertools.product(c.networks, c.splits)):
+    for ax_row, (network, split) in zip(axs, itertools.product(c.networks, c.scenarios_123)):
         for ax, var in zip(ax_row, c.iops):
             df = binned.loc[split, network][var]
             plot_log_binned_statistics_line(df, ax=ax, legend=False)
@@ -314,7 +314,7 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
         ax.set_ylim(ymin=0)
     for ax, var in zip(axs[-1], c.iops):
         ax.set_xlabel(var.label)
-    for ax, (network, split) in zip(axs[:, 0], itertools.product(c.networks, c.splits)):
+    for ax, (network, split) in zip(axs[:, 0], itertools.product(c.networks, c.scenarios_123)):
         ax.set_ylabel(f"{network.label}\n{split.label}")
 
     # Labels
@@ -336,12 +336,12 @@ def plot_uncertainty_heatmap(results_agg: pd.DataFrame, *,
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
     """
     # Generate figure
-    fig, axs = plt.subplots(nrows=2, ncols=len(c.splits), sharex=True, sharey=True, figsize=(11, 6), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
+    fig, axs = plt.subplots(nrows=2, ncols=len(c.scenarios_123), sharex=True, sharey=True, figsize=(11, 6), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
 
     # Plot data
     for ax_row, unc in zip(axs, _heatmap_metrics):
         # Plot each panel per row
-        for ax, split in zip(ax_row, c.splits):
+        for ax, split in zip(ax_row, c.scenarios_123):
             # Select relevant data
             df = results_agg.loc[unc, split]
             df = df[variables]
@@ -379,7 +379,7 @@ def plot_uncertainty_heatmap(results_agg: pd.DataFrame, *,
     for ax in axs[:, 0]:
         ax.set_yticks(*wrap_labels(c.networks))
 
-    for ax, split in zip(axs[0], c.splits):
+    for ax, split in zip(axs[0], c.scenarios_123):
         ax.set_title(split.label, fontweight="bold")
 
     plt.savefig(saveto)
@@ -404,7 +404,7 @@ def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=3) -> None:
         ax.text(1.01, percentage/100, f"$k = {k}$", transform=ax.transAxes, horizontalalignment="left", verticalalignment="center")
 
 def plot_coverage(data: pd.DataFrame, *,
-                  groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, splits: Iterable[c.Parameter]=c.splits,
+                  groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, splits: Iterable[c.Parameter]=c.scenarios_123,
                   saveto: Path | str=c.save_path/"uncertainty_coverage.pdf") -> None:
     """
     Bar plot showing the coverage factor (pre-calculated).

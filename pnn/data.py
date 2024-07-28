@@ -14,11 +14,13 @@ from . import constants as c
 ### INPUT / OUTPUT
 rename_org = {"org_aph_443": "aph_443", "org_anap_443": "aNAP_443", "org_acdom_443": "aCDOM_443",
               "org_aph_675": "aph_675", "org_anap_675": "aNAP_675", "org_acdom_675": "aCDOM_675",}
-def read_all_data(folder: Path | str=c.data_path) -> tuple[pd.DataFrame]:
+def read_scenario123_data(folder: Path | str=c.data_path) -> tuple[list[pd.DataFrame], list[pd.DataFrame]]:
     """
-    Read all split data from a given folder into a number of DataFrames.
+    Read the GLORIA scenario 1, 2, 3 data from a given folder into a number of DataFrames.
     The output cannot be a single DataFrame because of differing indices.
+    Filenames are hardcoded.
     """
+    ### LOAD DATA AND RENAME COLUMNS TO CONSISTENT FORMAT
     train_set_random = pd.read_csv(folder/"random_df_train_org.csv")
     test_set_random = pd.read_csv(folder/"random_df_test_org.csv")
 
@@ -28,15 +30,49 @@ def read_all_data(folder: Path | str=c.data_path) -> tuple[pd.DataFrame]:
     train_set_ood = pd.read_csv(folder/"ood_train_set_2.csv").drop(columns=rename_org.values()).rename(columns=rename_org)
     test_set_ood = pd.read_csv(folder/"ood_test_set_2.csv").drop(columns=rename_org.values()).rename(columns=rename_org)
 
-    return train_set_random, test_set_random, train_set_wd, test_set_wd, train_set_ood, test_set_ood
+    ### ORGANISE TRAIN/TEST SETS
+    train_data = [train_set_random, train_set_wd, train_set_ood]
+    test_data = [test_set_random, test_set_wd, test_set_ood]
+
+    return train_data, test_data
+
+
+capitalise_iops = {"acdom_443": "aCDOM_443", "acdom_675": "aCDOM_675", "anap_443": "aNAP_443", "anap_675": "aNAP_675",}
+def read_prisma_data(folder: Path | str=c.prisma_path) -> tuple[list[pd.DataFrame], list[pd.DataFrame]]:
+    """
+    Read the PRISMA subscenario 1--5 data from a given folder into a number of DataFrames.
+    The output cannot be a single DataFrame because of differing indices.
+    Filenames are hardcoded.
+    """
+    ### LOAD DATA AND RENAME COLUMNS TO CONSISTENT FORMAT
+    # train_X, train_y for subscenarios 1, 2a, 2b
+    gloria_resampled = pd.read_csv(folder/"case_1_insitu_vs_insitu"/"gloria_res_prisma_s.csv").rename(columns={f"{nm}_prisma_res": f"Rrs_{nm}" for nm in c.wavelengths_prisma})
+
+    # test_X, test_y for subscenarios 1
+    prisma_insitu = pd.read_csv(folder/"case_1_insitu_vs_insitu"/"prisma_insitu.csv").rename(columns={f"{nm}_prisma_insitu": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
+
+    # train_X, train_y for subscenarios 3a, 3b
+    gloria_and_prisma_insitu = pd.read_csv(folder/"case_3_local_insitu_vs_aco"/"combined_local_train_df.csv").rename(columns={f"{nm}_prisma_local": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns={"cdom_443": "aCDOM_443", "cdom_675": "aCDOM_675", "nap_443": "aNAP_443", "nap_675": "aNAP_675", "ph_443": "aph_443", "ph_675": "aph_675",})
+
+    # test_X, test_y for subscenarios 2a, 3a
+    prisma_acolite = pd.read_csv(folder/"case_2_insitu_vs_aco"/"prisma_aco.csv").rename(columns={f"aco_{nm}": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
+
+    # test_X, test_y for subscenarios 2b, 3b
+    prisma_l2 = pd.read_csv(folder/"case_2_insitu_vs_l2"/"prisma_l2.csv").rename(columns={f"L2C_{nm}": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
+
+    ### ORGANISE TRAIN/TEST SETS
+    train_data = [gloria_resampled, gloria_resampled, gloria_resampled, gloria_and_prisma_insitu, gloria_and_prisma_insitu]
+    test_data = [prisma_insitu, prisma_acolite, prisma_l2, prisma_acolite, prisma_l2]
+
+    return train_data, test_data
 
 
 def extract_inputs_outputs(data: pd.DataFrame, *,
-                           Rrs_stepsize: int=5, y_columns: Iterable[str]=c.iops) -> tuple[np.ndarray, np.ndarray]:
+                           Rrs_wavelengths: Iterable[int]=c.wavelengths_123, y_columns: Iterable[str]=c.iops) -> tuple[np.ndarray, np.ndarray]:
     """
     For a given DataFrame, extract the Rrs columns (X) and IOP columns (y).
     """
-    rrs_columns = [f"Rrs_{nm}" for nm in range(400, 701, 5)]
+    rrs_columns = [f"Rrs_{nm}" for nm in Rrs_wavelengths]
     X = data[rrs_columns].values
     y = data[y_columns].values
     return X, y

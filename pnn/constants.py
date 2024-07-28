@@ -12,6 +12,7 @@ from cmcrameri.cm import managua
 
 ### FILENAMES
 data_path = Path("datasets_train_test/")
+prisma_path = Path("prisma_subscenarios/")
 model_path = Path("pnn_tf_models/")
 pred_path = Path("pnn_model_estimates/")
 save_path = Path("manuscript_figures/")
@@ -66,13 +67,17 @@ networks = [bnn_mcd, bnn_dc, mdn, ensemble, rnn]
 networks_fromkey = {p.name: p for p in networks}
 
 
-### SPLIT TYPES
+### SCENARIOS
+# Scenarios 1, 2, 3
 random_split = Parameter("random_split", "Random split", label_2lines="Random\nsplit")
 wd = Parameter("wd_split", "Within-distribution split", label_2lines="Within-distribution\nsplit")
 ood = Parameter("ood_split", "Out-of-distribution split", label_2lines="Out-of-distribution\nsplit")
+scenarios_123 = [random_split, wd, ood]
+scenarios_123_fromkey = {p.name: p for p in scenarios_123}
+wavelengths_123 = range(400, 701, 5)
 
-splits = [random_split, wd, ood]
-splits_fromkey = {p.name: p for p in splits}
+# PRISMA scenarios 1, 2a, 2b, 3a, 3b
+wavelengths_prisma = [406, 415, 423, 431, 438, 446, 453, 460, 468, 475, 482, 489, 497, 504, 512, 519, 527, 535, 542, 550, 559, 567, 575, 583, 592, 601, 609, 618, 627, 636, 645, 655, 664, 674, 684, 694]
 
 
 ### UNCERTAINTY TYPES
