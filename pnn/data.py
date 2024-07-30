@@ -54,30 +54,29 @@ def read_scenario123_data(folder: Path | str=c.data_path) -> tuple[list[pd.DataF
 capitalise_iops = {"acdom_443": "aCDOM_443", "acdom_675": "aCDOM_675", "anap_443": "aNAP_443", "anap_675": "aNAP_675",}
 def read_prisma_data(folder: Path | str=c.prisma_path) -> tuple[list[pd.DataFrame], list[pd.DataFrame]]:
     """
-    Read the PRISMA subscenario 1--5 data from a given folder into a number of DataFrames.
-    The output cannot be a single DataFrame because of differing indices.
+    Read the PRISMA subscenario 1--3 data from a given folder into a number of DataFrames.
     Note that the data in the CSV files have NOT been rescaled, so this must be done here.
     Filenames are hardcoded.
     """
     ### LOAD DATA AND RENAME COLUMNS TO CONSISTENT FORMAT
-    # train_X, train_y for subscenarios 1, 2a, 2b
+    # train_X, train_y for GLORIA-based scenarios (case 1 & out-of-distribution)
     gloria_resampled = pd.read_csv(folder/"case_1_insitu_vs_insitu"/"gloria_res_prisma_s.csv").rename(columns={f"{nm}_prisma_res": f"Rrs_{nm}" for nm in c.wavelengths_prisma})
 
-    # test_X, test_y for subscenarios 1
-    prisma_insitu = pd.read_csv(folder/"case_1_insitu_vs_insitu"/"prisma_insitu.csv").rename(columns={f"{nm}_prisma_insitu": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
-
-    # train_X, train_y for subscenarios 3a, 3b
+    # train_X, train_y for GLORIA+PRISMA-based scenarios (within-distribution)
     combined_insitu = pd.read_csv(folder/"case_3_local_insitu_vs_aco"/"combined_local_train_df.csv").rename(columns={f"{nm}_prisma_local": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns={"cdom_443": "aCDOM_443", "cdom_675": "aCDOM_675", "nap_443": "aNAP_443", "nap_675": "aNAP_675", "ph_443": "aph_443", "ph_675": "aph_675",})
 
-    # test_X, test_y for subscenarios 2a, 3a
-    prisma_acolite = pd.read_csv(folder/"case_2_insitu_vs_aco"/"prisma_aco.csv").rename(columns={f"aco_{nm}": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
-    prisma_acolite_2a = prisma_acolite
-    prisma_acolite_3a = prisma_acolite.copy()
+    # test_X, test_y for case 1
+    prisma_insitu = pd.read_csv(folder/"case_1_insitu_vs_insitu"/"prisma_insitu.csv").rename(columns={f"{nm}_prisma_insitu": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
 
-    # test_X, test_y for subscenarios 2b, 3b
+    # test_X, test_y for ACOLITE scenarios
+    prisma_acolite = pd.read_csv(folder/"case_2_insitu_vs_aco"/"prisma_aco.csv").rename(columns={f"aco_{nm}": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
+    prisma_acolite_wd = prisma_acolite
+    prisma_acolite_ood = prisma_acolite.copy()
+
+    # test_X, test_y for L2 scenarios
     prisma_l2 = pd.read_csv(folder/"case_2_insitu_vs_l2"/"prisma_l2.csv").rename(columns={f"L2C_{nm}": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
-    prisma_l2_2a = prisma_l2
-    prisma_l2_3a = prisma_l2.copy()
+    prisma_l2_wd = prisma_l2
+    prisma_l2_ood = prisma_l2.copy()
 
     ### APPLY ROBUST SCALERS
     # Setup
@@ -89,17 +88,18 @@ def read_prisma_data(folder: Path | str=c.prisma_path) -> tuple[list[pd.DataFram
     combined_insitu[rrs_columns] = combined_scaler.fit_transform(combined_insitu[rrs_columns])
 
     # Apply to test data
-    prisma_insitu[rrs_columns] = gloria_scaler.transform(prisma_insitu[rrs_columns])  # subscenario 1
+    prisma_insitu[rrs_columns] = gloria_scaler.transform(prisma_insitu[rrs_columns])  # case 1
 
-    prisma_acolite_2a[rrs_columns] = gloria_scaler.transform(prisma_acolite_2a[rrs_columns])  # subscenario 2
-    prisma_l2_2a[rrs_columns] = gloria_scaler.transform(prisma_l2_2a[rrs_columns])
+    prisma_acolite_wd[rrs_columns] = combined_scaler.transform(prisma_acolite_wd[rrs_columns])  # within-distribution
+    prisma_l2_wd[rrs_columns] = combined_scaler.transform(prisma_l2_wd[rrs_columns])
 
-    prisma_acolite_3a[rrs_columns] = combined_scaler.transform(prisma_acolite_3a[rrs_columns])  # subscenario 3
-    prisma_l2_3a[rrs_columns] = combined_scaler.transform(prisma_l2_3a[rrs_columns])
+    prisma_acolite_ood[rrs_columns] = gloria_scaler.transform(prisma_acolite_ood[rrs_columns])  # out-of-distribution
+    prisma_l2_ood[rrs_columns] = gloria_scaler.transform(prisma_l2_ood[rrs_columns])
+
 
     ### ORGANISE TRAIN/TEST SETS
-    train_data = [gloria_resampled, gloria_resampled, gloria_resampled, combined_insitu, combined_insitu]
-    test_data = [prisma_insitu, prisma_acolite_2a, prisma_l2_2a, prisma_acolite_3a, prisma_l2_3a]
+    train_data = [gloria_resampled, combined_insitu, combined_insitu, gloria_resampled, gloria_resampled]
+    test_data = [prisma_insitu, prisma_acolite_wd, prisma_l2_wd, prisma_acolite_ood, prisma_l2_ood]
 
     return train_data, test_data
 
