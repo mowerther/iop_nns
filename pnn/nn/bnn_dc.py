@@ -4,7 +4,7 @@ Bayesian Neural Network with DropConnect (BNN DC).
 from typing import Self
 
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Dropout, Layer
+from tensorflow.keras.layers import Dense, Dropout, Input, Layer
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.regularizers import l2
 
@@ -57,12 +57,10 @@ class BNN_DC(DropoutPNN):
         Construct a BNN with DC based on the input hyperparameters.
         """
         model = Sequential()
-
-        # Add the first layer with input shape
-        model.add(DropConnectDense(hidden_units, activation=activation, dropout_rate=dropout_rate, l2_reg=l2_reg, input_shape=input_shape, name="drop_connect_dense_1"))
+        model.add(Input(shape=input_shape))
 
         # Add additional layers
-        for i in range(1, n_layers):
+        for i in range(n_layers):
             model.add(DropConnectDense(hidden_units, activation=activation, dropout_rate=dropout_rate, l2_reg=l2_reg, name=f"drop_connect_dense_{i+1}"))
 
         # Output layer: Adjust for 6 means and 6 variances (12 outputs in total)

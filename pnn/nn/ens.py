@@ -28,12 +28,10 @@ class _SimpleNN(BasePNN):
         Construct a single regular NN based on the input hyperparameters.
         """
         model = Sequential()
+        model.add(Input(shape=input_shape))
 
-        # Add the first layer with input shape
-        model.add(Dense(hidden_units, activation=activation, input_shape=input_shape, kernel_regularizer=l2(l2_reg)))
-
-        # Add additional layers
-        for i in range(n_layers - 1):
+        # Add layers
+        for i in range(n_layers):
             model.add(Dense(hidden_units, activation=activation, kernel_regularizer=l2(l2_reg)))
 
         # Output layer: Adjust for 6 means and 6 variances (12 outputs in total)
