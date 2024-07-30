@@ -44,6 +44,10 @@ def read_scenario123_data(folder: Path | str=c.data_path) -> tuple[list[pd.DataF
     train_data = [train_set_random, train_set_wd, train_set_ood]
     test_data = [test_set_random, test_set_wd, test_set_ood]
 
+    ### SELECT WAVELENGTHS
+    for data in [*train_data, *test_data]:
+        data.drop(columns=[col for col in _find_rrs_columns(data) if int(col.split("_")[1]) not in c.wavelengths_123], inplace=True)
+
     return train_data, test_data
 
 
