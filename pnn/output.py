@@ -487,7 +487,7 @@ def _plot_calibration_single(ax: plt.Axes, data: pd.Series, **kwargs) -> None:
 
 
 def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
-                            rows: Iterable[c.Parameter]=c.splits, columns: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks,
+                            rows: Iterable[c.Parameter]=c.scenarios_123, columns: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks,
                             saveto: Path | str=c.save_path/"calibration_curves.pdf") -> None:
     """
     Plot calibration curves (expected vs. observed).

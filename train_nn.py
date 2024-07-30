@@ -6,6 +6,10 @@ Selects the type of network from the first argument: [bnn_dc, bnn_mcd, ens_nn, m
 Example:
     python train_nn.py bnn_mcd
 
+Optionally, use the -p flag to use PRISMA data:
+Example:
+    python train_nn.py bnn_mcd -p
+
 Optionally, use the -c flag to enable recalibration.
 Example:
     python train_nn.py bnn_mcd -c
@@ -16,31 +20,29 @@ import pnn
 import argparse
 parser = argparse.ArgumentParser("Script for loading data and training a neural network.")
 parser.add_argument("nn_type", help="PNN architecture to use")
+parser.add_argument("-p", "--prisma", help="use PRISMA data", action="store_true")
 parser.add_argument("-c", "--recalibrate", help="apply recalibration", action="store_true")
 args = parser.parse_args()
-nn_type = args.nn_type
-RECALIBRATE = args.recalibrate
 
 # Select NN class
-NN = pnn.nn.select_nn(nn_type)
+NN = pnn.nn.select_nn(args.nn_type)
 
 ### LOAD DATA
 # Load from file
-train_set_random, test_set_random, train_set_wd, test_set_wd, train_set_ood, test_set_ood = pnn.read_all_data()
-train_sets = [train_set_random, train_set_wd, train_set_ood]
-test_sets = [test_set_random, test_set_wd, test_set_ood]
+scenarios, load_data = pnn.data.select_scenarios(prisma=args.prisma)
+train_sets, test_sets = load_data()
 print("Loaded data.")
 
 # Split data if recalibrating
-if RECALIBRATE:
+if args.recalibrate:
     train_sets, calibration_sets = pnn.recalibration.split(train_sets)
 else:
     calibration_sets = [None] * len(train_sets)
 
 # Loop over different data-split scenarios
-for scenario, data_train, data_test, data_cal in zip(pnn.splits, train_sets, test_sets, calibration_sets):
-    tag = f"{nn_type}_{scenario}"
-    if RECALIBRATE:
+for scenario, data_train, data_test, data_cal in zip(scenarios, train_sets, test_sets, calibration_sets):
+    tag = f"{args.nn_type}_{scenario}"
+    if args.recalibrate:
         tag += "_recal"
     print(f"\n\n\n   --- Now running: {tag} ---")
 
@@ -58,7 +60,7 @@ for scenario, data_train, data_test, data_cal in zip(pnn.splits, train_sets, tes
     print("Trained models.")
 
     # Optional: Train recalibration
-    if RECALIBRATE:
+    if args.recalibrate:
         X_cal, y_cal = pnn.data.extract_inputs_outputs(data_cal)
         best_model = pnn.nn.recalibrate_pnn(best_model, X_cal, y_cal, scaler_y)
 

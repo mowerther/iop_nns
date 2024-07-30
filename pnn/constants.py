@@ -72,11 +72,23 @@ networks_fromkey = {p.name: p for p in networks}
 random_split = Parameter("random_split", "Random split", label_2lines="Random\nsplit")
 wd = Parameter("wd_split", "Within-distribution split", label_2lines="Within-distribution\nsplit")
 ood = Parameter("ood_split", "Out-of-distribution split", label_2lines="Out-of-distribution\nsplit")
+
 scenarios_123 = [random_split, wd, ood]
 scenarios_123_fromkey = {p.name: p for p in scenarios_123}
-wavelengths_123 = range(400, 701, 5)
+
+wavelengths_123 = list(range(400, 701, 5))
 
 # PRISMA scenarios 1, 2a, 2b, 3a, 3b
+_insitu = r"$\it{in situ}$"
+prisma_insitu = Parameter("prisma1", f"Case 1: {_insitu} vs. {_insitu}", label_2lines="Case 1\n{_insitu} vs. {_insitu}")
+prisma_insitu_ACOLITE = Parameter("prisma2a", f"Case 2a: {_insitu} vs. ACOLITE", label_2lines="Case 2a\n{_insitu} vs. ACOLITE")
+prisma_insitu_L2 = Parameter("prisma2b", f"Case 2b: combined {_insitu} vs. L2", label_2lines="Case 2b\n{_insitu} vs. L2")
+prisma_gloria_ACOLITE = Parameter("prisma3a", f"Case 3a: {_insitu} vs. ACOLITE", label_2lines="Case 3a\ncombined {_insitu} vs. ACOLITE")
+prisma_gloria_L2 = Parameter("prisma3b", f"Case 3b: combined {_insitu} vs. L2", label_2lines="Case 3b\ncombined {_insitu} vs. L2")
+
+scenarios_prisma = [prisma_insitu, prisma_insitu_ACOLITE, prisma_insitu_L2, prisma_gloria_ACOLITE, prisma_gloria_L2]
+scenarios_prisma_fromkey = {p.name: p for p in scenarios_prisma}
+
 wavelengths_prisma = [406, 415, 423, 431, 438, 446, 453, 460, 468, 475, 482, 489, 497, 504, 512, 519, 527, 535, 542, 550, 559, 567, 575, 583, 592, 601, 609, 618, 627, 636, 645, 655, 664, 674, 684, 694]
 
 
