@@ -93,7 +93,7 @@ for scenario, data_train, data_test, data_cal in zip(scenarios, train_sets, test
     print(f"Best model predictions saved to {saveto_preds.absolute()}")
 
     # Sanity check
-    mean_metrics = pnn.nn.calculate_metrics(y_test, mean_predictions)
+    mean_metrics = pnn.nn.calculate_metrics(y_test, mean_predictions, total_variance)
     print()
     print("Mean prediction metrics for best-performing model:")
     print(mean_metrics)

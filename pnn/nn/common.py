@@ -36,7 +36,7 @@ def train_and_evaluate_models(model_class: type, X_train: np.ndarray, y_train_sc
         mean_preds, total_var, aleatoric_var, epistemic_var = model.predict_with_uncertainty(X_test, scaler_y, **predict_kwargs)
         print(f"Model {label}: Finished prediction.")
 
-        metrics_df = calculate_metrics(y_test, mean_preds)
+        metrics_df = calculate_metrics(y_test, mean_preds, total_var)
         all_metrics.append(metrics_df)
         print(f"Model {label}: Calculated performance metrics.")
 
@@ -56,13 +56,14 @@ def train_and_evaluate_models(model_class: type, X_train: np.ndarray, y_train_sc
 
 
 ### ASSESSMENT
-def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray, *, columns: Iterable[str]=c.iops_names) -> pd.DataFrame:
+def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray, total_var: np.ndarray, *, columns: Iterable[str]=c.iops_names) -> pd.DataFrame:
     """
     Calculate the mean absolute percentage error (MAPE) and other metrics between true and predicted values.
 
     Args:
     - y_true: Actual values (numpy array).
     - y_pred: Predicted values (numpy array).
+    - total_var: Total predicted variance (numpy array).
 
     Returns:
     - DataFrame of metrics (MAPD, MAD, sspb, mdsa) for the predictions.
@@ -70,6 +71,8 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray, *, columns: Iterab
     # Ensure y_true and y_pred are DataFrames
     y_true = pd.DataFrame(y_true, columns=columns)
     y_pred = pd.DataFrame(y_pred, columns=columns)
+    total_var = pd.DataFrame(total_var, columns=columns)
+    y_pred_std = np.sqrt(total_var)
 
     # Calculate metrics
     metrics_combined = {"MdSA": m.mdsa(y_true, y_pred),
@@ -77,7 +80,10 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray, *, columns: Iterab
                         "MAD": m.MAD(y_true, y_pred),
                         "MAPE": m.mape(y_true, y_pred),
                         "r_squared": m.r_squared(y_true, y_pred),
-                        "log_r_squared": m.log_r_squared(y_true, y_pred),}
+                        "log_r_squared": m.log_r_squared(y_true, y_pred),
+                        "coverage": m.coverage(y_true, y_pred, y_pred_std),
+                        "MA": m.miscalibration_area(y_true, y_pred, y_pred_std),
+                        }
 
     metrics_combined = pd.DataFrame(metrics_combined)
 
