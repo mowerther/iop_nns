@@ -133,7 +133,7 @@ def uncertainty_histogram(mean_predictions: np.ndarray, total_variance: np.ndarr
     Not saved to file.
     """
     # Prepare data
-    aleatoric_fraction = aleatoric_variance / total_variance * 100
+    aleatoric_fraction = aleatoric_variance / (aleatoric_variance + epistemic_variance) * 100
     total_unc_pct, ale_unc_pct, epi_unc_pct = [np.sqrt(var) / mean_predictions * 100 for var in (total_variance, aleatoric_variance, epistemic_variance)]
     N = mean_predictions.shape[1]  # Number of variables
     unc_pct_bins = np.linspace(0, 200, 50)
