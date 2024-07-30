@@ -44,7 +44,13 @@ for scenario, data_train, data_test, data_cal in zip(scenarios, train_sets, test
     tag = f"{args.nn_type}_{scenario}"
     if args.recalibrate:
         tag += "_recal"
+
+    saveto_model = pnn.model_path/f"{tag}_best.keras"
+    saveto_metrics = pnn.model_estimates_path/f"{tag}_metrics_10_networks.csv"
+
     print(f"\n\n\n   --- Now running: {tag} ---")
+    print(f"Models will be saved to {saveto_model.absolute() / 'x/'}")
+    print(f"Metrics will be saved to {saveto_metrics.absolute()}")
 
     # Select Rrs values in 5 nm steps, IOP columns
     X_train, y_train = pnn.data.extract_inputs_outputs(data_train)
@@ -64,8 +70,7 @@ for scenario, data_train, data_test, data_cal in zip(scenarios, train_sets, test
         X_cal, y_cal = pnn.data.extract_inputs_outputs(data_cal)
         best_model = pnn.nn.recalibrate_pnn(best_model, X_cal, y_cal, scaler_y)
 
-    # Save model to file
-    saveto_model = pnn.model_path/f"{tag}_best.keras"
+    # Save best model to file
     best_model.save(saveto_model)
     print(f"Best model saved to {saveto_model.absolute()}")
 
@@ -76,7 +81,6 @@ for scenario, data_train, data_test, data_cal in zip(scenarios, train_sets, test
     print(mdsa_all.to_string())
 
     # Save metrics to file
-    saveto_metrics = pnn.pred_path/f"{tag}_metrics_10_networks.csv"
     model_metrics.to_csv(saveto_metrics)
     print()
     print(f"All model metrics saved to {saveto_metrics.absolute()}")

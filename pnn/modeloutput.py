@@ -85,7 +85,7 @@ def read_model_outputs(filename: Path | str) -> pd.DataFrame:
     return df
 
 
-def read_all_model_outputs(folder: Path | str=c.pred_path, *,
+def read_all_model_outputs(folder: Path | str, *,
                            use_recalibration_data=False) -> pd.DataFrame:
     """
     Read all data from a given folder into one big dataframe.

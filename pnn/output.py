@@ -32,7 +32,7 @@ def _add_legend_below_figure(fig: plt.Figure, items: Iterable[c.Parameter], **kw
 def plot_full_dataset(df: pd.DataFrame, *,
                       variables: Iterable[c.Parameter]=c.iops,
                       title: Optional[str]=None,
-                      saveto: Path | str=c.save_path/"full_dataset.pdf") -> None:
+                      saveto: Path | str=c.output_path/"full_dataset.pdf") -> None:
     """
     Plot the full input dataset, with separate panels for each IOP.
     """
@@ -75,7 +75,7 @@ traincolor, testcolor = "black", "C1"
 def plot_data_splits(*datasets: tuple[pd.DataFrame],
                      variables: Iterable[c.Parameter]=c.iops_443, splits: Iterable[c.Parameter]=c.scenarios_123,
                      title: Optional[str]=None,
-                     saveto: Path | str=c.save_path/"scenarios.pdf") -> None:
+                     saveto: Path | str=c.output_path/"scenarios.pdf") -> None:
     """
     Plot the data splits (random/within-distribution/out-of-distribution).
     Datasets are expected in alternating train/test order, e.g. train-random, test-random, train-wd, test-wd, train-ood, test-ood.
@@ -214,7 +214,7 @@ def plot_performance_scatter(results: pd.DataFrame, *,
 _lollipop_metrics = [c.mdsa, c.sspb, c.r_squared]
 def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
                                       groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_lollipop_metrics, splits: Iterable[c.Parameter]=c.scenarios_123,
-                                      saveto: Path | str=c.save_path/"performance_lolliplot_vertical.pdf") -> None:
+                                      saveto: Path | str=c.output_path/"performance_lolliplot_vertical.pdf") -> None:
     """
     Plot some number of DataFrames containing performance metric statistics.
     """
@@ -331,7 +331,7 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
 _heatmap_metrics = [c.total_unc_pct, c.ale_frac]
 def plot_uncertainty_heatmap(results_agg: pd.DataFrame, *,
                              variables: Iterable[c.Parameter]=c.iops,
-                             saveto: Path | str=c.save_path/"uncertainty_heatmap.pdf") -> None:
+                             saveto: Path | str=c.output_path/"uncertainty_heatmap.pdf") -> None:
     """
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
     """
@@ -405,7 +405,7 @@ def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=3) -> None:
 
 def plot_coverage(data: pd.DataFrame, *,
                   groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, splits: Iterable[c.Parameter]=c.scenarios_123,
-                  saveto: Path | str=c.save_path/"uncertainty_coverage.pdf") -> None:
+                  saveto: Path | str=c.output_path/"uncertainty_coverage.pdf") -> None:
     """
     Bar plot showing the coverage factor (pre-calculated).
     """
@@ -462,7 +462,7 @@ def plot_coverage(data: pd.DataFrame, *,
 
 
 ## Uncertainty metrics - miscalibration area
-def table_miscalibration_area(df: pd.DataFrame, *, saveto: Path | str=c.save_path/"miscalibration_area.csv") -> None:
+def table_miscalibration_area(df: pd.DataFrame, *, saveto: Path | str=c.output_path/"miscalibration_area.csv") -> None:
     """
     Reorder the miscalibration area table and save it to file.
     To do: fully automate.
@@ -488,7 +488,7 @@ def _plot_calibration_single(ax: plt.Axes, data: pd.Series, **kwargs) -> None:
 
 def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
                             rows: Iterable[c.Parameter]=c.scenarios_123, columns: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks,
-                            saveto: Path | str=c.save_path/"calibration_curves.pdf") -> None:
+                            saveto: Path | str=c.output_path/"calibration_curves.pdf") -> None:
     """
     Plot calibration curves (expected vs. observed).
     """

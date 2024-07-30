@@ -13,10 +13,12 @@ from cmcrameri.cm import managua
 ### FILENAMES
 data_path = Path("datasets_train_test/")
 prisma_path = Path("prisma_subscenarios/")
+
 model_path = Path("pnn_tf_models/")
-pred_path = Path("pnn_model_estimates/")
-save_path = Path("manuscript_figures/")
-supplementary_path = save_path/"supplementary/"
+model_estimates_path = Path("pnn_model_estimates/")
+
+output_path = Path("manuscript_figures/")
+supplementary_path = output_path/"supplementary/"
 
 
 ### UNITS

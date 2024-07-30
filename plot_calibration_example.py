@@ -11,7 +11,7 @@ from typing import Tuple
 from typing import List
 from typing import Any
 
-from pnn import save_path
+from pnn import output_path
 
 Numeric = Union[int, float, np.ndarray]
 
@@ -273,7 +273,7 @@ def custom_plot_calibration(
     )
     return ax
 
-def make_plots(pred_mean_list, pred_std_list, *, saveto=save_path/"calibration_example.pdf"):
+def make_plots(pred_mean_list, pred_std_list, *, saveto=output_path/"calibration_example.pdf"):
     """Make set of plots for each scenario with improved layout and manual scenario title placement."""
     ylims = [0, 10]
     n_subset = 50
