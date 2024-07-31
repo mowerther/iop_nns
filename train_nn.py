@@ -47,7 +47,7 @@ for scenario, data_train, data_test, data_cal in zip(scenarios, train_sets, test
         tag += "_recal"
 
     # Set up save folders
-    saveto_model = pnn.model_path/f"{tag}_best.keras"
+    saveto_model = pnn.model_path/f"{tag}.keras"
     saveto_estimates = pnn.model_estimates_path/f"{tag}_estimates.csv"
     saveto_metrics = pnn.model_estimates_path/f"{tag}_metrics.csv"
 
