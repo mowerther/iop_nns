@@ -48,10 +48,17 @@ def apply_recalibration_single(recalibrator: Callable, predicted_mean: np.ndarra
     Apply a quantile-based recalibration function to one row/column of data.
     The lower/upper bounds are taken at mu-sigma, mu+sigma.
     """
+    # Filter NaNs
     total_uncertainty = np.sqrt(total_variance)
-    lower, upper = recalibrator(predicted_mean, total_uncertainty, 0.15865525393), recalibrator(predicted_mean, total_uncertainty, 0.84134474606)
+    valid = np.isfinite(total_uncertainty)
+
+    # Recalibrate
+    lower, upper = recalibrator(predicted_mean[valid], total_uncertainty[valid], 0.15865525393), recalibrator(predicted_mean[valid], total_uncertainty[valid], 0.84134474606)
     new_uncertainty = (upper - lower) / 2
-    new_variance = new_uncertainty**2
+
+    # Convert back to variance, accounting for NaNs
+    new_variance = np.tile(np.nan, total_uncertainty.shape)
+    new_variance[valid] = new_uncertainty**2
     return new_variance
 
 
