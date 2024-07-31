@@ -91,5 +91,18 @@ class RecalibratedPNN:
 
 
 ### CONVENIENCE FUNCTIONS
-def recalibrate_pnn(model: BasePNN, X: np.ndarray, y: np.ndarray, scaler_y: MinMaxScaler) -> RecalibratedPNN:
-    return RecalibratedPNN.recalibrate_pnn(model, X, y, scaler_y)
+def recalibrate_pnn(models: BasePNN, X: np.ndarray, y: np.ndarray, scaler_y: MinMaxScaler) -> list[RecalibratedPNN] | RecalibratedPNN:
+    """
+    Recalibrate existing PNNs.
+    Returns a list if multiple models are provided; returns a single object if only one.
+    """
+    SINGLE = (not isinstance(models, Iterable))
+    if SINGLE:
+        models = [models]
+
+    new_models = [RecalibratedPNN.recalibrate_pnn(model, X, y, scaler_y) for model in models]
+
+    if SINGLE:
+        new_models = new_models[0]
+
+    return new_models

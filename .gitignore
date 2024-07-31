@@ -1,6 +1,6 @@
 # Folders for input/output
-iop_model_predictions/
-scenario_datasets/
+pnn_model_estimates/
+pnn_tf_models/
 
 # Input/output files in the main folder, used for testing only
 *.csv

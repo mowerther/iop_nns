@@ -1,6 +1,8 @@
 """
 Functions etc. to be shared between network architectures, e.g. loss functions.
 """
+from os import makedirs
+from pathlib import Path
 from typing import Iterable, Optional
 
 import numpy as np
@@ -10,49 +12,82 @@ from sklearn.preprocessing import MinMaxScaler
 
 from .pnn_base import BasePNN
 from .. import constants as c, metrics as m
+from ..modeloutput import save_model_outputs
 
 
-### APPLICATION
-def train_and_evaluate_models(model_class: type, X_train: np.ndarray, y_train_scaled: np.ndarray, X_test: np.ndarray, y_test: np.ndarray, scaler_y: MinMaxScaler, *,
-                              n_models: int=10, mdsa_columns: Iterable[str]=c.iops_443, **predict_kwargs) -> tuple[BasePNN, pd.DataFrame]:
+### TRAINING
+def train_N_models(model_class: type, X_train: np.ndarray, y_train_scaled: np.ndarray, *,
+                   n_models: int=10) -> list[BasePNN]:
     """
-    Train and evaluate a model, `n_models` times, then pick the best one based on the MdSA from a comparison on the testing data.
-    Returns the best model and a DataFrame with the metrics of all models, for comparison purposes.
+    Train N instances of the provided model class.
     """
-    all_models, all_metrics = [], []
-
-    best_overall_model = None
-    best_mdsa = np.inf
+    all_models = []
 
     for i in range(n_models):
-        label = f"{i+1}/{n_models}"
+        label = f"{i}/{n_models}"
 
         # Train model
         model = model_class.build_and_train(X_train, y_train_scaled)
         all_models.append(model)
-        print(f"Model {label}: Finished training.")
+        print(f"\n\n   Model {label}: Finished training.   \n\n")
 
-        # Assess model
-        mean_preds, total_var, aleatoric_var, epistemic_var = model.predict_with_uncertainty(X_test, scaler_y, **predict_kwargs)
-        print(f"Model {label}: Finished prediction.")
+    return all_models
 
-        metrics_df = calculate_metrics(y_test, mean_preds, total_var)
-        all_metrics.append(metrics_df)
-        print(f"Model {label}: Calculated performance metrics.")
 
-        # Select best model so far
-        evaluation_mdsa = metrics_df.loc[mdsa_columns, "MdSA"].mean()  # Average the MdSA of the specified variables
-        if evaluation_mdsa < best_mdsa:
-            best_mdsa = evaluation_mdsa
-            best_overall_model = model
-            print(f"Model {label} is the new best model (mean MdSA: {evaluation_mdsa:.0f}%).")
+### APPLICATION
+def estimate_N_models(models: Iterable[BasePNN], X: np.ndarray, scaler_y: MinMaxScaler, **kwargs) -> list[tuple[np.ndarray]]:
+    """
+    Run predictions on testing data (X) for N models.
+    The different estimates (mean, variance, etc.) are not separated.
+    """
+    estimates = [model.predict_with_uncertainty(X, scaler_y, **kwargs) for model in models]
+    return estimates
 
-        print("\n\n")
 
-    all_metrics = pd.concat({i+1: df for i, df in enumerate(all_metrics)}, names=["model", "variable"])
+def calculate_N_metrics(y_true: np.ndarray, estimates: Iterable[tuple[np.ndarray]]) -> pd.DataFrame:
+    """
+    Calculate metrics for estimates from N models.
+    Metrics are collated into a single DataFrame.
+    """
+    all_metrics = [calculate_metrics(y_true, mean_preds, total_var) for mean_preds, total_var, *_ in estimates]
+    all_metrics = pd.concat({i: df for i, df in enumerate(all_metrics)}, names=["model", "variable"])
+    return all_metrics
 
-    return best_overall_model, all_metrics
 
+### LOADING / SAVING
+def _saveto_iteration(saveto: Path | str, i) -> Path:
+    """
+    For a given path, create a variant in subfolder `i`.
+    The subfolder is recursively created if it does not exist yet.
+
+    Example:
+        _saveto_iteration("C:/path/to/myfile.keras", 5) -> Path("C:/path/to/5/myfile.keras")
+    """
+    saveto = Path(saveto)
+    folder = saveto.parent / str(i)
+    makedirs(folder, exist_ok=True)
+    saveto_i = folder / saveto.name
+    return saveto_i
+
+
+def save_models(models: Iterable[BasePNN], saveto: Path | str, **kwargs) -> None:
+    """
+    Save multiple trained PNNs to file.
+    Separate folders are used (/created if necessary) for each.
+    """
+    for i, model in enumerate(models):
+        saveto_i = _saveto_iteration(saveto, i)
+        model.save(saveto_i, **kwargs)
+
+
+def save_estimates(y_true: np.ndarray, estimates: Iterable[tuple[np.ndarray]], saveto: Path | str, **kwargs) -> None:
+    """
+    Save multiple PNN estimates to file.
+    Separate folders are used (/created if necessary) for each.
+    """
+    for i, est in enumerate(estimates):
+        saveto_i = _saveto_iteration(saveto, i)
+        save_model_outputs(y_true, *est, saveto_i, **kwargs)
 
 
 ### ASSESSMENT
