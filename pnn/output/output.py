@@ -1,7 +1,6 @@
 """
 Functions relating to outputs, such as plots and tables.
 """
-from functools import partial
 import itertools
 from pathlib import Path
 from typing import Iterable, Optional
@@ -11,130 +10,13 @@ import pandas as pd
 from scipy.special import erf
 
 from matplotlib import pyplot as plt
-plt.style.use("default")
-from matplotlib import ticker, patches
-from matplotlib.colors import Normalize, to_rgba
+from matplotlib import ticker
+from matplotlib.colors import Normalize
 
-from . import metrics
-from . import constants as c
-
-
-### HELPER FUNCTIONS
-def _add_legend_below_figure(fig: plt.Figure, items: Iterable[c.Parameter], **kwargs) -> None:
-    """
-    Add a legend below the subplots, with a patch for each item.
-    """
-    legend_content = [patches.Patch(color=key.color, label=key.label, **kwargs) for key in items]
-    fig.legend(handles=legend_content, loc="upper center", bbox_to_anchor=(0.5, 0), ncols=len(items), framealpha=1, edgecolor="black")
-
+from .. import metrics
+from .. import constants as c
 
 ### FUNCTIONS
-## Input data - full
-def plot_full_dataset(df: pd.DataFrame, *,
-                      variables: Iterable[c.Parameter]=c.iops,
-                      title: Optional[str]=None,
-                      saveto: Path | str=c.output_path/"full_dataset.pdf") -> None:
-    """
-    Plot the full input dataset, with separate panels for each IOP.
-    """
-    # Constants
-    lims = (1e-5, 1e1)
-    bins = np.logspace(np.log10(lims[0]), np.log10(lims[1]), 50)
-    scale = "log"
-    ncols = 2
-    nrows = len(variables) // ncols
-
-    # Create figure
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(12, 6), squeeze=False, layout="constrained")
-
-    # Plot data per row
-    for ax, var in zip(axs.ravel(), variables):
-        # Plot data
-        data = df[var]
-        ax.hist(data, bins=bins, color=var.color, histtype="stepfilled")
-
-        # Panel settings
-        ax.grid(True, linestyle="--", alpha=0.5)
-        ax.text(0.05, 0.90, var.label, transform=ax.transAxes, horizontalalignment="left", verticalalignment="top", fontsize=12, color="black", bbox={"facecolor": "white", "edgecolor": "black", "boxstyle": "round"})
-
-
-    # Panel settings
-    axs[0, 0].set_xscale(scale)
-    axs[0, 0].set_xlim(*lims)
-
-    # Labels
-    fig.supxlabel("In situ value", fontweight="bold")
-    fig.supylabel("Frequency", fontweight="bold")
-
-    # Save result
-    plt.savefig(saveto, dpi=200, bbox_inches="tight")
-    plt.close()
-
-
-## Input data - Random/WD/OOD scenarios
-traincolor, testcolor = "black", "C1"
-def plot_scenarios(train_sets: Iterable[pd.DataFrame], test_sets: Iterable[pd.DataFrame], *,
-                   variables: Iterable[c.Parameter]=c.iops_443, scenarios: Iterable[c.Parameter]=c.scenarios_123,
-                   title: Optional[str]=None,
-                   saveto: Path | str=c.output_path/"scenarios.pdf") -> None:
-    """
-    Plot the data splits (random/within-distribution/out-of-distribution).
-    Datasets are expected in alternating train/test order, e.g. train-random, test-random, train-wd, test-wd, train-ood, test-ood.
-    One column per variable (default: IOPs at 443 nm).
-    """
-    # Constants
-    lims = (1e-5, 1e1)
-    bins = np.logspace(np.log10(lims[0]), np.log10(lims[1]), 35)
-    scale = "log"
-    ncols = len(variables)
-    nrows = len(scenarios)
-
-    # Checks
-    assert len(train_sets) == len(test_sets) == len(scenarios), f"Mismatch between number of scenarios ({len(scenarios)}), number of training datasets ({len(train_sets)}), and number of test datasets ({len(test_sets)})."
-
-    # Create figure
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(12, 7), squeeze=False, layout="constrained", gridspec_kw={"hspace": 0.15})
-
-    # Plot data per row
-    for ax_row, df_train, df_test in zip(axs, train_sets, test_sets):
-        for ax, var in zip(ax_row, variables):
-            # Plot data
-            ax.hist(df_train[var], bins=bins, color=traincolor, histtype="step")
-            ax.hist(df_train[var], bins=bins, color=traincolor, histtype="stepfilled", alpha=0.5)
-            ax.hist(df_test[var], bins=bins, color=testcolor, histtype="step")
-            ax.hist(df_test[var], bins=bins, color=testcolor, histtype="stepfilled", alpha=0.5)
-
-            # Panel settings
-            ax.grid(True, linestyle="--", alpha=0.5)
-
-
-    # Panel settings
-    axs[0, 0].set_xscale(scale)
-    axs[0, 0].set_xlim(*lims)
-
-    # Legend
-    trainpatch = patches.Patch(facecolor=to_rgba(traincolor, 0.5), edgecolor=traincolor, label="Train")
-    testpatch = patches.Patch(facecolor=to_rgba(testcolor, 0.5), edgecolor=testcolor, label="Test")
-    axs[0, 0].legend(handles=[trainpatch, testpatch], loc="upper left", framealpha=1, edgecolor="black")
-
-    # Labels
-    for scenario, ax in zip(scenarios, axs[:, ncols//2]):
-        ax.set_title(scenario.label)
-    for var, ax in zip(variables, axs[-1]):
-        ax.set_xlabel(var.label)
-
-    fig.supxlabel("In situ value", fontweight="bold")
-    fig.supylabel("Frequency", fontweight="bold")
-
-    # Save result
-    plt.savefig(saveto, dpi=200, bbox_inches="tight")
-    plt.close()
-
-
-plot_prisma_scenarios = partial(plot_scenarios, scenarios=c.scenarios_prisma_overview, saveto=c.output_path/"scenarios_prisma.pdf")
-
-
-
 ## Performance (matchups) - scatter plot, per algorithm/scenario combination
 def plot_performance_scatter_single(df: pd.DataFrame, *,
                                     columns: Iterable[c.Parameter]=c.iops, rows: Iterable[c.Parameter]=[c.total_unc_pct, c.ale_frac],
@@ -600,15 +482,15 @@ for i, metric in enumerate(metrics):
     for j, scenario in enumerate(scenarios):
         ax = axes[i, j]
         data = plot_data[(plot_data['metric'] == metric) & (plot_data['scenario'] == scenario)]
-        
-        sns.boxplot(x='variable', y='value', hue='model', data=data, ax=ax, palette=colors, 
+
+        sns.boxplot(x='variable', y='value', hue='model', data=data, ax=ax, palette=colors,
                     whis=[0, 100], width=0.6, hue_order=models)
-        
+
         # title only for the first row
         if i == 0:
             title = {"random": "Random split", "wd": "Within-distribution split", "ood": "Out-of-distribution split"}
             ax.set_title(title[scenario], fontsize=12)
-        
+
         # y-label only for the first column
         if j == 0:
             if metric == 'MdSA':
@@ -620,26 +502,26 @@ for i, metric in enumerate(metrics):
         else:
             ax.set_ylabel('')
             ax.set_yticklabels([])
-        
+
         #  x-axis labels
         x_labels = [format_xlabel(label.get_text()) for label in ax.get_xticklabels()]
-        ax.set_xticks(range(len(x_labels)))  
-        
+        ax.set_xticks(range(len(x_labels)))
+
         # x-labels only for the last row, show ticks for all
         if i == 2:
             ax.set_xticklabels(x_labels, rotation=45, ha='right', fontsize=8)
         else:
             ax.set_xticklabels([])
-        ax.set_xlabel('')  
-        
+        ax.set_xlabel('')
+
         # legend
         if i == 1 and j == 2:  # only the middle-right plot
             handles, labels = ax.get_legend_handles_labels()
-            ax.legend(handles, labels, title='Model', bbox_to_anchor=(1.05, 0.7), 
+            ax.legend(handles, labels, title='Model', bbox_to_anchor=(1.05, 0.7),
                       loc='upper left', fontsize=8)
         else:
             ax.get_legend().remove()
-        
+
         # y-axis limits based on metric
         if metric == 'MdSA':
             ax.set_ylim(0, 300)
@@ -647,7 +529,7 @@ for i, metric in enumerate(metrics):
             ax.set_ylim(-150, 100)
         elif metric == 'log_r_squared':
             ax.set_ylim(-1.5, 1)
-        
+
         ax.grid(True, axis='y', linestyle='--', alpha=0.7)
 
 plt.tight_layout()
