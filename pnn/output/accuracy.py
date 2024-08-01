@@ -12,7 +12,7 @@ from matplotlib import ticker
 
 from .. import constants as c
 from .. import metrics as m
-from .common import IOP_LIMS, IOP_SCALE
+from .common import IOP_LIMS, IOP_SCALE, add_legend_below_figure
 
 
 ### SCATTER PLOTS
@@ -105,7 +105,7 @@ def plot_accuracy_metrics(data: pd.DataFrame, *,
     Plot some number of DataFrames containing performance metric statistics.
     """
     # Constants
-    bar_width = 0.15
+    spacing = 0.15
 
     # Generate figure ; rows are metrics, columns are split types
     n_groups = len(groups)
@@ -114,22 +114,32 @@ def plot_accuracy_metrics(data: pd.DataFrame, *,
     n_cols = len(scenarios)
     fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(12, 7), sharex=True, sharey="row", squeeze=False)
 
-    # Plot results; must be done in a loop because there is no Pandas lollipop function
+    # Plot results; must be done in a loop because there is no direct function in Pandas
     for ax_row, metric in zip(axs, metrics):
         for ax, scenario in zip(ax_row, scenarios):
             for member_idx, member in enumerate(groupmembers):
                 # Select data
-                df = data.loc[scenario, member, groups]
-                values = df[metric]
+                df = data.loc[scenario, member][metric].unstack()
+                df = df[groups]  # Re-order
 
-                locations = np.arange(n_groups) - (bar_width * (n_members - 1) / 2) + member_idx * bar_width
+                locations = np.arange(n_groups) - (spacing * (n_members - 1) / 2) + member_idx * spacing
 
-                ax.scatter(locations, values, color=member.color, label=member.label, s=50, zorder=3, edgecolor="black")  # Draw points
-                ax.vlines(locations, 0, values, colors="grey", lw=1, alpha=0.7)
+                bplot = ax.boxplot(df, positions=locations, whis=(0, 100), widths=spacing*0.9, zorder=3, medianprops={"color": "black"}, patch_artist=True)
+                for patch in bplot["boxes"]:
+                    patch.set_facecolor(member.color)
 
             # Panel settings
             ax.grid(False, axis="x")
             ax.axhline(0, color="black", linewidth=1, zorder=1)
+
+        # y-axis limits
+        q = 0.03
+        ymin = data[metric].quantile(q) if metric.vmin is None else metric.vmin
+        ymax = data[metric].quantile(1-q) if metric.vmax is None else metric.vmax
+        if metric.symmetric:
+            maxvalue = np.max(np.abs([ymin, ymax]))
+            ymin, ymax = -maxvalue, maxvalue
+        ax_row[0].set_ylim(ymin, ymax)
 
     # Label variables
     axs[0, 0].set_xticks(np.arange(n_groups))
@@ -140,134 +150,13 @@ def plot_accuracy_metrics(data: pd.DataFrame, *,
         ax.set_ylabel(metric.label, fontsize=12)
     fig.align_ylabels()
 
-    # y-axis limits; currently hardcoded
-    for ax, metric in zip(axs[:, 0], metrics):
-        if metric.symmetric:
-            maxvalue = np.abs(ax.get_ylim()).max()
-            ax.set_ylim(-maxvalue, maxvalue)
-        else:
-            ax.set_ylim(metric.vmin, metric.vmax)
-
     # Titles
     for ax, scenario in zip(axs[0], scenarios):
         ax.set_title(scenario.label)
 
     # Plot legend outside the subplots
-    handles, labels = ax.get_legend_handles_labels()
-    fig.legend(handles, labels, loc="center left", bbox_to_anchor=(1, 0.5), framealpha=1, edgecolor="black")
+    add_legend_below_figure(fig, groupmembers)
 
     plt.tight_layout()
     plt.savefig(saveto, bbox_inches="tight")
     plt.close()
-
-
-# # Figure 5 - boxplot
-
-# import pandas as pd
-# import matplotlib.pyplot as plt
-# import seaborn as sns
-# import os
-
-# data_path = r"C:\SwitchDrive\Data\pnn_model_estimates"
-
-# model_file_mapping = {
-#     'BNN MCD': 'bnn_mcd',
-#     'BNN DC': 'bnn_dc',
-#     'MDN': 'mdn',
-#     'ENS NN': 'ens_nn',
-#     'RNN': 'rnn'
-# }
-
-# models = ['BNN MCD', 'BNN DC', 'MDN', 'ENS NN', 'RNN']
-# scenarios = ['random', 'wd', 'ood']
-# metrics = ['MdSA', 'SSPB', 'log_r_squared']
-
-# colors = {'BNN MCD': '#6699CC', 'BNN DC': '#997700', 'MDN': '#994455', 'ENS NN': '#EE99AA', 'RNN': '#EECC66'}
-
-# def read_csv_file(model, scenario):
-#     filename = f"{model_file_mapping[model]}_{scenario}_split_metrics.csv"
-#     filepath = os.path.join(data_path, filename)
-#     df = pd.read_csv(filepath)
-#     df['model'] = model
-#     df['scenario'] = scenario
-#     return df
-
-# # read all CSV files and combine into a single DataFrame
-# all_data = pd.concat([read_csv_file(model, scenario)
-#                       for model in models
-#                       for scenario in scenarios])
-
-# # prep for plotting
-# plot_data = all_data.melt(id_vars=['model', 'scenario', 'variable'],
-#                           value_vars=metrics,
-#                           var_name='metric', value_name='value')
-
-# # Set up the plot
-# fig, axes = plt.subplots(3, 3, figsize=(16, 10))
-# plt.subplots_adjust(wspace=0.05, hspace=0.2)
-
-# # format x-axis labels
-# def format_xlabel(label):
-#     if label.startswith('a'):
-#         parts = label.split('_')
-#         return f"$a_{{{parts[0][1:]}}}({parts[1]})$"
-#     return label
-
-# # create the boxplots
-# for i, metric in enumerate(metrics):
-#     for j, scenario in enumerate(scenarios):
-#         ax = axes[i, j]
-#         data = plot_data[(plot_data['metric'] == metric) & (plot_data['scenario'] == scenario)]
-
-#         sns.boxplot(x='variable', y='value', hue='model', data=data, ax=ax, palette=colors,
-#                     whis=[0, 100], width=0.6, hue_order=models)
-
-#         # title only for the first row
-#         if i == 0:
-#             title = {"random": "Random split", "wd": "Within-distribution split", "ood": "Out-of-distribution split"}
-#             ax.set_title(title[scenario], fontsize=12)
-
-#         # y-label only for the first column
-#         if j == 0:
-#             if metric == 'MdSA':
-#                 ax.set_ylabel('MdSA [%]', fontsize=10, fontweight='bold')
-#             elif metric == 'SSPB':
-#                 ax.set_ylabel('SSPB [%]', fontsize=10, fontweight='bold')
-#             elif metric == 'log_r_squared':
-#                 ax.set_ylabel('$R^2$', fontsize=10, fontweight='bold')
-#         else:
-#             ax.set_ylabel('')
-#             ax.set_yticklabels([])
-
-#         #  x-axis labels
-#         x_labels = [format_xlabel(label.get_text()) for label in ax.get_xticklabels()]
-#         ax.set_xticks(range(len(x_labels)))
-
-#         # x-labels only for the last row, show ticks for all
-#         if i == 2:
-#             ax.set_xticklabels(x_labels, rotation=45, ha='right', fontsize=8)
-#         else:
-#             ax.set_xticklabels([])
-#         ax.set_xlabel('')
-
-#         # legend
-#         if i == 1 and j == 2:  # only the middle-right plot
-#             handles, labels = ax.get_legend_handles_labels()
-#             ax.legend(handles, labels, title='Model', bbox_to_anchor=(1.05, 0.7),
-#                       loc='upper left', fontsize=8)
-#         else:
-#             ax.get_legend().remove()
-
-#         # y-axis limits based on metric
-#         if metric == 'MdSA':
-#             ax.set_ylim(0, 300)
-#         elif metric == 'SSPB':
-#             ax.set_ylim(-150, 100)
-#         elif metric == 'log_r_squared':
-#             ax.set_ylim(-1.5, 1)
-
-#         ax.grid(True, axis='y', linestyle='--', alpha=0.7)
-
-# plt.tight_layout()
-# plt.savefig('C:/SwitchDrive/Data/Plots/model_performance_boxplots.pdf', bbox_inches='tight')
-# plt.show()

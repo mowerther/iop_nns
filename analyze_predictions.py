@@ -21,21 +21,22 @@ metrics = pnn.modeloutput.read_all_model_metrics()
 print("Read metrics into `metrics` DataFrame:")
 print(metrics)
 
-# Accuracy metrics and lollipop plot
-metrics = metrics.groupby(level=["scenario", "network", "variable"]).first()  # Temporary
+# Accuracy metric plot
 pnn.output.plot_accuracy_metrics(metrics)
 print("Saved performance metric plot")
+
+metrics = metrics.groupby(level=["scenario", "network", "variable"]).first()  # Temporary
 
 # Coverage plot
 pnn.output.plot_coverage(metrics)
 print("Saved coverage plot")
 
+
+### TO DO: SELECT MEDIAN MODELS
+
 # Miscalibration area
 pnn.output.table_miscalibration_area(metrics)
 print("Saved miscalibration area table")
-
-
-### TO DO: SELECT MEDIAN MODELS
 
 
 ### INDIVIDUAL MODEL OUTPUTS
