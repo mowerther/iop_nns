@@ -1,6 +1,7 @@
 """
 Functions relating to outputs, such as plots and tables.
 """
+from functools import partial
 import itertools
 from pathlib import Path
 from typing import Iterable, Optional
@@ -70,12 +71,12 @@ def plot_full_dataset(df: pd.DataFrame, *,
     plt.close()
 
 
-## Input data - Random/WD/OOD splits
+## Input data - Random/WD/OOD scenarios
 traincolor, testcolor = "black", "C1"
-def plot_data_splits(train_sets: Iterable[pd.DataFrame], test_sets: Iterable[pd.DataFrame], *,
-                     variables: Iterable[c.Parameter]=c.iops_443, scenarios: Iterable[c.Parameter]=c.scenarios_123,
-                     title: Optional[str]=None,
-                     saveto: Path | str=c.output_path/"scenarios.pdf") -> None:
+def plot_scenarios(train_sets: Iterable[pd.DataFrame], test_sets: Iterable[pd.DataFrame], *,
+                   variables: Iterable[c.Parameter]=c.iops_443, scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                   title: Optional[str]=None,
+                   saveto: Path | str=c.output_path/"scenarios.pdf") -> None:
     """
     Plot the data splits (random/within-distribution/out-of-distribution).
     Datasets are expected in alternating train/test order, e.g. train-random, test-random, train-wd, test-wd, train-ood, test-ood.
@@ -128,6 +129,9 @@ def plot_data_splits(train_sets: Iterable[pd.DataFrame], test_sets: Iterable[pd.
     # Save result
     plt.savefig(saveto, dpi=200, bbox_inches="tight")
     plt.close()
+
+
+plot_prisma_scenarios = partial(plot_scenarios, scenarios=c.scenarios_prisma_overview, saveto=c.output_path/"scenarios_prisma.pdf")
 
 
 
