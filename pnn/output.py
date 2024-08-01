@@ -72,8 +72,8 @@ def plot_full_dataset(df: pd.DataFrame, *,
 
 ## Input data - Random/WD/OOD splits
 traincolor, testcolor = "black", "C1"
-def plot_data_splits(*datasets: tuple[pd.DataFrame],
-                     variables: Iterable[c.Parameter]=c.iops_443, splits: Iterable[c.Parameter]=c.scenarios_123,
+def plot_data_splits(train_sets: Iterable[pd.DataFrame], test_sets: Iterable[pd.DataFrame], *,
+                     variables: Iterable[c.Parameter]=c.iops_443, scenarios: Iterable[c.Parameter]=c.scenarios_123,
                      title: Optional[str]=None,
                      saveto: Path | str=c.output_path/"scenarios.pdf") -> None:
     """
@@ -86,15 +86,16 @@ def plot_data_splits(*datasets: tuple[pd.DataFrame],
     bins = np.logspace(np.log10(lims[0]), np.log10(lims[1]), 35)
     scale = "log"
     ncols = len(variables)
-    nrows = len(splits)
-    train_sets = datasets[::2]
-    test_sets = datasets[1::2]
+    nrows = len(scenarios)
+
+    # Checks
+    assert len(train_sets) == len(test_sets) == len(scenarios), f"Mismatch between number of scenarios ({len(scenarios)}), number of training datasets ({len(train_sets)}), and number of test datasets ({len(test_sets)})."
 
     # Create figure
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(12, 7), squeeze=False, layout="constrained", gridspec_kw={"hspace": 0.15})
 
     # Plot data per row
-    for ax_row, split, df_train, df_test in zip(axs, splits, train_sets, test_sets):
+    for ax_row, df_train, df_test in zip(axs, train_sets, test_sets):
         for ax, var in zip(ax_row, variables):
             # Plot data
             ax.hist(df_train[var], bins=bins, color=traincolor, histtype="step")
@@ -116,8 +117,8 @@ def plot_data_splits(*datasets: tuple[pd.DataFrame],
     axs[0, 0].legend(handles=[trainpatch, testpatch], loc="upper left", framealpha=1, edgecolor="black")
 
     # Labels
-    for split, ax in zip(splits, axs[:, ncols//2]):
-        ax.set_title(split.label)
+    for scenario, ax in zip(scenarios, axs[:, ncols//2]):
+        ax.set_title(scenario.label)
     for var, ax in zip(variables, axs[-1]):
         ax.set_xlabel(var.label)
 

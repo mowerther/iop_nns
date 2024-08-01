@@ -1,10 +1,9 @@
 """
-Script for loading data and PNN outputs and generating plots.
+Script for loading PNN outputs and generating plots.
 The individual results files are combined into a single DataFrame (`results`) which is then used for plotting and aggregation.
 
 To plot the recalibration data, use the -c flag. Note: for now, this overwrites the existing plots, rather than using a separate filename.
 """
-import pandas as pd
 import pnn
 
 ### Parse command line arguments
@@ -13,24 +12,6 @@ parser = argparse.ArgumentParser("Script for loading data and PNN outputs and ge
 parser.add_argument("-c", "--recalibrate", help="apply recalibration", action="store_true")
 args = parser.parse_args()
 RECALIBRATE = args.recalibrate
-
-### INPUT DATA
-print("--- INPUT DATA ---")
-# Load split data
-train_set_random, test_set_random, train_set_wd, test_set_wd, train_set_ood, test_set_ood = pnn.data.read_all_data()
-print("Read results into 6 DataFrames")
-
-# Load full data
-data_full = pd.concat([train_set_random, test_set_random])
-print(data_full)
-
-# Plot full data
-pnn.output.plot_full_dataset(data_full)
-print("Saved full data plot")
-
-# Plot split data
-pnn.output.plot_data_splits(train_set_random, test_set_random, train_set_wd, test_set_wd, train_set_ood, test_set_ood)
-print("Saved data splits plot")
 
 
 ### MODEL OUTPUTS
