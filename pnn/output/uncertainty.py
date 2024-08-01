@@ -14,11 +14,11 @@ from matplotlib import ticker
 from matplotlib.colors import Normalize
 
 from .. import constants as c
-from .common import add_legend_below_figure
+from .common import add_legend_below_figure, IOP_SCALE
 
 
-### FUNCTIONS
-## Uncertainty statistics - line plot
+### IOP VALUE VS. UNCERTAINTY (BINNED)
+## Individual panels
 def plot_log_binned_statistics_line(binned: pd.DataFrame, ax: plt.Axes, *,
                                     uncertainties: Iterable[str]=c.relative_uncertainties, **kwargs) -> None:
     """
@@ -36,31 +36,33 @@ def plot_log_binned_statistics_line(binned: pd.DataFrame, ax: plt.Axes, *,
     # Labels
     ax.grid(True, ls="--")
 
+
+## Combined, for all combinations of network and scenario
 def plot_log_binned_statistics(binned: pd.DataFrame, *,
+                               scenarios: Iterable[c.Parameter]=c.scenarios_123,
                                saveto: Path | str=c.supplementary_path/"uncertainty_line.pdf") -> None:
     """
     Plot log-binned statistics from a main DataFrame.
     """
     # Generate figure
-    fig, axs = plt.subplots(nrows=len(c.scenarios_123)*len(c.networks), ncols=len(c.iops), sharex=True, figsize=(15, 25), layout="constrained", squeeze=False)
+    fig, axs = plt.subplots(nrows=len(scenarios)*len(c.networks), ncols=len(c.iops), sharex=True, figsize=(15, 25), layout="constrained", squeeze=False)
 
     # Plot lines
-    for ax_row, (network, split) in zip(axs, itertools.product(c.networks, c.scenarios_123)):
+    for ax_row, (network, scenario) in zip(axs, itertools.product(c.networks, scenarios)):
         for ax, var in zip(ax_row, c.iops):
-            df = binned.loc[split, network][var]
+            df = binned.loc[scenario, network][var]
             plot_log_binned_statistics_line(df, ax=ax, legend=False)
 
     # Settings
-    axs[0, 0].set_xscale("log")
+    axs[0, 0].set_xscale(IOP_SCALE)
     for ax in axs.ravel():
         ax.set_ylim(ymin=0)
     for ax, var in zip(axs[-1], c.iops):
         ax.set_xlabel(var.label)
-    for ax, (network, split) in zip(axs[:, 0], itertools.product(c.networks, c.scenarios_123)):
-        ax.set_ylabel(f"{network.label}\n{split.label}")
+    for ax, (network, scenario) in zip(axs[:, 0], itertools.product(c.networks, scenarios)):
+        ax.set_ylabel(f"{network.label}\n{scenario.label}")
 
     # Labels
-    fig.suptitle("")
     fig.supxlabel("In situ value", fontweight="bold")
     fig.supylabel("Median uncertainty [%]", fontweight="bold")
     fig.align_ylabels()
@@ -69,10 +71,9 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
     plt.close()
 
 
-## Uncertainty statistics - heatmap
-_heatmap_metrics = [c.total_unc_pct, c.ale_frac]
+### AVERAGE UNCERTAINTY HEATMAP
 def plot_uncertainty_heatmap(results_agg: pd.DataFrame, *,
-                             variables: Iterable[c.Parameter]=c.iops,
+                             uncertainties: Iterable[c.Parameter]=[c.total_unc_pct, c.ale_frac], variables: Iterable[c.Parameter]=c.iops, scenarios: Iterable[c.Parameter]=c.scenarios_123,
                              saveto: Path | str=c.output_path/"uncertainty_heatmap.pdf") -> None:
     """
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
@@ -81,12 +82,11 @@ def plot_uncertainty_heatmap(results_agg: pd.DataFrame, *,
     fig, axs = plt.subplots(nrows=2, ncols=len(c.scenarios_123), sharex=True, sharey=True, figsize=(11, 6), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
 
     # Plot data
-    for ax_row, unc in zip(axs, _heatmap_metrics):
+    for ax_row, unc in zip(axs, uncertainties):
         # Plot each panel per row
-        for ax, split in zip(ax_row, c.scenarios_123):
+        for ax, scenario in zip(ax_row, scenarios):
             # Select relevant data
-            df = results_agg.loc[unc, split]
-            df = df[variables]
+            df = results_agg.loc[unc, scenario][variables]
 
             # Plot image
             im = ax.imshow(df, cmap=unc.cmap, vmin=unc.vmin, vmax=unc.vmax)
@@ -124,15 +124,17 @@ def plot_uncertainty_heatmap(results_agg: pd.DataFrame, *,
     for ax in axs[:, 0]:
         ax.set_yticks(*wrap_labels(c.networks))
 
-    for ax, split in zip(axs[0], c.scenarios_123):
+    for ax, split in zip(axs[0], scenarios):
         ax.set_title(split.label, fontweight="bold")
 
     plt.savefig(saveto)
     plt.close()
 
 
-## Uncertainty metrics - bar plot
+### COVERAGE
+## Helper function: Lines at k=1, 2, ...
 k_to_percentage = lambda k: 100*erf(k/np.sqrt(2))
+
 def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=3) -> None:
     """
     Add horizontal lines at k=1, k=2, ... coverage.
@@ -146,8 +148,9 @@ def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=3) -> None:
 
         # Add text to last panel
         ax = axs[-1]
-        ax.text(1.01, percentage/100, f"$k = {k}$", transform=ax.transAxes, horizontalalignment="left", verticalalignment="center")
+        ax.text(1.02, percentage/100, f"$k = {k}$", transform=ax.transAxes, horizontalalignment="left", verticalalignment="center")
 
+## Plot coverage per IOP, network, scenario
 def plot_coverage(data: pd.DataFrame, *,
                   groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, scenarios: Iterable[c.Parameter]=c.scenarios_123,
                   saveto: Path | str=c.output_path/"uncertainty_coverage.pdf") -> None:
@@ -169,15 +172,11 @@ def plot_coverage(data: pd.DataFrame, *,
         for ax, scenario in zip(ax_row, scenarios):
             for member_idx, member in enumerate(groupmembers):
                 # Select data
-                df = data.loc[scenario, member, groups]
-                values = df[c.coverage]
-
-                color = member.color
-                label = member.label
+                values = data.loc[scenario, member, groups][c.coverage]
 
                 locations = np.arange(n_groups) - (bar_width * (n_members - 1) / 2) + member_idx * bar_width
 
-                ax.bar(locations, values, color=color, label=label, width=bar_width, zorder=3)  # Draw points
+                ax.bar(locations, values, color=member.color, label=member.label, width=bar_width, zorder=3)  # Draw points
 
             ax.grid(False, axis="x")
 
@@ -206,7 +205,7 @@ def plot_coverage(data: pd.DataFrame, *,
     plt.close()
 
 
-## Uncertainty metrics - miscalibration area
+### MISCALIBRATION AREA
 def table_miscalibration_area(df: pd.DataFrame, *,
                               scenarios: Iterable[c.Parameter]=c.scenarios_123,
                               saveto: Path | str=c.output_path/"miscalibration_area.csv") -> None:
@@ -224,7 +223,8 @@ def table_miscalibration_area(df: pd.DataFrame, *,
     areas.to_csv(saveto)
 
 
-## Uncertainty metrics - calibration curves
+### CALIBRATION CURVES
+## Plot one
 def _plot_calibration_single(ax: plt.Axes, data: pd.Series, **kwargs) -> None:
     """
     Plot a single calibration curve.
@@ -233,6 +233,7 @@ def _plot_calibration_single(ax: plt.Axes, data: pd.Series, **kwargs) -> None:
     ax.plot(data.array, data.index, **kwargs)
 
 
+## Plot all
 def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
                             rows: Iterable[c.Parameter]=c.scenarios_123, columns: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks,
                             saveto: Path | str=c.output_path/"calibration_curves.pdf") -> None:
