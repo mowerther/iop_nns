@@ -1,9 +1,9 @@
 """
-Functions relating to outputs, such as plots and tables.
+Plots that show the uncertainty of estimates.
 """
 import itertools
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -13,8 +13,9 @@ from matplotlib import pyplot as plt
 from matplotlib import ticker
 from matplotlib.colors import Normalize
 
-from .. import metrics
 from .. import constants as c
+from .common import add_legend_below_figure
+
 
 ### FUNCTIONS
 ## Uncertainty statistics - line plot
@@ -103,6 +104,9 @@ def plot_uncertainty_heatmap(results_agg: pd.DataFrame, *,
                     # Show text
                     ax.text(j, i, f"{value:.0f}", ha="center", va="center", color=textcolor)
 
+            # Panel settings
+            ax.grid(False)
+
         # Color bar per row
         cb = fig.colorbar(im, ax=ax_row, fraction=0.1, pad=0.01, shrink=1, extend="max" if unc is c.total_unc_pct else "neither")
         cb.set_label(label=unc.label, weight="bold")
@@ -138,7 +142,7 @@ def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=3) -> None:
 
         # Plot lines
         for ax in axs:
-            ax.axhline(percentage, color="black", linestyle="--", zorder=4)
+            ax.axhline(percentage, color="black", linestyle="--", linewidth=1, zorder=4)
 
         # Add text to last panel
         ax = axs[-1]
@@ -175,7 +179,7 @@ def plot_coverage(data: pd.DataFrame, *,
 
                 ax.bar(locations, values, color=color, label=label, width=bar_width, zorder=3)  # Draw points
 
-            ax.grid(True, axis="y", linestyle="--", linewidth=0.5, color="black", alpha=0.4)
+            ax.grid(False, axis="x")
 
         add_coverage_k_lines(*ax_row)
 
@@ -195,7 +199,7 @@ def plot_coverage(data: pd.DataFrame, *,
         ax.set_title(scenario.label)
 
     # Plot legend outside the subplots
-    _add_legend_below_figure(fig, groupmembers)
+    add_legend_below_figure(fig, groupmembers)
 
     plt.tight_layout()
     plt.savefig(saveto, bbox_inches="tight")
@@ -260,7 +264,7 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
     axs[0, 0].locator_params(axis="both", nbins=5)  # Creates one spurious xtick that I have no idea how to deal with, but probably no one will notice
 
     # Plot legend outside the subplots
-    _add_legend_below_figure(fig, groupmembers)
+    add_legend_below_figure(fig, groupmembers)
 
     # Labels
     for ax, title in zip(axs[0], columns):

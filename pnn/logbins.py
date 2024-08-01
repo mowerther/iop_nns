@@ -6,8 +6,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from . import constants as c
-from . import metrics
+from . import constants as c, metrics as m
 
 def log_binned_statistics(x: pd.Series, y: pd.Series, *,
                           vmin: float=1e-4, vmax: float=40, binwidth: float=0.2, n: int=100) -> pd.DataFrame:
@@ -31,7 +30,7 @@ def log_binned_statistics(x: pd.Series, y: pd.Series, *,
 
     # Calculate statistics
     binned_averages = [b.median() for b in binned]
-    binned_diffs = [metrics.MAD(b, b.median()) for b in binned]
+    binned_diffs = [m.MAD(b, b.median()) for b in binned]
 
     # Wrap into dataframe
     binned = pd.DataFrame(index=bins, data={"median": binned_averages, "mad": binned_diffs})
@@ -55,6 +54,6 @@ def log_binned_statistics_combined(df: pd.DataFrame) -> pd.DataFrame:
     Calculate log binned statistics for each of the uncertainty dataframes relative to x, and combine them into a single dataframe.
     """
     # Reorder data and apply
-    binned = df.groupby(level=["split", "network"]).apply(log_binned_statistics_df)
+    binned = df.groupby(level=c.scenario_network).apply(log_binned_statistics_df)
 
     return binned

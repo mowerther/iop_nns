@@ -25,7 +25,7 @@ IOP_SCALE = "log"
 
 
 ### HELPER FUNCTIONS
-def _add_legend_below_figure(fig: plt.Figure, items: Iterable[c.Parameter], **kwargs) -> None:
+def add_legend_below_figure(fig: plt.Figure, items: Iterable[c.Parameter], **kwargs) -> None:
     """
     Add a legend below the subplots, with a patch for each item.
     """
