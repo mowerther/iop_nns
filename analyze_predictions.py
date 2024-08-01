@@ -11,26 +11,18 @@ import argparse
 parser = argparse.ArgumentParser("Script for loading data and PNN outputs and generating plots.")
 parser.add_argument("-c", "--recalibrate", help="apply recalibration", action="store_true")
 args = parser.parse_args()
-RECALIBRATE = args.recalibrate
 
 
-### MODEL OUTPUTS
-print("\n\n\n--- MODEL OUTPUTS ---")
+### MODEL METRICS
+print("\n\n\n--- MODEL METRICS ---")
 
 # Load data
-results = pnn.modeloutput.read_all_model_outputs(use_recalibration_data=RECALIBRATE)
-print("Read results into `results` DataFrame:")
-print(results)
+metrics = pnn.modeloutput.read_all_model_metrics()
 
 # Performance metrics and lollipop plot
-metrics = pnn.aggregate.calculate_metrics(results)
+metrics = metrics.groupby(level=["scenario", "network", "variable"]).first()  # Temporary
 pnn.output.plot_performance_metrics_lollipop(metrics)
 print("Saved performance metric (lollipop) plot")
-
-# Average uncertainty heatmap
-uncertainty_averages = pnn.aggregate.average_uncertainty(results)
-pnn.output.plot_uncertainty_heatmap(uncertainty_averages)
-print("Saved uncertainty heatmap plot")
 
 # Coverage plot
 pnn.output.plot_coverage(metrics)
@@ -39,6 +31,21 @@ print("Saved coverage plot")
 # Miscalibration area
 pnn.output.table_miscalibration_area(metrics)
 print("Saved miscalibration area table")
+
+
+### INDIVIDUAL MODEL OUTPUTS
+print("\n\n\n--- INDIVIDUAL MODEL OUTPUTS ---")
+raise Exception
+
+# Load data
+results = pnn.modeloutput.read_all_model_outputs(use_recalibration_data=args.recalibrate)
+print("Read results into `results` DataFrame:")
+print(results)
+
+# Average uncertainty heatmap
+uncertainty_averages = pnn.aggregate.average_uncertainty(results)
+pnn.output.plot_uncertainty_heatmap(uncertainty_averages)
+print("Saved uncertainty heatmap plot")
 
 # Calibration curves
 calibration_curves = pnn.aggregate.calibration_curve(results)

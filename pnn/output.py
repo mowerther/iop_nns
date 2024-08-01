@@ -216,9 +216,9 @@ def plot_performance_scatter(results: pd.DataFrame, *,
 
 
 ## Performance metrics - lollipop plot
-_lollipop_metrics = [c.mdsa, c.sspb, c.r_squared]
+_lollipop_metrics = [c.mdsa, c.sspb, c.log_r_squared]
 def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
-                                      groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_lollipop_metrics, splits: Iterable[c.Parameter]=c.scenarios_123,
+                                      groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_lollipop_metrics, scenarios: Iterable[c.Parameter]=c.scenarios_123,
                                       saveto: Path | str=c.output_path/"performance_lolliplot_vertical.pdf") -> None:
     """
     Plot some number of DataFrames containing performance metric statistics.
@@ -230,16 +230,16 @@ def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
     n_groups = len(groups)
     n_members = len(groupmembers)
     n_rows = len(metrics)
-    n_cols = len(splits)
+    n_cols = len(scenarios)
     fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(12, 7), sharex=True, sharey="row", squeeze=False)
 
     # Plot results; must be done in a loop because there is no Pandas lollipop function
     for ax_row, metric in zip(axs, metrics):
-        for ax, split in zip(ax_row, splits):
+        for ax, scenario in zip(ax_row, scenarios):
             for member_idx, member in enumerate(groupmembers):
                 # Select data
-                df = data.loc[split, member, metric]
-                values = df[groups]
+                df = data.loc[scenario, member, groups]
+                values = df[metric]
 
                 color = member.color
                 label = member.label
@@ -269,8 +269,8 @@ def plot_performance_metrics_lollipop(data: pd.DataFrame, *,
             ax.set_ylim(metric.vmin, metric.vmax)
 
     # Titles
-    for ax, split in zip(axs[0], splits):
-        ax.set_title(split.label)
+    for ax, scenario in zip(axs[0], scenarios):
+        ax.set_title(scenario.label)
 
     # Plot legend outside the subplots
     handles, labels = ax.get_legend_handles_labels()
@@ -409,7 +409,7 @@ def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=3) -> None:
         ax.text(1.01, percentage/100, f"$k = {k}$", transform=ax.transAxes, horizontalalignment="left", verticalalignment="center")
 
 def plot_coverage(data: pd.DataFrame, *,
-                  groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, splits: Iterable[c.Parameter]=c.scenarios_123,
+                  groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, scenarios: Iterable[c.Parameter]=c.scenarios_123,
                   saveto: Path | str=c.output_path/"uncertainty_coverage.pdf") -> None:
     """
     Bar plot showing the coverage factor (pre-calculated).
@@ -421,16 +421,16 @@ def plot_coverage(data: pd.DataFrame, *,
     n_groups = len(groups)
     n_members = len(groupmembers)
     n_rows = 1
-    n_cols = len(splits)
+    n_cols = len(scenarios)
     fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(11, 4), sharex=True, sharey="row", squeeze=False)
 
     # Plot results
     for ax_row in axs:
-        for ax, split in zip(ax_row, splits):
+        for ax, scenario in zip(ax_row, scenarios):
             for member_idx, member in enumerate(groupmembers):
                 # Select data
-                df = data.loc[split, member, c.coverage]
-                values = df[groups]
+                df = data.loc[scenario, member, groups]
+                values = df[c.coverage]
 
                 color = member.color
                 label = member.label
@@ -455,8 +455,8 @@ def plot_coverage(data: pd.DataFrame, *,
     axs[0, 0].set_ylim(c.coverage.vmin, c.coverage.vmax)
 
     # Titles
-    for ax, split in zip(axs[0], splits):
-        ax.set_title(split.label)
+    for ax, scenario in zip(axs[0], scenarios):
+        ax.set_title(scenario.label)
 
     # Plot legend outside the subplots
     _add_legend_below_figure(fig, groupmembers)
@@ -467,17 +467,19 @@ def plot_coverage(data: pd.DataFrame, *,
 
 
 ## Uncertainty metrics - miscalibration area
-def table_miscalibration_area(df: pd.DataFrame, *, saveto: Path | str=c.output_path/"miscalibration_area.csv") -> None:
+def table_miscalibration_area(df: pd.DataFrame, *,
+                              scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                              saveto: Path | str=c.output_path/"miscalibration_area.csv") -> None:
     """
     Reorder the miscalibration area table and save it to file.
     To do: fully automate.
     """
-    areas = df.loc[:, :, "miscalibration area"]
-    areas = areas.reorder_levels(["network", "split"])
+    areas = df[c.miscalibration_area].unstack("variable")[c.iops]
+    areas = areas.reorder_levels(["network", "scenario"])
     areas.sort_index(inplace=True)
     areas.sort_index(key=lambda x: x.map({model: i for i, model in enumerate(c.networks)}))
     areas.rename(index={model.name: model.label for model in c.networks}, level="network", inplace=True)
-    areas.rename(index={split.name: split.label for split in c.splits}, level="split", inplace=True)
+    areas.rename(index={scenario.name: scenario.label for scenario in scenarios}, level="scenario", inplace=True)
 
     areas.to_csv(saveto)
 

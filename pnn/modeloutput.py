@@ -1,5 +1,5 @@
 """
-Functions for reading the PNN output dataframes.
+Functions for reading the PNN outputs.
 """
 from pathlib import Path
 from typing import Iterable
@@ -9,11 +9,44 @@ import pandas as pd
 
 from . import constants as c
 
-LEVEL_ORDER = ["category", "split", "network", "instance"]
-LEVEL_ORDER_SINGLE = ["category", "instance"]
+LEVEL_ORDER_METRICS = ["scenario", "network", "model", "variable"]
+LEVEL_ORDER_SINGLE_METRICS = ["model", "variable"]
+LEVEL_ORDER_OUTPUTS = ["category", "scenario", "network", "instance"]
+LEVEL_ORDER_SINGLE_OUTPUT = ["category", "instance"]
 
 
-### LOADING / PROCESSING DATA
+### LOADING / PROCESSING MODEL METRICS
+def read_model_metrics(filename: Path | str, **kwargs) -> pd.DataFrame:
+    """
+    Read data from a dataframe and process it.
+    """
+    df = pd.read_csv(filename, index_col=LEVEL_ORDER_SINGLE_METRICS, **kwargs)
+    return df
+
+
+def read_all_model_metrics(folder: Path | str=c.model_estimates_path, *,
+                           scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                           use_recalibration_data=False) -> pd.DataFrame:
+    """
+    Read all data from a given folder into one big dataframe.
+    """
+    # Setup
+    filename_base = "metrics.csv"
+    if use_recalibration_data:
+        filename_base = "recal_" + filename_base
+
+    # Read data
+    metrics = {scenario.name: pd.concat({network.name: read_model_metrics(folder/f"{network.name}_{scenario.name}_{filename_base}") for network in c.networks}, names=["network"]) for scenario in scenarios}
+    metrics = pd.concat(metrics, names=["scenario"])
+
+    # Reorder
+    metrics = metrics.reorder_levels(LEVEL_ORDER_METRICS)
+
+    return metrics
+
+
+
+### LOADING / PROCESSING INDIVIDUAL MODEL OUTPUTS
 def variance_to_uncertainty(df: pd.DataFrame, *, input_keys: Iterable[str]=c.variances) -> pd.DataFrame:
     """
     Calculate the uncertainty corresponding to variances in the given dataframe.
@@ -71,17 +104,17 @@ def save_model_outputs(y_true: np.ndarray, mean_predictions: np.ndarray, total_v
                      c.epi_var: epistemic_variance,}
 
     data_combined = {str(key): pd.DataFrame(arr, columns=columns) for key, arr in data_combined.items()}
-    data_combined = pd.concat(data_combined, names=LEVEL_ORDER_SINGLE)
+    data_combined = pd.concat(data_combined, names=LEVEL_ORDER_SINGLE_OUTPUT)
 
     # Save
     data_combined.to_csv(filename)
 
 
-def read_model_outputs(filename: Path | str) -> pd.DataFrame:
+def read_model_outputs(filename: Path | str, **kwargs) -> pd.DataFrame:
     """
     Read data from a dataframe and process it.
     """
-    df = pd.read_csv(filename, index_col=LEVEL_ORDER_SINGLE)
+    df = pd.read_csv(filename, index_col=LEVEL_ORDER_SINGLE_OUTPUT, **kwargs)
     return df
 
 
@@ -100,7 +133,7 @@ def read_all_model_outputs(folder: Path | str, *,
     results = pd.concat(results, names=["split"])
 
     # Reorder
-    results = results.reorder_levels(LEVEL_ORDER)
+    results = results.reorder_levels(LEVEL_ORDER_OUTPUTS)
 
     # Convert variance to uncertainty (std)
     stds = variance_to_uncertainty(results)

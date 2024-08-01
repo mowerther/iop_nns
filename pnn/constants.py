@@ -142,8 +142,10 @@ iops_675 = [iop for iop in iops if "675" in iop.name]
 
 
 ### METRICS
-mdsa = Parameter("mdsa", "MdSA [%]", vmin=0)
-sspb = Parameter("sspb", "SSPB [%]", symmetric=True)
+mdsa = Parameter("MdSA", "MdSA [%]", vmin=0)
+sspb = Parameter("SSPB", "SSPB [%]", symmetric=True)
 r_squared = Parameter("r_squared", r"$R^2$", vmax=1)
+log_r_squared = Parameter("log_r_squared", r"$R^2$", vmax=1)
 interval_sharpness = Parameter("sharpness", f"Sharpness", vmin=0, vmax=1)
 coverage = Parameter("coverage", "Coverage [%]", vmin=0, vmax=100)
+miscalibration_area = Parameter("MA", "Miscalibration area", vmin=0, vmax=1)
