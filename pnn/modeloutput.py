@@ -119,18 +119,19 @@ def read_model_outputs(filename: Path | str, **kwargs) -> pd.DataFrame:
 
 
 def read_all_model_outputs(folder: Path | str, *,
+                           scenarios: Iterable[c.Parameter]=c.scenarios_123,
                            use_recalibration_data=False) -> pd.DataFrame:
     """
     Read all data from a given folder into one big dataframe.
     """
     # Setup
-    filename_base = "preds"
+    filename_base = "estimates.csv"
     if use_recalibration_data:
         filename_base = "recal_" + filename_base
 
     # Read data
-    results = {split.name: pd.concat({network.name: read_model_outputs(folder/f"{network.name}_{split.name}_{filename_base}.csv") for network in c.networks}, names=["network"]) for split in c.splits}
-    results = pd.concat(results, names=["split"])
+    results = {scenario.name: pd.concat({network.name: read_model_outputs(folder/f"{network.name}_{scenario.name}_{filename_base}") for network in c.networks}, names=["network"]) for scenario in scenarios}
+    results = pd.concat(results, names=["scenario"])
 
     # Reorder
     results = results.reorder_levels(LEVEL_ORDER_OUTPUTS)

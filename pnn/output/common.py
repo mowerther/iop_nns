@@ -12,10 +12,16 @@ from .. import constants as c
 
 ### UNIVERSAL RCPARAMS
 mpl.rcParams.update({
+                    "figure.dpi": 300,
                     "axes.grid": True,
                     "grid.linestyle": "--",
                     "grid.alpha": 0.5,
                     })
+
+
+### OTHER CONSTANTS
+IOP_LIMS = (1e-5, 1e1)
+IOP_SCALE = "log"
 
 
 ### HELPER FUNCTIONS

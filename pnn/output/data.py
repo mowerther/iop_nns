@@ -12,11 +12,9 @@ from matplotlib import patches
 from matplotlib.colors import to_rgba
 
 from .. import constants as c
+from .common import IOP_LIMS, IOP_SCALE
 
 ### CONSTANTS
-IOP_LIMS = (1e-5, 1e1)
-IOP_SCALE = "log"
-
 TRAIN_COLOR = "black"
 TEST_COLOR = "C1"
 
