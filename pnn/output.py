@@ -542,3 +542,114 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
 
     plt.savefig(saveto, bbox_inches="tight")
     plt.close()
+
+# Figure 5 - boxplot
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+
+data_path = r"C:\SwitchDrive\Data\pnn_model_estimates"
+
+model_file_mapping = {
+    'BNN MCD': 'bnn_mcd',
+    'BNN DC': 'bnn_dc',
+    'MDN': 'mdn',
+    'ENS NN': 'ens_nn',
+    'RNN': 'rnn'
+}
+
+models = ['BNN MCD', 'BNN DC', 'MDN', 'ENS NN', 'RNN']
+scenarios = ['random', 'wd', 'ood']
+metrics = ['MdSA', 'SSPB', 'log_r_squared']
+
+colors = {'BNN MCD': '#6699CC', 'BNN DC': '#997700', 'MDN': '#994455', 'ENS NN': '#EE99AA', 'RNN': '#EECC66'}
+
+def read_csv_file(model, scenario):
+    filename = f"{model_file_mapping[model]}_{scenario}_split_metrics.csv"
+    filepath = os.path.join(data_path, filename)
+    df = pd.read_csv(filepath)
+    df['model'] = model
+    df['scenario'] = scenario
+    return df
+
+# read all CSV files and combine into a single DataFrame
+all_data = pd.concat([read_csv_file(model, scenario)
+                      for model in models
+                      for scenario in scenarios])
+
+# prep for plotting
+plot_data = all_data.melt(id_vars=['model', 'scenario', 'variable'],
+                          value_vars=metrics,
+                          var_name='metric', value_name='value')
+
+# Set up the plot
+fig, axes = plt.subplots(3, 3, figsize=(16, 10))
+plt.subplots_adjust(wspace=0.05, hspace=0.2)
+
+# format x-axis labels
+def format_xlabel(label):
+    if label.startswith('a'):
+        parts = label.split('_')
+        return f"$a_{{{parts[0][1:]}}}({parts[1]})$"
+    return label
+
+# create the boxplots
+for i, metric in enumerate(metrics):
+    for j, scenario in enumerate(scenarios):
+        ax = axes[i, j]
+        data = plot_data[(plot_data['metric'] == metric) & (plot_data['scenario'] == scenario)]
+        
+        sns.boxplot(x='variable', y='value', hue='model', data=data, ax=ax, palette=colors, 
+                    whis=[0, 100], width=0.6, hue_order=models)
+        
+        # title only for the first row
+        if i == 0:
+            title = {"random": "Random split", "wd": "Within-distribution split", "ood": "Out-of-distribution split"}
+            ax.set_title(title[scenario], fontsize=12)
+        
+        # y-label only for the first column
+        if j == 0:
+            if metric == 'MdSA':
+                ax.set_ylabel('MdSA [%]', fontsize=10, fontweight='bold')
+            elif metric == 'SSPB':
+                ax.set_ylabel('SSPB [%]', fontsize=10, fontweight='bold')
+            elif metric == 'log_r_squared':
+                ax.set_ylabel('$R^2$', fontsize=10, fontweight='bold')
+        else:
+            ax.set_ylabel('')
+            ax.set_yticklabels([])
+        
+        #  x-axis labels
+        x_labels = [format_xlabel(label.get_text()) for label in ax.get_xticklabels()]
+        ax.set_xticks(range(len(x_labels)))  
+        
+        # x-labels only for the last row, show ticks for all
+        if i == 2:
+            ax.set_xticklabels(x_labels, rotation=45, ha='right', fontsize=8)
+        else:
+            ax.set_xticklabels([])
+        ax.set_xlabel('')  
+        
+        # legend
+        if i == 1 and j == 2:  # only the middle-right plot
+            handles, labels = ax.get_legend_handles_labels()
+            ax.legend(handles, labels, title='Model', bbox_to_anchor=(1.05, 0.7), 
+                      loc='upper left', fontsize=8)
+        else:
+            ax.get_legend().remove()
+        
+        # y-axis limits based on metric
+        if metric == 'MdSA':
+            ax.set_ylim(0, 300)
+        elif metric == 'SSPB':
+            ax.set_ylim(-150, 100)
+        elif metric == 'log_r_squared':
+            ax.set_ylim(-1.5, 1)
+        
+        ax.grid(True, axis='y', linestyle='--', alpha=0.7)
+
+plt.tight_layout()
+plt.savefig('C:/SwitchDrive/Data/Plots/model_performance_boxplots.pdf', bbox_inches='tight')
+plt.show()
