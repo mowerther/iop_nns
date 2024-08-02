@@ -14,7 +14,7 @@ from matplotlib import ticker
 from matplotlib.colors import Normalize
 
 from .. import constants as c
-from .common import add_legend_below_figure, IOP_SCALE
+from .common import IOP_SCALE, add_legend_below_figure, _plot_grouped_values
 
 
 ### IOP VALUE VS. UNCERTAINTY (BINNED)
@@ -199,6 +199,32 @@ def plot_coverage(data: pd.DataFrame, *,
 
     # Plot legend outside the subplots
     add_legend_below_figure(fig, groupmembers)
+
+    plt.tight_layout()
+    plt.savefig(saveto, bbox_inches="tight")
+    plt.close()
+
+
+def plot_coverage_box(data: pd.DataFrame, *,
+                      scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                      saveto: Path | str=c.output_path/"uncertainty_coverage_box.pdf") -> None:
+    """
+    Box plot showing the coverage factor (pre-calculated).
+    """
+    # Generate figure ; rows are metrics, columns are split types
+    n_rows = 1
+    n_cols = len(scenarios)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(12, 4), sharex=True, sharey="row", squeeze=False)
+
+    # Plot
+    _plot_grouped_values(axs, data, colparameters=scenarios, rowparameters=[c.coverage], groups=c.iops, groupmembers=c.networks)
+
+    # k lines
+    for ax_row in axs:
+        add_coverage_k_lines(*ax_row)
+
+    # Plot legend outside the subplots
+    add_legend_below_figure(fig, c.networks)
 
     plt.tight_layout()
     plt.savefig(saveto, bbox_inches="tight")

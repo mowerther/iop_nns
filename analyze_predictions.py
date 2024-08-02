@@ -25,6 +25,10 @@ print(metrics)
 pnn.output.plot_accuracy_metrics(metrics)
 print("Saved performance metric plot")
 
+# Coverage plot
+pnn.output.plot_coverage_box(metrics)
+print("Saved coverage plot")
+
 metrics = metrics.groupby(level=["scenario", "network", "variable"]).first()  # Temporary
 
 # Coverage plot
