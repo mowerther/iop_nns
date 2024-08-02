@@ -107,6 +107,10 @@ def _plot_grouped_values(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
     axs[0, 0].set_xticks(np.arange(n_groups))
     axs[0, 0].set_xticklabels([p.label_2lines for p in groups])
 
+    xmin = -spacing * (n_members + 1) / 2
+    xmax = n_groups - 1 + spacing * (n_members + 1) / 2
+    axs[0, 0].set_xlim(xmin, xmax)
+
     # Label y-axes
     for ax, rowparam in zip(axs[:, 0], rowparameters):
         ax.set_ylabel(rowparam.label_2lines, fontsize=12)
