@@ -160,15 +160,15 @@ def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=3) -> None:
 
 ## Plot coverage per IOP, network, scenario
 def plot_coverage(data: pd.DataFrame, *,
-                      scenarios: Iterable[c.Parameter]=c.scenarios_123,
-                      saveto: Path | str=c.output_path/"uncertainty_coverage.pdf", tag: Optional[str]=None) -> None:
+                  scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                  saveto: Path | str=c.output_path/"uncertainty_coverage.pdf", tag: Optional[str]=None) -> None:
     """
     Box plot showing the coverage factor (pre-calculated).
     """
     # Generate figure ; rows are metrics, columns are split types
     n_rows = 1
     n_cols = len(scenarios)
-    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(3.5*n_cols, 4), sharex=True, sharey="row", squeeze=False)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(3.5*n_cols, 4), sharex=True, sharey=True, squeeze=False)
 
     # Plot
     _plot_grouped_values(axs, data, colparameters=scenarios, rowparameters=[c.coverage], groups=c.iops, groupmembers=c.networks)
@@ -181,6 +181,40 @@ def plot_coverage(data: pd.DataFrame, *,
     add_legend_below_figure(fig, c.networks)
 
     plt.tight_layout()
+    saveto = saveto_append_tag(saveto, tag)
+    plt.savefig(saveto, bbox_inches="tight")
+    plt.close()
+
+## Plot coverage per IOP, network, scenario -- with recalibrated data
+def plot_coverage_with_recal(data: pd.DataFrame, data_recal: pd.DataFrame, *,
+                             scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                             saveto: Path | str=c.output_path/"uncertainty_coverage_recal.pdf", tag: Optional[str]=None) -> None:
+    """
+    Box plot showing the coverage factor (pre-calculated).
+    """
+    # Generate figure ; rows are metrics, columns are split types
+    n_rows = 2
+    n_cols = len(scenarios)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(3.5*n_cols, 7), sharex=True, sharey=True, squeeze=False, gridspec_kw={"hspace": 0.4, "wspace": 0.05})
+
+    # Plot
+    for j, df in enumerate([data, data_recal]):
+        _plot_grouped_values(axs[[j]], df, colparameters=scenarios, rowparameters=[c.coverage], groups=c.iops, groupmembers=c.networks)
+
+    # k lines
+    for ax_row in axs:
+        add_coverage_k_lines(*ax_row)
+
+    # Recal labels
+    fig.subplots_adjust(top=0.95, bottom=0.08)
+    labels = ["Without recalibration", "With recalibration"]
+    label_positions = [0.985, 0.48]  # Hand-tuned
+    for label, position in zip(labels, label_positions):
+        fig.text(0.5, position, label, fontsize=12, fontweight="bold", ha="center")
+
+    # Plot legend outside the subplots
+    add_legend_below_figure(fig, c.networks)
+
     saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto, bbox_inches="tight")
     plt.close()

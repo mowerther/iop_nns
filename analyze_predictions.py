@@ -3,6 +3,7 @@ Script for loading PNN outputs and generating plots.
 The individual results files are combined into a single DataFrame (`results`) which is then used for plotting and aggregation.
 
 To plot the PRISMA data, use the -p flag.
+If you don't want to plot recalibrated data, use the --no_recal flag.
 """
 import pnn
 
@@ -10,6 +11,7 @@ import pnn
 import argparse
 parser = argparse.ArgumentParser("Script for loading PNN outputs and generating plots.")
 parser.add_argument("-p", "--prisma", help="use PRSIMA data", action="store_true")
+parser.add_argument("-n", "--no_recal", help="do not use recalibrated data", action="store_true")
 args = parser.parse_args()
 
 
@@ -25,12 +27,21 @@ metrics = pnn.modeloutput.read_all_model_metrics(scenarios=scenarios)
 print("Read metrics into `metrics` DataFrame:")
 print(metrics)
 
+# Load recalibrated data
+if not args.no_recal:
+    metrics_recal = pnn.modeloutput.read_all_model_metrics(scenarios=scenarios, use_recalibration_data=True)
+    print("\n\nRead recalibrationmetrics into `metrics_recal` DataFrame:")
+    print(metrics_recal)
+
 # Accuracy metric plot
 pnn.output.plot_accuracy_metrics(metrics, scenarios=scenarios, tag=tag)
 print("Saved accuracy metric plot")
 
 # Coverage plot
-pnn.output.plot_coverage(metrics, scenarios=scenarios, tag=tag)
+if args.no_recal:
+    pnn.output.plot_coverage(metrics, scenarios=scenarios, tag=tag)
+else:
+    pnn.output.plot_coverage_with_recal(metrics, metrics_recal, scenarios=scenarios, tag=tag)
 print("Saved coverage plot")
 
 
