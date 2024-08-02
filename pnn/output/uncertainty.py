@@ -165,7 +165,7 @@ def plot_coverage(data: pd.DataFrame, *,
     """
     Box plot showing the coverage factor (pre-calculated).
     """
-    # Generate figure ; rows are metrics, columns are split types
+    # Generate figure ; columns are split types
     n_rows = 1
     n_cols = len(scenarios)
     fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(3.5*n_cols, 4), sharex=True, sharey=True, squeeze=False)
@@ -192,25 +192,23 @@ def plot_coverage_with_recal(data: pd.DataFrame, data_recal: pd.DataFrame, *,
     """
     Box plot showing the coverage factor (pre-calculated).
     """
-    # Generate figure ; rows are metrics, columns are split types
-    n_rows = 2
-    n_cols = len(scenarios)
-    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(3.5*n_cols, 7), sharex=True, sharey=True, squeeze=False, gridspec_kw={"hspace": 0.4, "wspace": 0.05})
+    # Generate figure ; columns are split types
+    nrows = 2
+    ncols = len(scenarios)
+    fig = plt.figure(figsize=(3.5*ncols, 7), layout="constrained")
+    subfigs = fig.subfigures(nrows=nrows, hspace=0.1)
+    labels = ["Without recalibration", "With recalibration"]
 
     # Plot
-    for j, df in enumerate([data, data_recal]):
-        _plot_grouped_values(axs[[j]], df, colparameters=scenarios, rowparameters=[c.coverage], groups=c.iops, groupmembers=c.networks)
+    for sfig, df, title in zip(subfigs, [data, data_recal], labels):
+        axs = sfig.subplots(nrows=1, ncols=ncols, sharex=True, sharey=True, squeeze=False)
+        _plot_grouped_values(axs, df, colparameters=scenarios, rowparameters=[c.coverage], groups=c.iops, groupmembers=c.networks)
 
-    # k lines
-    for ax_row in axs:
-        add_coverage_k_lines(*ax_row)
+        # k lines
+        add_coverage_k_lines(*axs[0])
 
-    # Recal labels
-    fig.subplots_adjust(top=0.95, bottom=0.08)
-    labels = ["Without recalibration", "With recalibration"]
-    label_positions = [0.985, 0.48]  # Hand-tuned
-    for label, position in zip(labels, label_positions):
-        fig.text(0.5, position, label, fontsize=12, fontweight="bold", ha="center")
+        # Recal labels
+        sfig.suptitle(title, fontweight="bold", fontsize=12)
 
     # Plot legend outside the subplots
     add_legend_below_figure(fig, c.networks)

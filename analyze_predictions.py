@@ -30,7 +30,7 @@ print(metrics)
 # Load recalibrated data
 if not args.no_recal:
     metrics_recal = pnn.modeloutput.read_all_model_metrics(scenarios=scenarios, use_recalibration_data=True)
-    print("\n\nRead recalibrationmetrics into `metrics_recal` DataFrame:")
+    print("\n\nRead recalibration metrics into `metrics_recal` DataFrame:")
     print(metrics_recal)
 
 # Accuracy metric plot
