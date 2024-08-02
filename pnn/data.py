@@ -109,9 +109,9 @@ def select_scenarios(prisma: bool) -> tuple[list[c.Parameter], Callable]:
     Select the desired scenarios - GLORIA 1, 2, 3 (`prisma=False`) or PRISMA 1, 2a, 2b, 3a, 3b (`prisma=True`).
     """
     if prisma:
-        return c.scenarios_prisma, read_prisma_data
+        return c.prisma, c.scenarios_prisma, read_prisma_data
     else:
-        return c.scenarios_123, read_scenario123_data
+        return c.gloria, c.scenarios_123, read_scenario123_data
 
 
 def extract_inputs_outputs(data: pd.DataFrame, *,

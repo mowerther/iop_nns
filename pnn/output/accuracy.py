@@ -1,6 +1,7 @@
 """
 Plots that show the accuracy of estimates.
 """
+from itertools import product
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -12,7 +13,7 @@ from matplotlib import ticker
 
 from .. import constants as c
 from .. import metrics as m
-from .common import IOP_LIMS, IOP_SCALE, add_legend_below_figure, _plot_grouped_values
+from .common import IOP_LIMS, IOP_SCALE, _plot_grouped_values, add_legend_below_figure, saveto_append_tag
 
 
 ### SCATTER PLOTS
@@ -78,20 +79,18 @@ def plot_performance_scatter(df: pd.DataFrame, *,
 ## Loop over scenarios and networks, and make a scatter plot for each combination
 _scatter_levels = ["scenario", "network"]
 def plot_performance_scatter_multi(results: pd.DataFrame, *,
-                                   saveto: Path | str=c.supplementary_path/"scatterplot.pdf", **kwargs) -> None:
+                                   scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                                   saveto: Path | str=c.supplementary_path/"scatterplot.pdf", tag: Optional[str]=None,
+                                   **kwargs) -> None:
     """
     Plot many DataFrames with y, y_hat, with total uncertainty (top) or aleatoric fraction (bottom) as colour.
-    To do: simplify by looping over pre-defined networks and scenarios, rather than finding them in the DataFrame.
     """
-    saveto = Path(saveto)
+    saveto = saveto_append_tag(saveto, tag)
 
     # Loop over results and plot each network/scenario combination in a separate figure
-    for (scenariokey, networkkey), df in results.groupby(level=_scatter_levels):
-        # Set up labels
-        saveto_here = saveto.with_stem(f"{saveto.stem}_{networkkey}-{scenariokey}")
-        scenario, network = c.scenarios_123_fromkey[scenariokey], c.networks_fromkey[networkkey]
-
-        # Plot
+    for network, scenario in product(c.networks, scenarios):
+        saveto_here = saveto.with_stem(f"{saveto.stem}_{network}-{scenario}")
+        df = results.loc[:, scenario, network]
         plot_performance_scatter(df, title=f"{network.label} {scenario.label}", saveto=saveto_here, **kwargs)
 
 
@@ -100,14 +99,14 @@ def plot_performance_scatter_multi(results: pd.DataFrame, *,
 _accuracy_metrics = [c.mdsa, c.sspb, c.log_r_squared]
 def plot_accuracy_metrics(data: pd.DataFrame, *,
                           scenarios: Iterable[c.Parameter]=c.scenarios_123,
-                          saveto: Path | str=c.output_path/"accuracy_metrics.pdf") -> None:
+                          saveto: Path | str=c.output_path/"accuracy_metrics.pdf", tag: Optional[str]=None) -> None:
     """
     Plot some number of DataFrames containing performance metric statistics.
     """
     # Generate figure ; rows are metrics, columns are scenarios
     n_rows = len(_accuracy_metrics)
     n_cols = len(scenarios)
-    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(12, 7), sharex=True, sharey="row", squeeze=False)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(4*n_cols, 2.3*n_rows), sharex=True, sharey="row", squeeze=False)
 
     # Plot
     _plot_grouped_values(axs, data, colparameters=scenarios, rowparameters=_accuracy_metrics, groups=c.iops, groupmembers=c.networks)
@@ -116,5 +115,6 @@ def plot_accuracy_metrics(data: pd.DataFrame, *,
     add_legend_below_figure(fig, c.networks)
 
     plt.tight_layout()
+    saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto, bbox_inches="tight")
     plt.close()

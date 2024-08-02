@@ -30,7 +30,7 @@ PNN = pnn.nn.select_nn(args.pnn_type)
 
 ### LOAD DATA
 # Load from file
-scenarios, load_data = pnn.data.select_scenarios(prisma=args.prisma)
+label, scenarios, load_data = pnn.data.select_scenarios(prisma=args.prisma)
 train_sets, test_sets = load_data()
 print("Loaded data.")
 

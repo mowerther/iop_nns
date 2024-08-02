@@ -77,6 +77,12 @@ def calibration_curve_single(df: pd.DataFrame) -> pd.DataFrame:
     Calculate the calibration curve for a single DataFrame with predicted mean, predicted uncertainty (std), and reference ("true") values.
     To do: Output Series rather than DataFrame.
     """
-    expected, observed = uct.get_proportion_lists_vectorized(df.loc[c.y_pred].to_numpy(), df.loc[c.total_unc].to_numpy(), df.loc[c.y_true].to_numpy())
+    # Filter NaNs
+    y_pred, total_uncertainty, y_true = [df.loc[key].to_numpy() for key in (c.y_pred, c.total_unc, c.y_true)]
+    valid = np.isfinite(total_uncertainty)
+    y_pred, total_uncertainty, y_true = [arr[valid] for arr in (y_pred, total_uncertainty, y_true)]
+
+    # Curves
+    expected, observed = uct.get_proportion_lists_vectorized(y_pred, total_uncertainty, y_true)
     observed = pd.DataFrame(index=expected, data=observed).rename_axis("expected")
     return observed

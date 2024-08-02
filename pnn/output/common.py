@@ -1,7 +1,8 @@
 """
 Anything that needs to be shared between modules.
 """
-from typing import Iterable
+from pathlib import Path
+from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
@@ -34,6 +35,15 @@ def add_legend_below_figure(fig: plt.Figure, items: Iterable[c.Parameter], **kwa
     legend_content = [patches.Patch(color=key.color, label=key.label, **kwargs) for key in items]
     fig.legend(handles=legend_content, loc="upper center", bbox_to_anchor=(0.5, 0), ncols=len(items), framealpha=1, edgecolor="black")
 
+
+def saveto_append_tag(saveto: Path | str, tag: Optional[str]=None) -> Path:
+    """
+    Add a tag to the end of a path. Does nothing if `tag` is None.
+    """
+    saveto = Path(saveto)
+    if tag is not None:
+        saveto = saveto.with_stem(f"{saveto.stem}_{tag}")
+    return saveto
 
 
 ### PLOTTING FUNCTIONS
@@ -99,10 +109,10 @@ def _plot_grouped_values(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
 
     # Label y-axes
     for ax, rowparam in zip(axs[:, 0], rowparameters):
-        ax.set_ylabel(rowparam.label, fontsize=12)
+        ax.set_ylabel(rowparam.label_2lines, fontsize=12)
     fig.align_ylabels()
 
     # Titles
     if apply_titles:
         for ax, colparam in zip(axs[0], colparameters):
-            ax.set_title(colparam.label)
+            ax.set_title(colparam.label_2lines)
