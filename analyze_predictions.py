@@ -45,12 +45,11 @@ else:
 print("Saved coverage plot")
 
 
-### TO DO: SELECT MEDIAN MODELS
-metrics_median = metrics.groupby(level=["scenario", "network", "variable"]).first()  # Temporary
-
+### SELECT MEDIAN MODELS
+median_indices, median_metrics = pnn.modeloutput.select_median_metrics(metrics)
 
 # Miscalibration area
-pnn.output.table_miscalibration_area(metrics_median, scenarios=scenarios, tag=tag)
+pnn.output.table_miscalibration_area(median_metrics, scenarios=scenarios, tag=tag)
 print("Saved miscalibration area table")
 
 

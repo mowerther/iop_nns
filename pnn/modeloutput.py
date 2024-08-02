@@ -2,7 +2,7 @@
 Functions for reading the PNN outputs.
 """
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
@@ -43,7 +43,6 @@ def read_all_model_metrics(folder: Path | str=c.model_estimates_path, *,
     metrics = metrics.reorder_levels(LEVEL_ORDER_METRICS)
 
     return metrics
-
 
 
 ### LOADING / PROCESSING INDIVIDUAL MODEL OUTPUTS
@@ -151,3 +150,50 @@ def read_all_model_outputs(folder: Path | str, *,
     # Sort
     results = results[c.iops]
     return results
+
+
+### FINDING AND LOADING THE MEDIAN MODEL
+def find_median_indices(metrics: pd.DataFrame, *,
+                        median_by_metric: c.Parameter=c.mdsa, columns: Iterable[c.Parameter]=c.iops_443,
+                        mode: Optional[str]="median") -> pd.Series:
+    """
+    Find the median (or best) model out of N, for each combination of scenario and network.
+    """
+    # Reduce DataFrame and argsort
+    values = metrics[median_by_metric]
+    values = values.unstack()
+    values = values[columns]
+    values = values.sum(axis=1)
+    indices = values.groupby(level=c.scenario_network).transform(pd.Series.argsort)
+
+    # Index
+    if mode == "median":
+        m = values.index.levshape[-1] // 2  # Size of last ("model") index, divide by 2
+    elif mode == "best":
+        m = 0
+    else:
+        raise ValueError(f"Cannot handle mode '{mode}' -- please use 'median' or 'best'.")
+
+    # Find the median (or best) indices
+    median_indices = indices.unstack()[m]
+    median_indices.rename("model", inplace=True)
+
+    return median_indices
+
+
+def select_median_metrics(metrics: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    """
+    Pull out metrics for the median model.
+    """
+    # Get indices
+    median_indices = find_median_indices(metrics, **kwargs)
+
+    # Select
+    # This can probably be done with clever indexing but I haven't figured it out yet
+    def _selector(df: pd.DataFrame) -> pd.DataFrame:
+        i = median_indices[df.index].iloc[0]  # Get the corresponding index
+        return df.loc[:, :, i]  # Select element from df; hardcoded index levels
+
+    median_metrics = metrics.groupby(c.scenario_network, group_keys=False).apply(_selector)
+
+    return median_indices, median_metrics

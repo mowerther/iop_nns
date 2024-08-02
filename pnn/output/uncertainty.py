@@ -248,6 +248,9 @@ def _plot_calibration_single(ax: plt.Axes, data: pd.Series, **kwargs) -> None:
 
 
 ## Plot all
+# Base
+
+# Applied
 def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
                             rows: Iterable[c.Parameter]=c.scenarios_123, columns: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks,
                             saveto: Path | str=c.output_path/"calibration_curves.pdf", tag: Optional[str]=None) -> None:
@@ -298,3 +301,6 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
     saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto, bbox_inches="tight")
     plt.close()
+
+
+# With recalibration
