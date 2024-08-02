@@ -10,7 +10,7 @@ import pandas as pd
 from scipy.special import erf
 
 from matplotlib import pyplot as plt
-from matplotlib import ticker
+from matplotlib import ticker, transforms
 from matplotlib.colors import Normalize
 
 from .. import constants as c
@@ -148,7 +148,8 @@ def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=3) -> None:
 
         # Add text to last panel
         ax = axs[-1]
-        ax.text(1.02, percentage/100, f"$k = {k}$", transform=ax.transAxes, horizontalalignment="left", verticalalignment="center")
+        trans = transforms.blended_transform_factory(ax.transAxes, ax.transData)  # X in plot coordinates, Y in data coordinates
+        ax.text(1.02, percentage, f"$k = {k}$", transform=trans, horizontalalignment="left", verticalalignment="center")
 
 ## Plot coverage per IOP, network, scenario
 def plot_coverage(data: pd.DataFrame, *,
