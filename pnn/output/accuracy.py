@@ -12,7 +12,7 @@ from matplotlib import ticker
 
 from .. import constants as c
 from .. import metrics as m
-from .common import IOP_LIMS, IOP_SCALE, add_legend_below_figure
+from .common import IOP_LIMS, IOP_SCALE, add_legend_below_figure, _plot_grouped_values
 
 
 ### SCATTER PLOTS
@@ -97,65 +97,23 @@ def plot_performance_scatter_multi(results: pd.DataFrame, *,
 
 ### ACCURACY METRICS
 ## Combined plot
-_lollipop_metrics = [c.mdsa, c.sspb, c.log_r_squared]
+_accuracy_metrics = [c.mdsa, c.sspb, c.log_r_squared]
 def plot_accuracy_metrics(data: pd.DataFrame, *,
-                             groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, metrics: Iterable[c.Parameter]=_lollipop_metrics, scenarios: Iterable[c.Parameter]=c.scenarios_123,
-                             saveto: Path | str=c.output_path/"accuracy_metrics.pdf") -> None:
+                          scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                          saveto: Path | str=c.output_path/"accuracy_metrics.pdf") -> None:
     """
     Plot some number of DataFrames containing performance metric statistics.
     """
-    # Constants
-    spacing = 0.15
-
-    # Generate figure ; rows are metrics, columns are split types
-    n_groups = len(groups)
-    n_members = len(groupmembers)
-    n_rows = len(metrics)
+    # Generate figure ; rows are metrics, columns are scenarios
+    n_rows = len(_accuracy_metrics)
     n_cols = len(scenarios)
     fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(12, 7), sharex=True, sharey="row", squeeze=False)
 
-    # Plot results; must be done in a loop because there is no direct function in Pandas
-    for ax_row, metric in zip(axs, metrics):
-        for ax, scenario in zip(ax_row, scenarios):
-            for member_idx, member in enumerate(groupmembers):
-                # Select data
-                df = data.loc[scenario, member][metric].unstack()
-                df = df[groups]  # Re-order
-
-                locations = np.arange(n_groups) - (spacing * (n_members - 1) / 2) + member_idx * spacing
-
-                bplot = ax.boxplot(df, positions=locations, whis=(0, 100), widths=spacing*0.9, zorder=3, medianprops={"color": "black"}, patch_artist=True)
-                for patch in bplot["boxes"]:
-                    patch.set_facecolor(member.color)
-
-            # Panel settings
-            ax.grid(False, axis="x")
-            ax.axhline(0, color="black", linewidth=1, zorder=1)
-
-        # y-axis limits
-        q = 0.03
-        ymin = data[metric].quantile(q) if metric.vmin is None else metric.vmin
-        ymax = data[metric].quantile(1-q) if metric.vmax is None else metric.vmax
-        if metric.symmetric:
-            maxvalue = np.max(np.abs([ymin, ymax]))
-            ymin, ymax = -maxvalue, maxvalue
-        ax_row[0].set_ylim(ymin, ymax)
-
-    # Label variables
-    axs[0, 0].set_xticks(np.arange(n_groups))
-    axs[0, 0].set_xticklabels([p.label_2lines for p in groups])
-
-    # Label y-axes
-    for ax, metric in zip(axs[:, 0], metrics):
-        ax.set_ylabel(metric.label, fontsize=12)
-    fig.align_ylabels()
-
-    # Titles
-    for ax, scenario in zip(axs[0], scenarios):
-        ax.set_title(scenario.label)
+    # Plot
+    _plot_grouped_values(axs, data, colparameters=scenarios, rowparameters=_accuracy_metrics, groups=c.iops, groupmembers=c.networks)
 
     # Plot legend outside the subplots
-    add_legend_below_figure(fig, groupmembers)
+    add_legend_below_figure(fig, c.networks)
 
     plt.tight_layout()
     plt.savefig(saveto, bbox_inches="tight")
