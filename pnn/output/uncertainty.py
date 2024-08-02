@@ -120,7 +120,7 @@ def plot_uncertainty_heatmap(results_agg: pd.DataFrame, *,
 
     # Labels
     fig.supxlabel("IOPs", fontweight="bold")
-    fig.supylabel("Models", fontweight="bold")
+    fig.supylabel("Models\n", fontweight="bold")
 
     wrap_labels = lambda parameters: list(zip(*enumerate(p.label for p in parameters)))  # (0, 1, ...) (label0, label1, ...)
     wrap_labels2 = lambda parameters: list(zip(*enumerate(p.label_2lines for p in parameters)))  # (0, 1, ...) (label0, label1, ...)
@@ -249,6 +249,48 @@ def _plot_calibration_single(ax: plt.Axes, data: pd.Series, **kwargs) -> None:
 
 ## Plot all
 # Base
+def _plot_calibration_curves_base(axs: np.ndarray[plt.Axes], calibration_curves: pd.DataFrame,
+                                  rows: Iterable[c.Parameter], columns: Iterable[c.Parameter], groupmembers: Iterable[c.Parameter]) -> None:
+    """
+    Plot calibration curves (expected vs. observed).
+
+    Base function that plots into existing panels. Should not be used by itself.
+    """
+    # Plot all curves
+    for ax_row, row_key in zip(axs, rows):
+        for ax, col_key in zip(ax_row, columns):
+            # Select data
+            df = calibration_curves.loc[row_key][col_key]
+
+            # Plot data
+            for key in groupmembers:
+                _plot_calibration_single(ax, df.loc[key], c=key.color, lw=3)
+
+            # Plot diagonal
+            ax.axline((0, 0), slope=1, c="black")
+
+    # Limits (in a loop because there is no guarantee that the axs share x or y)
+    for ax in axs.ravel():
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.set_aspect("equal")
+        ax.locator_params(axis="both", nbins=5)  # Creates one spurious xtick that I have no idea how to deal with, but probably no one will notice
+
+    # Labels
+    for ax, title in zip(axs[0], columns):
+        ax.set_title(title.label)
+
+    for ax, label in zip(axs[:, 0], rows):
+        ax.set_ylabel(label.label_2lines)
+
+    for ax in axs[-1]:
+        ax.set_xlabel(None)
+
+    fig = axs[0, 0].figure  # Assume all axs are in the same figure
+    fig.supxlabel("Observed proportion in interval", fontweight="bold")
+    fig.supylabel("Expected proportion in interval", fontweight="bold")
+    fig.align_ylabels()
+
 
 # Applied
 def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
@@ -261,42 +303,10 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
     fig, axs = plt.subplots(nrows=len(rows), ncols=len(columns), sharex=True, sharey=True, figsize=(2*len(columns), 2*len(rows)), layout="constrained", squeeze=False)
 
     # Loop and plot
-    for ax_row, row_key in zip(axs, rows):
-        for ax, col_key in zip(ax_row, columns):
-            # Select data
-            df = calibration_curves.loc[row_key][col_key]
-
-            # Plot data
-            for key in groupmembers:
-                _plot_calibration_single(ax, df.loc[key], c=key.color, lw=3)
-
-            # Plot diagonal
-            ax.axline((0, 0), slope=1, c="black")
-            ax.grid(True, ls="--", c="black", alpha=0.5)
-
-    # Limits
-    axs[0, 0].set_xlim(0, 1)
-    axs[0, 0].set_ylim(0, 1)
-    for ax in axs.ravel():
-        ax.set_aspect("equal")
-    axs[0, 0].locator_params(axis="both", nbins=5)  # Creates one spurious xtick that I have no idea how to deal with, but probably no one will notice
+    _plot_calibration_curves_base(axs, calibration_curves, rows, columns, groupmembers)
 
     # Plot legend outside the subplots
     add_legend_below_figure(fig, groupmembers)
-
-    # Labels
-    for ax, title in zip(axs[0], columns):
-        ax.set_title(title.label)
-
-    for ax, label in zip(axs[:, 0], rows):
-        ax.set_ylabel(label.label_2lines)
-
-    for ax in axs[-1]:
-        ax.set_xlabel(None)
-
-    fig.supxlabel("Observed proportion in interval", fontweight="bold")
-    fig.supylabel("Expected proportion in interval", fontweight="bold")
-    fig.align_ylabels()
 
     saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto, bbox_inches="tight")
@@ -304,3 +314,31 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
 
 
 # With recalibration
+def plot_calibration_curves_with_recal(calibration_curves: pd.DataFrame, calibration_curves_recal: pd.DataFrame, *,
+                                       rows: Iterable[c.Parameter]=c.scenarios_123, columns: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks,
+                                       saveto: Path | str=c.output_path/"calibration_curves_recal.pdf", tag: Optional[str]=None) -> None:
+    """
+    Plot calibration curves (expected vs. observed).
+    """
+    # Create figure
+    fig = plt.figure(figsize=(2*len(columns), 4*len(rows)), layout="constrained")
+    subfigs = fig.subfigures(nrows=2, hspace=0.1)
+    labels = ["Without recalibration", "With recalibration"]
+
+    nrows = len(rows)
+    ncols = len(columns)
+
+    # Plot
+    for sfig, df, title in zip(subfigs, [calibration_curves, calibration_curves_recal], labels):
+        axs = sfig.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, squeeze=False)
+        _plot_calibration_curves_base(axs, df, rows, columns, groupmembers)
+
+        # Recal labels
+        sfig.suptitle(title, fontweight="bold", fontsize=12)
+
+    # Plot legend outside the subplots
+    add_legend_below_figure(fig, c.networks)
+
+    saveto = saveto_append_tag(saveto, tag)
+    plt.savefig(saveto, bbox_inches="tight")
+    plt.close()

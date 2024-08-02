@@ -47,6 +47,8 @@ print("Saved coverage plot")
 
 ### SELECT MEDIAN MODELS
 median_indices, median_metrics = pnn.modeloutput.select_median_metrics(metrics)
+if not args.no_recal:
+    median_indices_recal, median_metrics_recal = pnn.modeloutput.select_median_metrics(metrics_recal)
 
 # Miscalibration area
 pnn.output.table_miscalibration_area(median_metrics, scenarios=scenarios, tag=tag)
@@ -57,9 +59,15 @@ print("Saved miscalibration area table")
 print("\n\n\n--- INDIVIDUAL MODEL OUTPUTS ---")
 
 # Load data
-results = pnn.modeloutput.read_all_model_outputs(pnn.model_estimates_path/"0/", scenarios=scenarios)
+results = pnn.modeloutput.read_all_model_outputs(pnn.model_estimates_path, scenarios=scenarios, subfolder_indices=median_indices)
 print("Read results into `results` DataFrame:")
 print(results)
+
+# Load recalibrated data
+if not args.no_recal:
+    results_recal = pnn.modeloutput.read_all_model_outputs(pnn.model_estimates_path, scenarios=scenarios, subfolder_indices=median_indices_recal, use_recalibration_data=True)
+    print("Read recalibration results into `results_recal` DataFrame:")
+    print(results_recal)
 
 # Average uncertainty heatmap
 uncertainty_averages = pnn.aggregate.average_uncertainty(results)
@@ -68,7 +76,11 @@ print("Saved uncertainty heatmap plot")
 
 # Calibration curves
 calibration_curves = pnn.aggregate.calibration_curve(results)
-pnn.output.plot_calibration_curves(calibration_curves, rows=scenarios, tag=tag)
+if args.no_recal:
+    pnn.output.plot_calibration_curves(calibration_curves, rows=scenarios, tag=tag)
+else:
+    calibration_curves_recal = pnn.aggregate.calibration_curve(results_recal)
+    pnn.output.plot_calibration_curves_with_recal(calibration_curves, calibration_curves_recal, rows=scenarios, tag=tag)
 print("Saved calibration curve plot")
 
 # y vs y_hat scatter plots

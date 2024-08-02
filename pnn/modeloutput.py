@@ -45,6 +45,53 @@ def read_all_model_metrics(folder: Path | str=c.model_estimates_path, *,
     return metrics
 
 
+### FINDING THE MEDIAN MODEL
+def find_median_indices(metrics: pd.DataFrame, *,
+                        median_by_metric: c.Parameter=c.mdsa, columns: Iterable[c.Parameter]=c.iops_443,
+                        mode: Optional[str]="median") -> pd.Series:
+    """
+    Find the median (or best) model out of N, for each combination of scenario and network.
+    """
+    # Reduce DataFrame and argsort
+    values = metrics[median_by_metric]
+    values = values.unstack()
+    values = values[columns]
+    values = values.sum(axis=1)
+    indices = values.groupby(level=c.scenario_network).transform(pd.Series.argsort)
+
+    # Index
+    if mode == "median":
+        m = values.index.levshape[-1] // 2  # Size of last ("model") index, divide by 2
+    elif mode == "best":
+        m = 0
+    else:
+        raise ValueError(f"Cannot handle mode '{mode}' -- please use 'median' or 'best'.")
+
+    # Find the median (or best) indices
+    median_indices = indices.unstack()[m]
+    median_indices.rename("model", inplace=True)
+
+    return median_indices
+
+
+def select_median_metrics(metrics: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    """
+    Pull out metrics for the median model.
+    """
+    # Get indices
+    median_indices = find_median_indices(metrics, **kwargs)
+
+    # Select
+    # This can probably be done with clever indexing but I haven't figured it out yet
+    def _selector(df: pd.DataFrame) -> pd.DataFrame:
+        i = median_indices[df.index].iloc[0]  # Get the corresponding index
+        return df.loc[:, :, i]  # Select element from df; hardcoded index levels
+
+    median_metrics = metrics.groupby(c.scenario_network, group_keys=False).apply(_selector)
+
+    return median_indices, median_metrics
+
+
 ### LOADING / PROCESSING INDIVIDUAL MODEL OUTPUTS
 def variance_to_uncertainty(df: pd.DataFrame, *, input_keys: Iterable[str]=c.variances) -> pd.DataFrame:
     """
@@ -119,17 +166,29 @@ def read_model_outputs(filename: Path | str, **kwargs) -> pd.DataFrame:
 
 def read_all_model_outputs(folder: Path | str, *,
                            scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                           subfolder_indices: Optional[pd.Series]=None,
                            use_recalibration_data=False) -> pd.DataFrame:
     """
     Read all data from a given folder into one big dataframe.
+
+    If `subfolder_indices` is provided, use the indices to find the appropriate subfolder for each scenario/network combination.
+    Example: if subfolder_indices.loc["ood_split", "rnn"] is 3, load from `folder/"3"/...` instead of `folder/...`.
     """
-    # Setup
+    # Setup: filenames
     filename_base = "estimates.csv"
     if use_recalibration_data:
         filename_base = "recal_" + filename_base
 
+    # Setup: subfolders
+    if subfolder_indices is None:
+        read_single = lambda folder, scenario, network, filename_base: read_model_outputs(folder/f"{network.name}_{scenario.name}_{filename_base}")
+    else:
+        def read_single(folder, scenario, network, filename_base):
+            i = subfolder_indices.loc[scenario, network]  # Get the corresponding index
+            return read_model_outputs(folder/str(i)/f"{network.name}_{scenario.name}_{filename_base}")
+
     # Read data
-    results = {scenario.name: pd.concat({network.name: read_model_outputs(folder/f"{network.name}_{scenario.name}_{filename_base}") for network in c.networks}, names=["network"]) for scenario in scenarios}
+    results = {scenario.name: pd.concat({network.name: read_single(folder, scenario, network, filename_base) for network in c.networks}, names=["network"]) for scenario in scenarios}
     results = pd.concat(results, names=["scenario"])
 
     # Reorder
@@ -150,50 +209,3 @@ def read_all_model_outputs(folder: Path | str, *,
     # Sort
     results = results[c.iops]
     return results
-
-
-### FINDING AND LOADING THE MEDIAN MODEL
-def find_median_indices(metrics: pd.DataFrame, *,
-                        median_by_metric: c.Parameter=c.mdsa, columns: Iterable[c.Parameter]=c.iops_443,
-                        mode: Optional[str]="median") -> pd.Series:
-    """
-    Find the median (or best) model out of N, for each combination of scenario and network.
-    """
-    # Reduce DataFrame and argsort
-    values = metrics[median_by_metric]
-    values = values.unstack()
-    values = values[columns]
-    values = values.sum(axis=1)
-    indices = values.groupby(level=c.scenario_network).transform(pd.Series.argsort)
-
-    # Index
-    if mode == "median":
-        m = values.index.levshape[-1] // 2  # Size of last ("model") index, divide by 2
-    elif mode == "best":
-        m = 0
-    else:
-        raise ValueError(f"Cannot handle mode '{mode}' -- please use 'median' or 'best'.")
-
-    # Find the median (or best) indices
-    median_indices = indices.unstack()[m]
-    median_indices.rename("model", inplace=True)
-
-    return median_indices
-
-
-def select_median_metrics(metrics: pd.DataFrame, **kwargs) -> pd.DataFrame:
-    """
-    Pull out metrics for the median model.
-    """
-    # Get indices
-    median_indices = find_median_indices(metrics, **kwargs)
-
-    # Select
-    # This can probably be done with clever indexing but I haven't figured it out yet
-    def _selector(df: pd.DataFrame) -> pd.DataFrame:
-        i = median_indices[df.index].iloc[0]  # Get the corresponding index
-        return df.loc[:, :, i]  # Select element from df; hardcoded index levels
-
-    median_metrics = metrics.groupby(c.scenario_network, group_keys=False).apply(_selector)
-
-    return median_indices, median_metrics
