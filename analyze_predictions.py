@@ -26,20 +26,16 @@ pnn.output.plot_accuracy_metrics(metrics)
 print("Saved performance metric plot")
 
 # Coverage plot
-pnn.output.plot_coverage_box(metrics)
-print("Saved coverage plot")
-
-metrics = metrics.groupby(level=["scenario", "network", "variable"]).first()  # Temporary
-
-# Coverage plot
 pnn.output.plot_coverage(metrics)
 print("Saved coverage plot")
 
 
 ### TO DO: SELECT MEDIAN MODELS
+metrics_median = metrics.groupby(level=["scenario", "network", "variable"]).first()  # Temporary
+
 
 # Miscalibration area
-pnn.output.table_miscalibration_area(metrics)
+pnn.output.table_miscalibration_area(metrics_median)
 print("Saved miscalibration area table")
 
 

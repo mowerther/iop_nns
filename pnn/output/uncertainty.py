@@ -153,62 +153,8 @@ def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=3) -> None:
 
 ## Plot coverage per IOP, network, scenario
 def plot_coverage(data: pd.DataFrame, *,
-                  groups: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks, scenarios: Iterable[c.Parameter]=c.scenarios_123,
-                  saveto: Path | str=c.output_path/"uncertainty_coverage.pdf") -> None:
-    """
-    Bar plot showing the coverage factor (pre-calculated).
-    """
-    # Constants
-    bar_width = 0.15
-
-    # Generate figure ; rows are metrics, columns are split types
-    n_groups = len(groups)
-    n_members = len(groupmembers)
-    n_rows = 1
-    n_cols = len(scenarios)
-    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(11, 4), sharex=True, sharey="row", squeeze=False)
-
-    # Plot results
-    for ax_row in axs:
-        for ax, scenario in zip(ax_row, scenarios):
-            for member_idx, member in enumerate(groupmembers):
-                # Select data
-                values = data.loc[scenario, member, groups][c.coverage]
-
-                locations = np.arange(n_groups) - (bar_width * (n_members - 1) / 2) + member_idx * bar_width
-
-                ax.bar(locations, values, color=member.color, label=member.label, width=bar_width, zorder=3)  # Draw points
-
-            ax.grid(False, axis="x")
-
-        add_coverage_k_lines(*ax_row)
-
-    # Label variables
-    axs[0, 0].set_xticks(np.arange(n_groups))
-    axs[0, 0].set_xticklabels([p.label_2lines for p in groups])
-
-    # Label y-axes
-    axs[0, 0].set_ylabel(c.coverage.label, fontsize=12)
-    fig.align_ylabels()
-
-    # y-axis limits
-    axs[0, 0].set_ylim(c.coverage.vmin, c.coverage.vmax)
-
-    # Titles
-    for ax, scenario in zip(axs[0], scenarios):
-        ax.set_title(scenario.label)
-
-    # Plot legend outside the subplots
-    add_legend_below_figure(fig, groupmembers)
-
-    plt.tight_layout()
-    plt.savefig(saveto, bbox_inches="tight")
-    plt.close()
-
-
-def plot_coverage_box(data: pd.DataFrame, *,
                       scenarios: Iterable[c.Parameter]=c.scenarios_123,
-                      saveto: Path | str=c.output_path/"uncertainty_coverage_box.pdf") -> None:
+                      saveto: Path | str=c.output_path/"uncertainty_coverage.pdf") -> None:
     """
     Box plot showing the coverage factor (pre-calculated).
     """
