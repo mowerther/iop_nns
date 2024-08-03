@@ -322,7 +322,7 @@ def plot_calibration_curves_with_recal(calibration_curves: pd.DataFrame, calibra
     """
     # Create figure
     fig = plt.figure(figsize=(2*len(columns), 4*len(rows)), layout="constrained")
-    subfigs = fig.subfigures(nrows=2, hspace=0.1)
+    subfigs = fig.subfigures(nrows=2, hspace=1.0/fig.get_figheight())
     labels = ["Without recalibration", "With recalibration"]
 
     nrows = len(rows)
