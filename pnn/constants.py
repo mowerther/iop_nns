@@ -40,6 +40,7 @@ class Parameter:
     cmap: Optional[Colormap] = field(default_factory=lambda: cmap_uniform)
     vmin: Optional[float] = None
     vmax: Optional[float] = None
+    extend_cbar: Optional[str] = "neither"
     symmetric: bool = False
     label_2lines: Optional[str] = None
 
@@ -66,7 +67,6 @@ rnn = Parameter("rnn", "RNN", "#EECC66")
 mdn = Parameter("mdn", "MDN", "#994455")
 
 networks = [bnn_mcd, bnn_dc, mdn, ensemble, rnn]
-networks_fromkey = {p.name: p for p in networks}
 
 
 ### SCENARIOS
@@ -80,8 +80,6 @@ wd = Parameter("wd_split", "Within-distribution split")
 ood = Parameter("ood_split", "Out-of-distribution split")
 
 scenarios_123 = [random_split, wd, ood]
-scenarios_123_fromkey = {p.name: p for p in scenarios_123}
-
 wavelengths_123 = list(range(400, 701, 5))
 
 # PRISMA scenarios
@@ -97,24 +95,22 @@ prisma_ood_ACOLITE = Parameter("prisma_ood_a", f"Out-of-distribution: {_insitu} 
 prisma_ood_L2 = Parameter("prisma_ood_l", f"Out-of-distribution: {_insitu} vs. L2", label_2lines=f"Out-of-distribution\n{_insitu} vs. L2")
 
 scenarios_prisma = [prisma_insitu, prisma_wd_ACOLITE, prisma_wd_L2, prisma_ood_ACOLITE, prisma_ood_L2]
-scenarios_prisma_fromkey = {p.name: p for p in scenarios_prisma}
 scenarios_prisma_overview = [prisma_insitu, prisma_wd, prisma_ood]
-
 wavelengths_prisma = [406, 415, 423, 431, 438, 446, 453, 460, 468, 475, 482, 489, 497, 504, 512, 519, 527, 535, 542, 550, 559, 567, 575, 583, 592, 601, 609, 618, 627, 636, 645, 655, 664, 674, 684, 694]
 
 
 ### UNCERTAINTY TYPES
 ale_var = Parameter("ale_var", f"Aleatoric variance [{m2}]", cmap_aleatoric_fraction.colors[-3], vmin=0)
 ale_unc = Parameter("ale_unc", f"Aleatoric uncertainty [{m1}]", cmap_aleatoric_fraction.colors[-3], vmin=0)
-ale_unc_pct = Parameter("ale_unc_pct", "Aleatoric uncertainty [%]", cmap_aleatoric_fraction.colors[-3], vmin=0, vmax=100)
+ale_unc_pct = Parameter("ale_unc_pct", "Aleatoric uncertainty [%]", cmap_aleatoric_fraction.colors[-3], vmin=0, vmax=100, extend_cbar="max")
 
 epi_var = Parameter("epi_var", f"Epistemic variance [{m2}]", cmap_aleatoric_fraction.colors[2], vmin=0)
 epi_unc = Parameter("epi_unc", f"Epistemic uncertainty [{m1}]", cmap_aleatoric_fraction.colors[2], vmin=0)
-epi_unc_pct = Parameter("epi_unc_pct", "Epistemic uncertainty [%]", cmap_aleatoric_fraction.colors[2], vmin=0, vmax=100)
+epi_unc_pct = Parameter("epi_unc_pct", "Epistemic uncertainty [%]", cmap_aleatoric_fraction.colors[2], vmin=0, vmax=100, extend_cbar="max")
 
 total_var = Parameter("total_var", f"Total variance [{m2}]", "black", vmin=0)
 total_unc = Parameter("total_unc", f"Total uncertainty [{m1}]", "black", vmin=0)
-total_unc_pct = Parameter("total_unc_pct", "Total uncertainty [%]", "black", vmin=0, vmax=200)
+total_unc_pct = Parameter("total_unc_pct", "Total uncertainty [%]", "black", vmin=0, vmax=200, extend_cbar="max")
 
 ale_frac = Parameter("ale_frac", "Aleatoric fraction [%]", cmap=cmap_aleatoric_fraction, vmin=0, vmax=100)
 
@@ -150,11 +146,11 @@ iops_675 = [iop for iop in iops if "675" in iop.name]
 mdsa = Parameter("MdSA", "MdSA [%]", vmin=0)
 sspb = Parameter("SSPB", "SSPB [%]", symmetric=True)
 r_squared = Parameter("r_squared", r"$R^2$", vmax=1)
-log_r_squared = Parameter("log_r_squared", r"$R^2$", vmax=1)
+log_r_squared = Parameter("log_r_squared", r"$R^2$", vmax=1)  # R² of log, not log of R²
 
 # Uncertainty
-interval_sharpness = Parameter("sharpness", f"Sharpness", vmin=0, vmax=1)
 coverage = Parameter("coverage", "Coverage [%]", vmin=100, vmax=0)
+interval_sharpness = Parameter("sharpness", f"Sharpness", vmin=0, vmax=1)
 miscalibration_area = Parameter("MA", "Miscalibration area", vmin=0, vmax=1)
 
 

@@ -10,11 +10,10 @@ import pandas as pd
 from scipy.special import erf
 
 from matplotlib import pyplot as plt
-from matplotlib import ticker, transforms
-from matplotlib.colors import Normalize
+from matplotlib import transforms
 
 from .. import constants as c
-from .common import IOP_SCALE, _plot_grouped_values, add_legend_below_figure, saveto_append_tag
+from .common import IOP_SCALE, _heatmap, _plot_grouped_values, add_legend_below_figure, saveto_append_tag
 
 
 ### IOP VALUE VS. UNCERTAINTY (BINNED)
@@ -44,7 +43,7 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
     """
     Plot log-binned statistics from a main DataFrame.
     """
-    # Generate figure
+    # Create figure
     nrows = len(scenarios)*len(c.networks)
     ncols = len(c.iops)
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, figsize=(2.5*ncols, 1.67*nrows), layout="constrained", squeeze=False)
@@ -75,67 +74,66 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
 
 
 ### AVERAGE UNCERTAINTY HEATMAP
-def plot_uncertainty_heatmap(results_agg: pd.DataFrame, *,
-                             uncertainties: Iterable[c.Parameter]=[c.total_unc_pct, c.ale_frac], variables: Iterable[c.Parameter]=c.iops, scenarios: Iterable[c.Parameter]=c.scenarios_123,
+_heatmap_uncertainties = [c.total_unc_pct, c.ale_frac]
+# Single
+def plot_uncertainty_heatmap(data: pd.DataFrame, *,
+                             uncertainties: Iterable[c.Parameter]=_heatmap_uncertainties, variables: Iterable[c.Parameter]=c.iops, scenarios: Iterable[c.Parameter]=c.scenarios_123,
                              saveto: Path | str=c.output_path/"uncertainty_heatmap.pdf", tag: Optional[str]=None) -> None:
     """
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
     """
-    # Generate figure
+    # Create figure
     nrows = len(uncertainties)
     ncols = len(scenarios)
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(3.7*ncols, 3*nrows), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
+    width, height = 3.7*ncols, 3*nrows
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(width, height), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
 
     # Plot data
-    for ax_row, unc in zip(axs, uncertainties):
-        # Plot each panel per row
-        for ax, scenario in zip(ax_row, scenarios):
-            # Select relevant data
-            df = results_agg.loc[unc, scenario][variables]
-
-            # Plot image
-            im = ax.imshow(df, cmap=unc.cmap, vmin=unc.vmin, vmax=unc.vmax)
-
-            # Plot individual values
-            norm = Normalize(unc.vmin, unc.vmax)
-            for i, x in enumerate(c.networks):
-                for j, y in enumerate(variables):
-                    # Ensure text is visible
-                    value = df.iloc[i, j]
-                    facecolor = unc.cmap(norm(value))
-                    facecolor_brightness = 0.3 * facecolor[0] + 0.6 * facecolor[1] + 0.1 * facecolor[2]
-                    textcolor = "w" if facecolor_brightness < 0.7 else "k"
-
-                    # Show text
-                    ax.text(j, i, f"{value:.0f}", ha="center", va="center", color=textcolor)
-
-            # Panel settings
-            ax.grid(False)
-
-        # Color bar per row
-        cb = fig.colorbar(im, ax=ax_row, fraction=0.1, pad=0.01, shrink=1, extend="max" if unc is c.total_unc_pct else "neither")
-        cb.set_label(label=unc.label, weight="bold")
-        cb.locator = ticker.MaxNLocator(nbins=6)
-        cb.update_ticks()
+    _heatmap(axs, data, rowparameters=uncertainties, colparameters=scenarios, datarowparameters=c.networks, datacolparameters=variables)
 
     # Labels
     fig.supxlabel("IOPs", fontweight="bold")
     fig.supylabel("Models\n", fontweight="bold")
 
-    wrap_labels = lambda parameters: list(zip(*enumerate(p.label for p in parameters)))  # (0, 1, ...) (label0, label1, ...)
-    wrap_labels2 = lambda parameters: list(zip(*enumerate(p.label_2lines for p in parameters)))  # (0, 1, ...) (label0, label1, ...)
-    for ax in axs[-1]:
-        ax.set_xticks(*wrap_labels2(variables))
+    saveto = saveto_append_tag(saveto, tag)
+    plt.savefig(saveto)
+    plt.close()
 
-    for ax in axs[:, 0]:
-        ax.set_yticks(*wrap_labels(c.networks))
 
-    for ax, scenario in zip(axs[0], scenarios):
-        ax.set_title(scenario.label_2lines)
+# With recalibration
+def plot_uncertainty_heatmap_with_recal(data: pd.DataFrame, data_recal: pd.DataFrame, *,
+                                        uncertainties: Iterable[c.Parameter]=_heatmap_uncertainties, variables: Iterable[c.Parameter]=c.iops, scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                                        saveto: Path | str=c.output_path/"uncertainty_heatmap_recal.pdf", tag: Optional[str]=None) -> None:
+    """
+    Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
+    Includes an extra row for recalibrated uncertainties.
+    """
+    # Find recalibrated uncertainties
+    uncertainties_recal = [param for param in uncertainties if param is not c.ale_frac]
+
+    # Combine data
+    data_combined = data
+
+    # Create figure
+    nrows_data = len(uncertainties)
+    nrows_recal = len(uncertainties_recal)
+    nrows = nrows_data + nrows_recal
+    ncols = len(scenarios)
+    width, height = 3.7*ncols, 3*nrows
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(width, height), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
+
+    # Plot data
+    _heatmap(axs[:nrows_data], data, rowparameters=uncertainties, colparameters=scenarios, datarowparameters=c.networks, datacolparameters=variables)
+    _heatmap(axs[nrows_data:], data_recal, rowparameters=uncertainties_recal, colparameters=scenarios, datarowparameters=c.networks, datacolparameters=variables, apply_titles=False, cbar_label_tag="\n(Recalibrated)")
+
+    # Labels
+    fig.supxlabel("IOPs", fontweight="bold")
+    fig.supylabel("Models\n", fontweight="bold")
 
     saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto)
     plt.close()
+
 
 
 ### COVERAGE

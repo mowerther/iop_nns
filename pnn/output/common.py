@@ -7,7 +7,7 @@ from typing import Iterable, Optional
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from matplotlib import patches
+from matplotlib import colors, patches, ticker
 import matplotlib as mpl
 
 from .. import constants as c
@@ -34,6 +34,24 @@ def add_legend_below_figure(fig: plt.Figure, items: Iterable[c.Parameter], **kwa
     """
     legend_content = [patches.Patch(color=key.color, label=key.label, **kwargs) for key in items]
     fig.legend(handles=legend_content, loc="upper center", bbox_to_anchor=(0.5, 0), ncols=len(items), framealpha=1, edgecolor="black")
+
+
+def get_axes_size(ax: plt.Axes) -> tuple[float, float]:
+    """
+    Get the size (in inches) of an Axes object.
+    """
+    bbox = ax.get_window_extent().transformed(ax.figure.dpi_scale_trans.inverted())
+    return bbox.width, bbox.height
+
+
+def pick_textcolor(cmap: colors.Colormap, value: float) -> str:
+    """
+    For a given value and colour map, pick the appropriate text colour (white or black) that is most visible.
+    """
+    facecolor = cmap(value)
+    facecolor_brightness = 0.3 * facecolor[0] + 0.6 * facecolor[1] + 0.1 * facecolor[2]
+    textcolor = "w" if facecolor_brightness < 0.7 else "k"
+    return textcolor
 
 
 def saveto_append_tag(saveto: Path | str, tag: Optional[str]=None) -> Path:
@@ -117,6 +135,72 @@ def _plot_grouped_values(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
     fig.align_ylabels()
 
     # Titles
+    if apply_titles:
+        for ax, colparam in zip(axs[0], colparameters):
+            ax.set_title(colparam.label_2lines)
+
+
+## Heatmap, e.g. for median uncertainty
+def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
+             rowparameters: Iterable[c.Parameter], colparameters: Iterable[c.Parameter],
+             datarowparameters: Iterable[c.Parameter], datacolparameters: Iterable[c.Parameter],
+             *,
+             apply_titles=True, cbar_label_tag: Optional[str]="") -> None:
+    """
+    Plot a heatmap with text.
+    For a DataFrame with at least 2 index levels and 1 column level, plot them as follows:
+        - `rowparameters`, level=0  --  one row of panels for each
+        - `colparameters`, level=1  --  one column of panels for each
+        - `datarowparameters`, level=2  --  rows in the heatmap
+        - `datacolparameters`, columns of DataFrame  -- columns in the heatmap
+
+    `apply_titles` will add titles to the top row in the Axes array.
+    `cbar_label_tag` will be appended to the colour bar labels; this can be used e.g. to add "\n(Recalibrated)".
+
+    This function must be called on an existing Axes array, which is modified in-place.
+    Do not use this directly; rather, build a function around it that handles figure creation and saving, etc.
+    """
+    # Metadata
+    fig = axs[0, 0].figure  # We assume all axes are in the same figure
+
+    # Plot data
+    for ax_row, rowparam in zip(axs, rowparameters):
+        for ax, colparam in zip(ax_row, colparameters):
+            # Select relevant data
+            df = data.loc[rowparam, colparam, datarowparameters][datacolparameters]
+
+            # Plot image
+            im = ax.imshow(df, cmap=rowparam.cmap, vmin=rowparam.vmin, vmax=rowparam.vmax)
+
+            # Plot individual values
+            norm = colors.Normalize(rowparam.vmin, rowparam.vmax)
+            for i, x in enumerate(datarowparameters):
+                for j, y in enumerate(datacolparameters):
+                    # Ensure text is visible
+                    value = df.iloc[i, j]
+                    textcolor = pick_textcolor(rowparam.cmap, norm(value))
+
+                    # Show text
+                    ax.text(j, i, f"{value:.0f}", ha="center", va="center", color=textcolor)
+
+            # Panel settings
+            ax.grid(False)
+
+        # Color bar per row
+        cb = fig.colorbar(im, ax=ax_row, fraction=0.1, pad=0.01, shrink=0.94, extend=rowparam.extend_cbar)
+        cb.set_label(label=f"{rowparam.label}{cbar_label_tag}", weight="bold")
+        cb.locator = ticker.MaxNLocator(nbins=6)
+        cb.update_ticks()
+
+    # Labels
+    wrap_labels = lambda parameters: list(zip(*enumerate(p.label for p in parameters)))  # (0, 1, ...) (label0, label1, ...)
+    wrap_labels2 = lambda parameters: list(zip(*enumerate(p.label_2lines for p in parameters)))  # (0, 1, ...) (label0, label1, ...)
+    for ax in axs[-1]:
+        ax.set_xticks(*wrap_labels2(datacolparameters))
+
+    for ax in axs[:, 0]:
+        ax.set_yticks(*wrap_labels(datarowparameters))
+
     if apply_titles:
         for ax, colparam in zip(axs[0], colparameters):
             ax.set_title(colparam.label_2lines)

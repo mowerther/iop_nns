@@ -72,6 +72,9 @@ if args.recal:
 # Average uncertainty heatmap
 uncertainty_averages = pnn.aggregate.average_uncertainty(results)
 pnn.output.plot_uncertainty_heatmap(uncertainty_averages, scenarios=scenarios, tag=tag)
+if args.recal:
+    uncertainty_averages_recal = pnn.aggregate.average_uncertainty(results_recal)
+    pnn.output.plot_uncertainty_heatmap_with_recal(uncertainty_averages, uncertainty_averages_recal, scenarios=scenarios, tag=tag)
 print("Saved uncertainty heatmap plot")
 
 # Calibration curves
