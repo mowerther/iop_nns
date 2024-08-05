@@ -10,10 +10,6 @@ import uncertainty_toolbox as uct
 from . import constants as c, metrics
 from .recalibration import calibration_curve_single
 
-### CONSTANTS
-split_network = ["split", "network"]  # Aggregation levels
-
-
 ### HELPER FUNCTIONS
 def metric_to_groupby(func: Callable, *df_keys: Iterable[str]) -> Callable:
     """
@@ -47,7 +43,7 @@ def calculate_metrics(df: pd.DataFrame) -> pd.DataFrame:
     df = df[mask]  # Masked items become np.nan
 
     # Use groupby to apply metrics across combinations
-    df = df.groupby(level=split_network)
+    df = df.groupby(level=c.scenario_network)
 
     df_metrics = {"sspb": df.apply(sspb),
                   "mdsa": df.apply(mdsa),
@@ -60,7 +56,7 @@ def calculate_metrics(df: pd.DataFrame) -> pd.DataFrame:
 
     # Reorganise results
     df_metrics = pd.concat(df_metrics, names=["metric"])
-    df_metrics = df_metrics.reorder_levels([*split_network, "metric"])
+    df_metrics = df_metrics.reorder_levels([*c.scenario_network, "metric"])
 
     # Sort
     df_metrics = df_metrics[c.iops]
@@ -93,5 +89,5 @@ def calibration_curve(results: pd.DataFrame) -> pd.DataFrame:
     """
     Determine calibration curves for results.
     """
-    observed = results.groupby(level=split_network).apply(_calibration_curve_pernetwork)
+    observed = results.groupby(level=c.scenario_network).apply(_calibration_curve_pernetwork)
     return observed

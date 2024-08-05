@@ -3,7 +3,7 @@ Bayesian Neural Network with Monte Carlo Dropout (BNN MCD).
 """
 from typing import Self
 
-from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import Dense, Dropout, Input
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.regularizers import l2
 
@@ -23,17 +23,14 @@ class BNN_MCD(DropoutPNN):
         Construct a BNN with MCD based on the input hyperparameters.
         """
         model = Sequential()
+        model.add(Input(shape=input_shape))
 
-        # Add the first layer with input shape
-        model.add(Dense(hidden_units, activation=activation, input_shape=input_shape, kernel_regularizer=l2(l2_reg)))
-
-        # Add additional layers with Dropout layers between them
-        for i in range(n_layers - 1):
-            model.add(Dropout(dropout_rate))
+        # Add layers with Dropout layers between them
+        for i in range(n_layers):
             model.add(Dense(hidden_units, activation=activation, kernel_regularizer=l2(l2_reg)))
+            model.add(Dropout(dropout_rate))
 
         # Output layer: Adjust for 6 means and 6 variances (12 outputs in total)
-        model.add(Dropout(dropout_rate))
         model.add(Dense(output_size * 2, activation="linear"))
 
         return cls(model)

@@ -48,10 +48,17 @@ def apply_recalibration_single(recalibrator: Callable, predicted_mean: np.ndarra
     Apply a quantile-based recalibration function to one row/column of data.
     The lower/upper bounds are taken at mu-sigma, mu+sigma.
     """
+    # Filter NaNs
     total_uncertainty = np.sqrt(total_variance)
-    lower, upper = recalibrator(predicted_mean, total_uncertainty, 0.15865525393), recalibrator(predicted_mean, total_uncertainty, 0.84134474606)
+    valid = np.isfinite(total_uncertainty)
+
+    # Recalibrate
+    lower, upper = recalibrator(predicted_mean[valid], total_uncertainty[valid], 0.15865525393), recalibrator(predicted_mean[valid], total_uncertainty[valid], 0.84134474606)
     new_uncertainty = (upper - lower) / 2
-    new_variance = new_uncertainty**2
+
+    # Convert back to variance, accounting for NaNs
+    new_variance = np.tile(np.nan, total_uncertainty.shape)
+    new_variance[valid] = new_uncertainty**2
     return new_variance
 
 
@@ -70,6 +77,12 @@ def calibration_curve_single(df: pd.DataFrame) -> pd.DataFrame:
     Calculate the calibration curve for a single DataFrame with predicted mean, predicted uncertainty (std), and reference ("true") values.
     To do: Output Series rather than DataFrame.
     """
-    expected, observed = uct.get_proportion_lists_vectorized(df.loc[c.y_pred].to_numpy(), df.loc[c.total_unc].to_numpy(), df.loc[c.y_true].to_numpy())
+    # Filter NaNs
+    y_pred, total_uncertainty, y_true = [df.loc[key].to_numpy() for key in (c.y_pred, c.total_unc, c.y_true)]
+    valid = np.isfinite(total_uncertainty)
+    y_pred, total_uncertainty, y_true = [arr[valid] for arr in (y_pred, total_uncertainty, y_true)]
+
+    # Curves
+    expected, observed = uct.get_proportion_lists_vectorized(y_pred, total_uncertainty, y_true)
     observed = pd.DataFrame(index=expected, data=observed).rename_axis("expected")
     return observed

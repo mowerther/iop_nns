@@ -2,23 +2,35 @@
 Functions for reading the (split) input data.
 """
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, RobustScaler
 
 from . import constants as c
+
+
+### HELPER FUNCTIONS
+def _find_rrs_columns(data: pd.DataFrame) -> list[str]:
+    """
+    Find all columns that contain the string "Rrs_" and return these in order.
+    """
+    return sorted([col for col in data.columns if "Rrs_" in col])
+
 
 
 ### INPUT / OUTPUT
 rename_org = {"org_aph_443": "aph_443", "org_anap_443": "aNAP_443", "org_acdom_443": "aCDOM_443",
               "org_aph_675": "aph_675", "org_anap_675": "aNAP_675", "org_acdom_675": "aCDOM_675",}
-def read_all_data(folder: Path | str=c.data_path) -> tuple[pd.DataFrame]:
+def read_scenario123_data(folder: Path | str=c.data_path) -> tuple[list[pd.DataFrame], list[pd.DataFrame]]:
     """
-    Read all split data from a given folder into a number of DataFrames.
+    Read the GLORIA scenario 1, 2, 3 data from a given folder into a number of DataFrames.
     The output cannot be a single DataFrame because of differing indices.
+    Note that the data in the CSV files have already been rescaled (RobustScaler), so this should not be done again.
+    Filenames are hardcoded.
     """
+    ### LOAD DATA AND RENAME COLUMNS TO CONSISTENT FORMAT
     train_set_random = pd.read_csv(folder/"random_df_train_org.csv")
     test_set_random = pd.read_csv(folder/"random_df_test_org.csv")
 
@@ -28,15 +40,86 @@ def read_all_data(folder: Path | str=c.data_path) -> tuple[pd.DataFrame]:
     train_set_ood = pd.read_csv(folder/"ood_train_set_2.csv").drop(columns=rename_org.values()).rename(columns=rename_org)
     test_set_ood = pd.read_csv(folder/"ood_test_set_2.csv").drop(columns=rename_org.values()).rename(columns=rename_org)
 
-    return train_set_random, test_set_random, train_set_wd, test_set_wd, train_set_ood, test_set_ood
+    ### ORGANISE TRAIN/TEST SETS
+    train_data = [train_set_random, train_set_wd, train_set_ood]
+    test_data = [test_set_random, test_set_wd, test_set_ood]
+
+    ### SELECT WAVELENGTHS
+    for data in [*train_data, *test_data]:
+        data.drop(columns=[col for col in _find_rrs_columns(data) if int(col.split("_")[1]) not in c.wavelengths_123], inplace=True)
+
+    return train_data, test_data
+
+
+capitalise_iops = {"acdom_443": "aCDOM_443", "acdom_675": "aCDOM_675", "anap_443": "aNAP_443", "anap_675": "aNAP_675",}
+def read_prisma_data(folder: Path | str=c.prisma_path) -> tuple[list[pd.DataFrame], list[pd.DataFrame]]:
+    """
+    Read the PRISMA subscenario 1--3 data from a given folder into a number of DataFrames.
+    Note that the data in the CSV files have NOT been rescaled, so this must be done here.
+    Filenames are hardcoded.
+    """
+    ### LOAD DATA AND RENAME COLUMNS TO CONSISTENT FORMAT
+    # train_X, train_y for GLORIA-based scenarios (case 1 & out-of-distribution)
+    gloria_resampled = pd.read_csv(folder/"case_1_insitu_vs_insitu"/"gloria_res_prisma_s.csv").rename(columns={f"{nm}_prisma_res": f"Rrs_{nm}" for nm in c.wavelengths_prisma})
+
+    # train_X, train_y for GLORIA+PRISMA-based scenarios (within-distribution)
+    combined_insitu = pd.read_csv(folder/"case_3_local_insitu_vs_aco"/"combined_local_train_df.csv").rename(columns={f"{nm}_prisma_local": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns={"cdom_443": "aCDOM_443", "cdom_675": "aCDOM_675", "nap_443": "aNAP_443", "nap_675": "aNAP_675", "ph_443": "aph_443", "ph_675": "aph_675",})
+
+    # test_X, test_y for case 1
+    prisma_insitu = pd.read_csv(folder/"case_1_insitu_vs_insitu"/"prisma_insitu.csv").rename(columns={f"{nm}_prisma_insitu": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
+
+    # test_X, test_y for ACOLITE scenarios
+    prisma_acolite = pd.read_csv(folder/"case_2_insitu_vs_aco"/"prisma_aco.csv").rename(columns={f"aco_{nm}": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
+    prisma_acolite_wd = prisma_acolite
+    prisma_acolite_ood = prisma_acolite.copy()
+
+    # test_X, test_y for L2 scenarios
+    prisma_l2 = pd.read_csv(folder/"case_2_insitu_vs_l2"/"prisma_l2.csv").rename(columns={f"L2C_{nm}": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
+    prisma_l2_wd = prisma_l2
+    prisma_l2_ood = prisma_l2.copy()
+
+    ### APPLY ROBUST SCALERS
+    # Setup
+    rrs_columns = _find_rrs_columns(gloria_resampled)
+    gloria_scaler, combined_scaler = RobustScaler(), RobustScaler()
+
+    # Train on training data
+    gloria_resampled[rrs_columns] = gloria_scaler.fit_transform(gloria_resampled[rrs_columns])
+    combined_insitu[rrs_columns] = combined_scaler.fit_transform(combined_insitu[rrs_columns])
+
+    # Apply to test data
+    prisma_insitu[rrs_columns] = gloria_scaler.transform(prisma_insitu[rrs_columns])  # case 1
+
+    prisma_acolite_wd[rrs_columns] = combined_scaler.transform(prisma_acolite_wd[rrs_columns])  # within-distribution
+    prisma_l2_wd[rrs_columns] = combined_scaler.transform(prisma_l2_wd[rrs_columns])
+
+    prisma_acolite_ood[rrs_columns] = gloria_scaler.transform(prisma_acolite_ood[rrs_columns])  # out-of-distribution
+    prisma_l2_ood[rrs_columns] = gloria_scaler.transform(prisma_l2_ood[rrs_columns])
+
+
+    ### ORGANISE TRAIN/TEST SETS
+    train_data = [gloria_resampled, combined_insitu, combined_insitu, gloria_resampled, gloria_resampled]
+    test_data = [prisma_insitu, prisma_acolite_wd, prisma_l2_wd, prisma_acolite_ood, prisma_l2_ood]
+
+    return train_data, test_data
+
+
+def select_scenarios(prisma: bool) -> tuple[list[c.Parameter], Callable]:
+    """
+    Select the desired scenarios - GLORIA 1, 2, 3 (`prisma=False`) or PRISMA 1, 2a, 2b, 3a, 3b (`prisma=True`).
+    """
+    if prisma:
+        return c.prisma, c.scenarios_prisma, read_prisma_data
+    else:
+        return c.gloria, c.scenarios_123, read_scenario123_data
 
 
 def extract_inputs_outputs(data: pd.DataFrame, *,
-                           Rrs_stepsize: int=5, y_columns: Iterable[str]=c.iops) -> tuple[np.ndarray, np.ndarray]:
+                           y_columns: Iterable[str]=c.iops) -> tuple[np.ndarray, np.ndarray]:
     """
     For a given DataFrame, extract the Rrs columns (X) and IOP columns (y).
     """
-    rrs_columns = [f"Rrs_{nm}" for nm in range(400, 701, 5)]
+    rrs_columns = _find_rrs_columns(data)
     X = data[rrs_columns].values
     y = data[y_columns].values
     return X, y
