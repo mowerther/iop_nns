@@ -151,7 +151,8 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
              rowparameters: Iterable[c.Parameter], colparameters: Iterable[c.Parameter],
              datarowparameters: Iterable[c.Parameter], datacolparameters: Iterable[c.Parameter],
              *,
-             apply_titles=True, cbar_label_tag: Optional[str]="") -> None:
+             apply_titles=True, remove_ticks=True,
+             colorbar_tag: Optional[str]="") -> None:
     """
     Plot a heatmap with text.
     For a DataFrame with at least 2 index levels and 1 column level, plot them as follows:
@@ -194,7 +195,7 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
 
         # Color bar per row
         cb = fig.colorbar(im, ax=ax_row, fraction=0.1, pad=0.01, shrink=0.94, extend=rowparam.extend_cbar)
-        cb.set_label(label=f"{rowparam.label}{cbar_label_tag}", weight="bold")
+        cb.set_label(label=f"{rowparam.label}{colorbar_tag}", weight="bold")
         cb.locator = ticker.MaxNLocator(nbins=6)
         cb.update_ticks()
 
@@ -210,3 +211,13 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
     if apply_titles:
         for ax, colparam in zip(axs[0], colparameters):
             ax.set_title(colparam.label_2lines)
+
+    # Remove ticks
+    if remove_ticks:
+        for ax in axs.ravel():
+            # Check for unlabelled xticks
+            if not ax.xaxis.get_majorticklabels():
+                ax.tick_params(axis="x", which="both", bottom=False)
+            # Check for unlabelled yticks
+            if not ax.yaxis.get_majorticklabels():
+                ax.tick_params(axis="y", which="both", left=False)

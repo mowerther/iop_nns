@@ -124,7 +124,7 @@ def plot_uncertainty_heatmap_with_recal(data: pd.DataFrame, data_recal: pd.DataF
 
     # Plot data
     _heatmap(axs[:nrows_data], data, rowparameters=uncertainties, colparameters=scenarios, datarowparameters=c.networks, datacolparameters=variables)
-    _heatmap(axs[nrows_data:], data_recal, rowparameters=uncertainties_recal, colparameters=scenarios, datarowparameters=c.networks, datacolparameters=variables, apply_titles=False, cbar_label_tag="\n(Recalibrated)")
+    _heatmap(axs[nrows_data:], data_recal, rowparameters=uncertainties_recal, colparameters=scenarios, datarowparameters=c.networks, datacolparameters=variables, apply_titles=False, colorbar_tag="\n(Recalibrated)")
 
     # Labels
     fig.supxlabel("IOPs", fontweight="bold")
