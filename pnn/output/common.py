@@ -194,7 +194,7 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
             ax.grid(False)
 
         # Color bar per row
-        cb = fig.colorbar(im, ax=ax_row, fraction=0.1, pad=0.01, shrink=0.94, extend=rowparam.extend_cbar)
+        cb = fig.colorbar(im, ax=ax_row, fraction=0.1, pad=0.01, shrink=0.96, extend=rowparam.extend_cbar)
         cb.set_label(label=f"{rowparam.label}{colorbar_tag}", weight="bold")
         cb.locator = ticker.MaxNLocator(nbins=6)
         cb.update_ticks()
