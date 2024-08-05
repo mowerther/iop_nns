@@ -76,23 +76,23 @@ prisma = Parameter("prisma", "PRISMA")
 
 # Scenarios 1, 2, 3
 random_split = Parameter("random_split", "Random split")
-wd = Parameter("wd_split", "Within-distribution split")
-ood = Parameter("ood_split", "Out-of-distribution split")
+wd = Parameter("wd_split", "Within-distribution")
+ood = Parameter("ood_split", "Out-of-distribution")
 
 scenarios_123 = [random_split, wd, ood]
 wavelengths_123 = list(range(400, 701, 5))
 
 # PRISMA scenarios
 _insitu = r"$\it{in}$ $\it{situ}$"
-prisma_insitu = Parameter("prisma_1", f"{_insitu} vs. {_insitu}", label_2lines=f"Case 1\n{_insitu} vs. {_insitu}")
+prisma_insitu = Parameter("prisma_1", f"{_insitu} vs. {_insitu}", label_2lines=f"{_insitu} vs. {_insitu}\n")
 
-prisma_wd = Parameter("prisma_wd", f"Within-distribution: combined {_insitu} vs. PRISMA", label_2lines=f"Within-distribution\ncombined {_insitu} vs. PRISMA")
-prisma_wd_ACOLITE = Parameter("prisma_wd_a", f"Within-distribution: combined {_insitu} vs. ACOLITE", label_2lines=f"Within-distribution\ncombined {_insitu} vs. ACOLITE")
-prisma_wd_L2 = Parameter("prisma_wd_l", f"Within-distribution: combined {_insitu} vs. L2", label_2lines=f"Within-distribution\ncombined {_insitu} vs. L2")
+prisma_wd = Parameter("prisma_wd", f"Within-distribution")
+prisma_wd_ACOLITE = Parameter("prisma_wd_a", f"Within-distribution: ACOLITE", label_2lines=f"Within-distribution\nACOLITE")
+prisma_wd_L2 = Parameter("prisma_wd_l", f"Within-distribution: L2", label_2lines=f"Within-distribution\nL2")
 
-prisma_ood = Parameter("prisma_ood", f"Out-of-distribution: {_insitu} vs. PRISMA", label_2lines=f"Out-of-distribution\n{_insitu} vs. PRISMA")
-prisma_ood_ACOLITE = Parameter("prisma_ood_a", f"Out-of-distribution: {_insitu} vs. ACOLITE", label_2lines=f"Out-of-distribution\n{_insitu} vs. ACOLITE")
-prisma_ood_L2 = Parameter("prisma_ood_l", f"Out-of-distribution: {_insitu} vs. L2", label_2lines=f"Out-of-distribution\n{_insitu} vs. L2")
+prisma_ood = Parameter("prisma_ood", f"Out-of-distribution")
+prisma_ood_ACOLITE = Parameter("prisma_ood_a", f"Out-of-distribution: ACOLITE", label_2lines=f"Out-of-distribution\nACOLITE")
+prisma_ood_L2 = Parameter("prisma_ood_l", f"Out-of-distribution: L2", label_2lines=f"Out-of-distribution\nL2")
 
 scenarios_prisma = [prisma_insitu, prisma_wd_ACOLITE, prisma_wd_L2, prisma_ood_ACOLITE, prisma_ood_L2]
 scenarios_prisma_overview = [prisma_insitu, prisma_wd, prisma_ood]

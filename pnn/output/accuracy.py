@@ -13,7 +13,7 @@ from matplotlib import ticker
 
 from .. import constants as c
 from .. import metrics as m
-from .common import IOP_LIMS, IOP_SCALE, _plot_grouped_values, add_legend_below_figure, saveto_append_tag
+from .common import IOP_LIMS, IOP_SCALE, _plot_grouped_values, add_legend_below_figure, label_topleft, saveto_append_tag
 
 
 ### SCATTER PLOTS
@@ -101,7 +101,7 @@ def plot_accuracy_metrics(data: pd.DataFrame, *,
                           scenarios: Iterable[c.Parameter]=c.scenarios_123,
                           saveto: Path | str=c.output_path/"accuracy_metrics.pdf", tag: Optional[str]=None) -> None:
     """
-    Plot some number of DataFrames containing performance metric statistics.
+    Generate a boxplot of accuracy metrics contained in a DataFrame.
     """
     # Generate figure ; rows are metrics, columns are scenarios
     n_rows = len(_accuracy_metrics)
@@ -109,7 +109,42 @@ def plot_accuracy_metrics(data: pd.DataFrame, *,
     fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(4*n_cols, 2.3*n_rows), sharex=True, sharey="row", squeeze=False)
 
     # Plot
-    _plot_grouped_values(axs, data, colparameters=scenarios, rowparameters=_accuracy_metrics, groups=c.iops, groupmembers=c.networks)
+    _plot_grouped_values(axs, data, colparameters=scenarios, groups=c.iops, groupmembers=c.networks, rowparameters=_accuracy_metrics)
+
+    # Plot legend outside the subplots
+    add_legend_below_figure(fig, c.networks)
+
+    plt.tight_layout()
+    saveto = saveto_append_tag(saveto, tag)
+    plt.savefig(saveto, bbox_inches="tight")
+    plt.close()
+
+
+## Plot a single metric (default: MdSA, aph)
+def plot_mdsa(data: pd.DataFrame, *,
+              metric: c.Parameter=c.mdsa, scenarios: Iterable[c.Parameter]=c.scenarios_123, variables: Iterable[c.Parameter]=[c.aph_443, c.aph_675],
+              saveto: Path | str=c.output_path/"mdsa.pdf", tag: Optional[str]=None,
+              **kwargs) -> None:
+    """
+    Generate an MdSA boxplot.
+    """
+    # Generate figure ; rows are IOPs
+    n_rows = len(variables)
+    n_groups = len(scenarios)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=1, figsize=(1.6*n_groups, 2.3*n_rows), sharex=True, sharey=True, squeeze=False)
+
+    # Reorder for boxplot function
+    data = data.stack().unstack(level="variable")  # Transpose
+    data = data.reorder_levels([-1, "network", "model", "scenario"])
+
+    # Plot
+    _plot_grouped_values(axs, data, colparameters=[metric], groups=scenarios, groupmembers=c.networks, rowparameters=variables, apply_titles=False, ylim_quantile=0.015, **kwargs)
+
+    # Adjust axis labels
+    fig.supylabel(metric.label, fontweight="bold", fontsize=12)
+    for ax, var in zip(axs.ravel(), variables):
+        ax.set_ylabel(None)
+        label_topleft(ax, var.label)
 
     # Plot legend outside the subplots
     add_legend_below_figure(fig, c.networks)

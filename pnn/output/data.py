@@ -12,7 +12,7 @@ from matplotlib import patches
 from matplotlib.colors import to_rgba
 
 from .. import constants as c
-from .common import IOP_LIMS, IOP_SCALE
+from .common import IOP_LIMS, IOP_SCALE, label_topleft
 
 ### CONSTANTS
 TRAIN_COLOR = "black"
@@ -46,7 +46,7 @@ def plot_full_dataset(df: pd.DataFrame, *,
         ax.hist(data, bins=bins, color=var.color, histtype="stepfilled")
 
         # Panel settings
-        ax.text(0.05, 0.90, var.label, transform=ax.transAxes, horizontalalignment="left", verticalalignment="top", fontsize=12, color="black", bbox={"facecolor": "white", "edgecolor": "black", "boxstyle": "round"})
+        label_topleft(ax, var.label)
 
     # Panel settings
     axs[0, 0].set_xscale(IOP_SCALE)

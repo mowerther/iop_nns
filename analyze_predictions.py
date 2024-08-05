@@ -37,6 +37,12 @@ if args.recal:
 pnn.output.plot_accuracy_metrics(metrics, scenarios=scenarios, tag=tag)
 print("Saved accuracy metric plot")
 
+# MdSA plot
+pnn.output.plot_mdsa(metrics, scenarios=scenarios, tag=tag)
+if args.recal:
+    pnn.output.plot_mdsa(metrics_recal, scenarios=scenarios, tag=f"{tag}_recal")
+print("Saved MdSA plot")
+
 # Coverage plot
 if args.recal:
     pnn.output.plot_coverage_with_recal(metrics, metrics_recal, scenarios=scenarios, tag=tag)
@@ -91,8 +97,3 @@ pnn.output.plot_performance_scatter_multi(results, scenarios=scenarios, tag=tag)
 if args.recal:
     pnn.output.plot_performance_scatter_multi(results_recal, scenarios=scenarios, tag=f"{tag}_recal")
 print("Saved match-up (scatter) plots")
-
-# Log-binned uncertainty and line plot
-binned = pnn.logbins.log_binned_statistics_combined(results)
-pnn.output.plot_log_binned_statistics(binned, scenarios=scenarios, tag=tag)
-print("Saved log-binned uncertainty (line) plot")

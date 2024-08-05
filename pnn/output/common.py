@@ -44,6 +44,12 @@ def get_axes_size(ax: plt.Axes) -> tuple[float, float]:
     return bbox.width, bbox.height
 
 
+def label_topleft(ax: plt.Axes, text: str, **kwargs) -> None:
+    """
+    Add a label to the top left corner of a panel.
+    """
+    ax.text(0.05, 0.90, text, transform=ax.transAxes, horizontalalignment="left", verticalalignment="top", fontsize=12, color="black", bbox={"facecolor": "white", "edgecolor": "black", "boxstyle": "round"})
+
 def pick_textcolor(cmap: colors.Colormap, value: float) -> str:
     """
     For a given value and colour map, pick the appropriate text colour (white or black) that is most visible.
@@ -75,7 +81,7 @@ def _plot_grouped_values(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
     For a DataFrame with at least 3 index levels and 1 column level, plot them as follows:
         - `colparameters`, level=0  --  one column of panels for each
         - `groupmembers`, level=1  --  parameters within each group
-        - `groups`, level=2  --  groups within each panel
+        - `groups`, level=3  --  groups within each panel
         - `rowparameters`, columns of DataFrame  --  one row of panels for each
 
     This function must be called on an existing Axes array, which is modified in-place.
