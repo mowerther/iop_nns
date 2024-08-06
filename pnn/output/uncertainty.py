@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 from matplotlib import transforms
 
 from .. import constants as c
-from .common import IOP_SCALE, _heatmap, _plot_grouped_values, add_legend_below_figure, saveto_append_tag
+from .common import IOP_SCALE, _heatmap, _plot_grouped_values, add_legend_below_figure, saveto_append_tag, title_type_for_scenarios
 
 
 ### IOP VALUE VS. UNCERTAINTY (BINNED)
@@ -83,6 +83,9 @@ def plot_uncertainty_heatmap(data: pd.DataFrame, *,
     """
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
     """
+    # Setup
+    title_type = title_type_for_scenarios(scenarios)
+
     # Create figure
     nrows = len(uncertainties)
     ncols = len(scenarios)
@@ -90,7 +93,7 @@ def plot_uncertainty_heatmap(data: pd.DataFrame, *,
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(width, height), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
 
     # Plot data
-    _heatmap(axs, data, rowparameters=uncertainties, colparameters=scenarios, datarowparameters=c.networks, datacolparameters=variables)
+    _heatmap(axs, data, rowparameters=uncertainties, colparameters=scenarios, datarowparameters=c.networks, datacolparameters=variables, apply_titles=title_type)
 
     # Labels
     fig.supxlabel("IOPs", fontweight="bold")
@@ -109,6 +112,9 @@ def plot_uncertainty_heatmap_with_recal(data: pd.DataFrame, data_recal: pd.DataF
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
     Includes an extra row for recalibrated uncertainties.
     """
+    # Setup
+    title_type = title_type_for_scenarios(scenarios)
+
     # Find recalibrated uncertainties
     uncertainties_recal = [param for param in uncertainties if param is not c.ale_frac]
 
@@ -121,7 +127,7 @@ def plot_uncertainty_heatmap_with_recal(data: pd.DataFrame, data_recal: pd.DataF
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(width, height), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
 
     # Plot data
-    _heatmap(axs[:nrows_data], data, rowparameters=uncertainties, colparameters=scenarios, datarowparameters=c.networks, datacolparameters=variables)
+    _heatmap(axs[:nrows_data], data, rowparameters=uncertainties, colparameters=scenarios, datarowparameters=c.networks, datacolparameters=variables, apply_titles=title_type)
     _heatmap(axs[nrows_data:], data_recal, rowparameters=uncertainties_recal, colparameters=scenarios, datarowparameters=c.networks, datacolparameters=variables, apply_titles=False, colorbar_tag="\n(Recalibrated)")
 
     # Labels
@@ -138,7 +144,7 @@ def plot_uncertainty_heatmap_with_recal(data: pd.DataFrame, data_recal: pd.DataF
 ## Helper function: Lines at k=1, 2, ...
 k_to_percentage = lambda k: 100*erf(k/np.sqrt(2))
 
-def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=3) -> None:
+def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=2) -> None:
     """
     Add horizontal lines at k=1, k=2, ... coverage.
     """
@@ -161,13 +167,16 @@ def plot_coverage(data: pd.DataFrame, *,
     """
     Box plot showing the coverage factor (pre-calculated).
     """
+    # Setup
+    title_type = title_type_for_scenarios(scenarios)
+
     # Generate figure ; columns are split types
     n_rows = 1
     n_cols = len(scenarios)
     fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(3.5*n_cols, 4), sharex=True, sharey=True, squeeze=False)
 
     # Plot
-    _plot_grouped_values(axs, data, colparameters=scenarios, rowparameters=[c.coverage], groups=c.iops, groupmembers=c.networks)
+    _plot_grouped_values(axs, data, colparameters=scenarios, rowparameters=[c.coverage], groups=c.iops, groupmembers=c.networks, apply_titles=title_type)
 
     # k lines
     for ax_row in axs:
@@ -188,17 +197,20 @@ def plot_coverage_with_recal(data: pd.DataFrame, data_recal: pd.DataFrame, *,
     """
     Box plot showing the coverage factor (pre-calculated).
     """
+    # Setup
+    title_type = title_type_for_scenarios(scenarios)
+
     # Generate figure ; columns are split types
     nrows = 2
     ncols = len(scenarios)
-    fig = plt.figure(figsize=(3.5*ncols, 7), layout="constrained")
+    fig = plt.figure(figsize=(3*ncols, 5.7), layout="constrained")
     subfigs = fig.subfigures(nrows=nrows, hspace=0.1)
     labels = ["Without recalibration", "With recalibration"]
 
     # Plot
     for sfig, df, title in zip(subfigs, [data, data_recal], labels):
         axs = sfig.subplots(nrows=1, ncols=ncols, sharex=True, sharey=True, squeeze=False)
-        _plot_grouped_values(axs, df, colparameters=scenarios, rowparameters=[c.coverage], groups=c.iops, groupmembers=c.networks)
+        _plot_grouped_values(axs, df, colparameters=scenarios, rowparameters=[c.coverage], groups=c.iops, groupmembers=c.networks, apply_titles=title_type)
 
         # k lines
         add_coverage_k_lines(*axs[0])

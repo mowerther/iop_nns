@@ -13,7 +13,7 @@ from matplotlib import ticker
 
 from .. import constants as c
 from .. import metrics as m
-from .common import IOP_LIMS, IOP_SCALE, _plot_grouped_values, add_legend_below_figure, label_topleft, saveto_append_tag
+from .common import IOP_LIMS, IOP_SCALE, _plot_grouped_values, add_legend_below_figure, label_topleft, saveto_append_tag, title_type_for_scenarios
 
 
 ### SCATTER PLOTS
@@ -103,13 +103,16 @@ def plot_accuracy_metrics(data: pd.DataFrame, *,
     """
     Generate a boxplot of accuracy metrics contained in a DataFrame.
     """
+    # Setup
+    title_type = title_type_for_scenarios(scenarios)
+
     # Generate figure ; rows are metrics, columns are scenarios
     n_rows = len(_accuracy_metrics)
     n_cols = len(scenarios)
     fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, sharex=True, sharey="row", figsize=(3.2*n_cols, 1.8*n_rows), gridspec_kw={"hspace": 0.007, "wspace": 0.007}, layout="constrained", squeeze=False)
 
     # Plot
-    _plot_grouped_values(axs, data, colparameters=scenarios, groups=c.iops, groupmembers=c.networks, rowparameters=_accuracy_metrics)
+    _plot_grouped_values(axs, data, colparameters=scenarios, groups=c.iops, groupmembers=c.networks, rowparameters=_accuracy_metrics, apply_titles=title_type)
 
     # Plot legend outside the subplots
     add_legend_below_figure(fig, c.networks)

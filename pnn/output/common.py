@@ -51,6 +51,7 @@ def label_topleft(ax: plt.Axes, text: str, **kwargs) -> None:
     """
     ax.text(0.05, 0.90, text, transform=ax.transAxes, horizontalalignment="left", verticalalignment="top", fontsize=12, color="black", bbox={"facecolor": "white", "edgecolor": "black", "boxstyle": "round"})
 
+
 def pick_textcolor(cmap: colors.Colormap, value: float) -> str:
     """
     For a given value and colour map, pick the appropriate text colour (white or black) that is most visible.
@@ -71,13 +72,42 @@ def saveto_append_tag(saveto: Path | str, tag: Optional[str]=None) -> Path:
     return saveto
 
 
+def title_type_for_scenarios(scenarios: Iterable[c.Parameter]) -> int:
+    """
+    Pick the title type (to be used in _apply_titles) for scenarios.
+    """
+    return 1 if scenarios is c.scenarios_123 else 2
+
+
+### HIDDEN HELPER FUNCTIONS
+_label_types = {1: "label", 2: "label_2lines"}
+def _apply_titles(axs: Iterable[plt.Axes], parameters: Iterable[c.Parameter] | c.Parameter, label_type: int=2) -> None:
+    """
+    Apply no titles, 1-line label titles, or 2-line label titles.
+    """
+    # Do nothing if no titles are desired
+    if not label_type:
+        return
+
+    # Set up iterable if only one parameter was provided
+    if not isinstance(parameters, Iterable):
+        parameters = [parameters] * len(axs)
+
+    # Determine attribute
+    label_type = _label_types[label_type]
+
+    # Apply
+    for ax, param in zip(axs, parameters):
+        ax.set_title(getattr(param, label_type))
+
+
 ### PLOTTING FUNCTIONS
 ## Grouped metrics - useful for boxplots, lollipops, etc.
 def _plot_grouped_values(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
                          colparameters: Iterable[c.Parameter], rowparameters: Iterable[c.Parameter],
                          groups: Iterable[c.Parameter], groupmembers: Iterable[c.Parameter],
                          *,
-                         spacing: float=0.15, ylim_quantile: float=0.03, apply_titles=True) -> None:
+                         spacing: float=0.15, ylim_quantile: float=0.03, apply_titles: int=2) -> None:
     """
     For a DataFrame with at least 3 index levels and 1 column level, plot them as follows:
         - `colparameters`, level=0  --  one column of panels for each
@@ -134,13 +164,11 @@ def _plot_grouped_values(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
 
     # Label y-axes
     for ax, rowparam in zip(axs[:, 0], rowparameters):
-        ax.set_ylabel(rowparam.label_2lines, fontsize=12)
+        ax.set_ylabel(rowparam.label_2lines)
     fig.align_ylabels()
 
     # Titles
-    if apply_titles:
-        for ax, colparam in zip(axs[0], colparameters):
-            ax.set_title(colparam.label_2lines)
+    _apply_titles(axs[0], colparameters, apply_titles)
 
 
 ## Heatmap, e.g. for median uncertainty
@@ -148,7 +176,7 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
              rowparameters: Iterable[c.Parameter], colparameters: Iterable[c.Parameter],
              datarowparameters: Iterable[c.Parameter], datacolparameters: Iterable[c.Parameter],
              *,
-             apply_titles=True, remove_ticks=True, precision: int=0,
+             apply_titles: int=2, remove_ticks=True, precision: int=0,
              colorbar_location: str="right", colorbar_pad: Optional[float]=None, colorbar_shrink: Optional[float]=None, colorbar_tag: Optional[str]="") -> None:
     """
     Plot a heatmap with text.
@@ -220,9 +248,7 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
     for ax in axs[:, 0]:
         ax.set_yticks(*wrap_labels(datarowparameters))
 
-    if apply_titles:
-        for ax, colparam in zip(axs[0], colparameters):
-            ax.set_title(colparam.label_2lines)
+    _apply_titles(axs[0], colparameters, apply_titles)
 
     # Remove ticks
     if remove_ticks:
