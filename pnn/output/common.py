@@ -28,6 +28,7 @@ mpl.rcParams.update({
 
 ### OTHER CONSTANTS
 IOP_LIMS = (1e-5, 1e1)
+IOP_LIMS_PRISMA = (1e-2, 1e1)
 IOP_SCALE = "log"
 IOP_TICKS = 10**np.arange(np.log10(IOP_LIMS[0]), np.log10(IOP_LIMS[1])+0.01)  # 10^-5, 10^-4, ..., 10^1
 

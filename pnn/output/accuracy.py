@@ -3,7 +3,7 @@ Plots that show the accuracy of estimates.
 """
 from itertools import product
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Callable, Iterable, Optional
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ from matplotlib import ticker
 
 from .. import constants as c
 from .. import metrics as m
-from .common import IOP_LIMS, IOP_SCALE, _plot_grouped_values, add_legend_below_figure, label_topleft, saveto_append_tag, title_type_for_scenarios
+from .common import IOP_LIMS, IOP_LIMS_PRISMA, IOP_SCALE, _plot_grouped_values, add_legend_below_figure, label_topleft, saveto_append_tag, title_type_for_scenarios
 
 
 ### SCATTER PLOTS
@@ -44,7 +44,6 @@ def plot_performance_scatter(df: pd.DataFrame, *,
     for ax in axs.ravel():
         # ax.set_aspect("equal")
         ax.axline((0, 0), slope=1, color="black")
-        ax.grid(True, color="black", alpha=0.5, linestyle="--")
 
     # Metrics
     for ax, iop in zip(axs[0], columns):
@@ -92,6 +91,90 @@ def plot_performance_scatter_multi(results: pd.DataFrame, *,
         saveto_here = saveto.with_stem(f"{saveto.stem}_{network}-{scenario}")
         df = results.loc[:, scenario, network]
         plot_performance_scatter(df, title=f"{network.label} {scenario.label}", saveto=saveto_here, **kwargs)
+
+
+## PRISMA scatter plot - accuracy for one IOP, for each network and scenario (combining 2a-2b, 3a-3b)
+_markers = ["o", "x"]
+@plt.rc_context({"axes.titleweight": "bold"})
+def plot_prisma_scatter(results: pd.DataFrame, variable: c.Parameter, *,
+                        uncertainty: c.Parameter=c.total_unc_pct,
+                        metrics: dict[c.Parameter, Callable]={c.mdsa: m.mdsa, c.sspb: m.sspb},
+                        saveto: Optional[Path | str]=None,
+                        **kwargs) -> None:
+    """
+    For one IOP, make a scatter plot for every PRISMA subscenario.
+    """
+    # Setup
+    norm = plt.Normalize(vmin=uncertainty.vmin, vmax=uncertainty.vmax)
+
+    # Create figure
+    nrows = len(c.networks)
+    ncols = len(c.scenarios_prisma_sorted)
+    figsize = np.array([1, 20/12]) * 9
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=figsize, layout="constrained", gridspec_kw={"hspace": 0.05}, squeeze=False)
+
+    # Loop and plot
+    for ax_row, network in zip(axs, c.networks):
+        # Scatter plot
+        for ax, scenarios in zip(ax_row, c.scenarios_prisma_sorted):
+            # Setup
+            metrics_scenario = []
+
+            for sub, marker in zip(scenarios, _markers):
+                # Select/process data
+                df = results.loc[:, sub, network][variable]
+                y, y_hat, color = df.loc[c.y_true], df.loc[c.y_pred], df.loc[uncertainty]
+                metrics_sub = "\n".join(f"{metric.name}: {func(y, y_hat):.0f} {metric.unit}" for metric, func in metrics.items())
+                metrics_scenario.append(metrics_sub)
+
+                # Plot
+                ax.scatter(y, y_hat, c=color, norm=norm, cmap=uncertainty.cmap, marker=marker, alpha=0.9)
+
+            # Metrics in textbox
+            if len(scenarios) == 2:  # Add labels in L2/ACOLITE case
+                metrics_scenario = [f"{sub.label} ({marker})\n{metrics_sub}" for sub, marker, metrics_sub in zip(c._scenarios_prisma_sub, _markers, metrics_scenario)]
+            metrics_scenario = "\n\n".join(metrics_scenario)
+            ax.text(0.95, 0.03, metrics_scenario, transform=ax.transAxes, horizontalalignment="right", verticalalignment="bottom", color="black", size=9, bbox={"facecolor": "white", "edgecolor": "black", "alpha": 0.5}, zorder=0)
+
+            # Panel settings
+            ax.set_aspect("equal")
+            ax.axline((0, 0), slope=1, color="black")
+
+        # Labels
+        ax_row[len(ax_row)//2].set_title(network.label)
+
+    # Panel settings
+    axs[0, 0].set_xscale(IOP_SCALE)
+    axs[0, 0].set_yscale(IOP_SCALE)
+    axs[0, 0].set_xlim(*IOP_LIMS_PRISMA)
+    axs[0, 0].set_ylim(*IOP_LIMS_PRISMA)
+
+    # Labels
+    fig.supxlabel(f"In situ {variable.label}")
+    fig.supylabel(f"Estimated {variable.label}")
+    for ax, scenario in zip(axs[0], c.scenarios_prisma_overview):
+        ax.set_title(f"{scenario.label}\n{ax.get_title()}")
+
+    # Colour bar
+    sm = plt.cm.ScalarMappable(cmap=uncertainty.cmap, norm=norm)
+    sm.set_array([])
+    cb = fig.colorbar(sm, ax=axs, location="right", fraction=0.02, pad=0.01, extend=uncertainty.extend_cbar)
+    cb.set_label(uncertainty.label, fontweight="bold")
+    cb.locator = ticker.MaxNLocator(nbins=5)
+    cb.update_ticks()
+
+    if saveto:
+        plt.savefig(saveto, bbox_inches="tight")
+    plt.close()
+
+
+def plot_prisma_scatter_multi(results: pd.DataFrame, *,
+                              variables: Iterable[c.Parameter]=[c.aph_443, c.aph_675],
+                              saveto: Path | str=c.output_path/"prisma_scatter.pdf",
+                              **kwargs) -> None:
+    for variable in variables:
+        saveto_here = saveto.with_stem(f"{saveto.stem}_{variable.name}.pdf")
+        plot_prisma_scatter(results, variable, saveto=saveto_here, **kwargs)
 
 
 ### ACCURACY METRICS

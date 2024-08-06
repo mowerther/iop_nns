@@ -63,7 +63,7 @@ print("Saved miscalibration area plot")
 
 
 ### INDIVIDUAL MODEL OUTPUTS
-print("\n\n\n--- INDIVIDUAL MODEL OUTPUTS ---")
+print("\n\n\n--- INDIVIDUAL (MEDIAN) MODEL OUTPUTS ---")
 
 # Load data
 results = pnn.modeloutput.read_all_model_outputs(pnn.model_estimates_path, scenarios=scenarios, subfolder_indices=median_indices)
@@ -75,6 +75,11 @@ if args.recal:
     results_recal = pnn.modeloutput.read_all_model_outputs(pnn.model_estimates_path, scenarios=scenarios, subfolder_indices=median_indices_recal, use_recalibration_data=True)
     print("Read recalibration results into `results_recal` DataFrame:")
     print(results_recal)
+
+# PRISMA only: scatter plot
+if args.prisma:
+    pnn.output.plot_prisma_scatter_multi(results, tag=tag)
+    print("Saved PRISMA match-up (scatter) plots")
 
 # Average uncertainty heatmap
 uncertainty_averages = pnn.aggregate.average_uncertainty(results)
