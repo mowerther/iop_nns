@@ -128,13 +128,13 @@ def plot_prisma_scatter(results: pd.DataFrame, variable: c.Parameter, *,
                 metrics_scenario.append(metrics_sub)
 
                 # Plot
-                ax.scatter(y, y_hat, c=color, norm=norm, cmap=uncertainty.cmap, marker=marker, alpha=0.9)
+                ax.scatter(y, y_hat, c=color, norm=norm, cmap=uncertainty.cmap, marker=marker, alpha=0.9, zorder=2)
 
             # Metrics in textbox
             if len(scenarios) == 2:  # Add labels in L2/ACOLITE case
                 metrics_scenario = [f"{sub.label} ({marker})\n{metrics_sub}" for sub, marker, metrics_sub in zip(c._scenarios_prisma_sub, _markers, metrics_scenario)]
             metrics_scenario = "\n\n".join(metrics_scenario)
-            ax.text(0.95, 0.05, metrics_scenario, transform=ax.transAxes, horizontalalignment="right", verticalalignment="bottom", color="black", size=9, bbox={"facecolor": "white", "edgecolor": "black", "alpha": 0.5}, zorder=0)
+            ax.text(0.95, 0.05, metrics_scenario, transform=ax.transAxes, horizontalalignment="right", verticalalignment="bottom", color="black", size=9, bbox={"facecolor": "white", "edgecolor": "black", "boxstyle": "round"}, zorder=1)
 
             # Panel settings
             ax.set_aspect("equal")
