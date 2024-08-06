@@ -152,7 +152,7 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
              datarowparameters: Iterable[c.Parameter], datacolparameters: Iterable[c.Parameter],
              *,
              apply_titles=True, remove_ticks=True, precision: int=0,
-             colorbar_location: str="right", colorbar_pad: Optional[float]=None, colorbar_tag: Optional[str]="") -> None:
+             colorbar_location: str="right", colorbar_pad: Optional[float]=None, colorbar_shrink: Optional[float]=None, colorbar_tag: Optional[str]="") -> None:
     """
     Plot a heatmap with text.
     For a DataFrame with at least 2 index levels and 1 column level, plot them as follows:
@@ -172,8 +172,11 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
     data = data.loc[rowparameters, colparameters, datarowparameters][datacolparameters]  # Remove extraneous variables
 
     # Color bar settings
+    VERTICAL = (colorbar_location in ("left", "right"))
     if colorbar_pad is None:  # More padding if at the bottom
-        colorbar_pad = 0.01 if colorbar_location in ("left", "right") else 0.05
+        colorbar_pad = 0.01 if VERTICAL else 0.05
+    if colorbar_shrink is None:  # Reduce size if at the bottom, to prevent text collisions
+        colorbar_shrink = 1. if VERTICAL else 0.95
 
     # Plot data
     for ax_row, rowparam in zip(axs, rowparameters):
@@ -181,7 +184,7 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
         df_row = data.loc[rowparam]
         vmin = rowparam.vmin if rowparam.vmin is not None else df_row.min().min()
         vmax = rowparam.vmax if rowparam.vmax is not None else df_row.max().max()
-        if rowparam.symmetric:
+        if rowparam.symmetric and (rowparam.vmin is None or rowparam.vmax is None):
             maxvalue = max([-vmin, vmax])
             vmin, vmax = -maxvalue, maxvalue
         norm = colors.Normalize(vmin, vmax)
@@ -207,9 +210,9 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
             ax.grid(False)
 
         # Color bar per row
-        cb = fig.colorbar(im, ax=ax_row, location=colorbar_location, fraction=0.1, pad=colorbar_pad, extend=rowparam.extend_cbar)
+        cb = fig.colorbar(im, ax=ax_row, location=colorbar_location, fraction=0.1, pad=colorbar_pad, shrink=colorbar_shrink, extend=rowparam.extend_cbar)
         cb.set_label(label=f"{rowparam.label}{colorbar_tag}", weight="bold")
-        cb.locator = ticker.MaxNLocator(nbins=6)
+        cb.locator = ticker.MaxNLocator(nbins=5)
         cb.update_ticks()
 
     # Labels

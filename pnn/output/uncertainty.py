@@ -237,7 +237,7 @@ def table_miscalibration_area(df: pd.DataFrame, *,
 ## Plot
 def miscalibration_area_heatmap(data: pd.DataFrame, data_recal: pd.DataFrame, *,
                                 metric: c.Parameter=c.miscalibration_area, scenarios: Iterable[c.Parameter]=c.scenarios_123, variables: Iterable[c.Parameter]=c.iops,
-                                precision: int=2,
+                                precision: int=2, diff_range: float=0.4,
                                 saveto: Path | str=c.output_path/"miscalibration_area.pdf", tag: Optional[str]=None) -> None:
     """
     Generate a heatmap showing the miscalibration area without and with recalibration, as well as their difference.
@@ -250,7 +250,7 @@ def miscalibration_area_heatmap(data: pd.DataFrame, data_recal: pd.DataFrame, *,
     data, data_recal = [df.stack().unstack("variable").reorder_levels(new_order) for df in (data, data_recal)]
 
     # Calculate miscalibration area difference
-    metric_diff = c.Parameter(f"{metric.name}_diff", f"{metric.label} difference", cmap=c.cmap_difference, symmetric=True)
+    metric_diff = c.Parameter(f"{metric.name}_diff", f"{metric.label} difference", cmap=c.cmap_difference, symmetric=True, vmin=-diff_range, vmax=diff_range)
     data_diff = data_recal.loc[metric] - data.loc[metric]
     data_diff = pd.concat({metric_diff.name: data_diff})
 
@@ -258,7 +258,7 @@ def miscalibration_area_heatmap(data: pd.DataFrame, data_recal: pd.DataFrame, *,
     nrows = len(c.networks)
     ncols = 3
     nrows_data = len(scenarios)
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(14, 20), gridspec_kw={"hspace": 0.25, "wspace": 0.02})
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(13, 14), gridspec_kw={"hspace": 0.25, "wspace": 0.02})
 
     # Plot main metric  --  note that axs is being transposed, so rows <--> columns
     plot_heatmap = partial(_heatmap, colparameters=c.networks, datarowparameters=scenarios, datacolparameters=variables, colorbar_location="bottom", precision=precision)
