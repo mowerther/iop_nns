@@ -95,7 +95,7 @@ def plot_performance_scatter_multi(results: pd.DataFrame, *,
 
 ## PRISMA scatter plot - accuracy for one IOP, for each network and scenario (combining 2a-2b, 3a-3b)
 _markers = ["o", "x"]
-@plt.rc_context({"axes.titleweight": "bold"})
+@plt.rc_context({"axes.labelweight": "bold", "axes.titleweight": "bold"})
 def plot_prisma_scatter(results: pd.DataFrame, variable: c.Parameter, *,
                         uncertainty: c.Parameter=c.total_unc_pct,
                         metrics: dict[c.Parameter, Callable]={c.mdsa: m.mdsa, c.sspb: m.sspb},
@@ -110,8 +110,7 @@ def plot_prisma_scatter(results: pd.DataFrame, variable: c.Parameter, *,
     # Create figure
     nrows = len(c.networks)
     ncols = len(c.scenarios_prisma_sorted)
-    figsize = np.array([1, 20/12]) * 9
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=figsize, layout="constrained", gridspec_kw={"hspace": 0.05}, squeeze=False)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(9.2, 16), layout="constrained", gridspec_kw={"hspace": 0.05}, squeeze=False)
 
     # Loop and plot
     for ax_row, network in zip(axs, c.networks):
@@ -150,7 +149,7 @@ def plot_prisma_scatter(results: pd.DataFrame, variable: c.Parameter, *,
     axs[0, 0].set_ylim(*IOP_LIMS_PRISMA)
 
     # Labels
-    fig.supxlabel(f"In situ {variable.label}")
+    axs[-1, axs.shape[1]//2].set_xlabel(f"In situ {variable.label}")
     fig.supylabel(f"Estimated {variable.label}")
     for ax, scenario in zip(axs[0], c.scenarios_prisma_overview):
         ax.set_title(f"{scenario.label}\n{ax.get_title()}")
@@ -158,7 +157,7 @@ def plot_prisma_scatter(results: pd.DataFrame, variable: c.Parameter, *,
     # Colour bar
     sm = plt.cm.ScalarMappable(cmap=uncertainty.cmap, norm=norm)
     sm.set_array([])
-    cb = fig.colorbar(sm, ax=axs, location="right", fraction=0.02, pad=0.01, extend=uncertainty.extend_cbar)
+    cb = fig.colorbar(sm, ax=axs, location="bottom", fraction=0.01, pad=0.02, extend=uncertainty.extend_cbar)
     cb.set_label(uncertainty.label, fontweight="bold")
     cb.locator = ticker.MaxNLocator(nbins=5)
     cb.update_ticks()
