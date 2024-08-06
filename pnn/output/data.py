@@ -54,8 +54,8 @@ def plot_full_dataset(df: pd.DataFrame, *,
     axs[0, 0].set_xticks(IOP_TICKS)
 
     # Labels
-    fig.supxlabel("In situ value", fontweight="bold")
-    fig.supylabel("Frequency", fontweight="bold")
+    fig.supxlabel("In situ value")
+    fig.supylabel("Frequency")
 
     # Save result
     plt.savefig(saveto, bbox_inches="tight")
@@ -100,7 +100,7 @@ def plot_scenarios(train_sets: Iterable[pd.DataFrame], test_sets: Iterable[pd.Da
     # Legend
     trainpatch = patches.Patch(facecolor=to_rgba(TRAIN_COLOR, 0.5), edgecolor=TRAIN_COLOR, label="Train")
     testpatch = patches.Patch(facecolor=to_rgba(TEST_COLOR, 0.5), edgecolor=TEST_COLOR, label="Test")
-    axs[0, 0].legend(handles=[trainpatch, testpatch], loc="upper left", framealpha=1, edgecolor="black")
+    axs[0, 0].legend(handles=[trainpatch, testpatch], loc="upper left")
 
     # Labels
     for scenario, ax in zip(scenarios, axs[:, ncols//2]):
@@ -108,8 +108,8 @@ def plot_scenarios(train_sets: Iterable[pd.DataFrame], test_sets: Iterable[pd.Da
     for var, ax in zip(variables, axs[-1]):
         ax.set_xlabel(var.label)
 
-    fig.supxlabel("In situ value", fontweight="bold")
-    fig.supylabel("Frequency", fontweight="bold")
+    fig.supxlabel("In situ value")
+    fig.supylabel("Frequency")
 
     # Save result
     plt.savefig(saveto, bbox_inches="tight")

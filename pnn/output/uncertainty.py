@@ -65,8 +65,8 @@ def plot_log_binned_statistics(binned: pd.DataFrame, *,
         ax.set_ylabel(f"{network.label}\n{scenario.label}")
 
     # Labels
-    fig.supxlabel("In situ value", fontweight="bold")
-    fig.supylabel("Median uncertainty [%]", fontweight="bold")
+    fig.supxlabel("In situ value")
+    fig.supylabel("Median uncertainty [%]")
     fig.align_ylabels()
 
     saveto = saveto_append_tag(saveto, tag)
@@ -96,8 +96,8 @@ def plot_uncertainty_heatmap(data: pd.DataFrame, *,
     _heatmap(axs, data, rowparameters=uncertainties, colparameters=scenarios, datarowparameters=c.networks, datacolparameters=variables, apply_titles=title_type)
 
     # Labels
-    fig.supxlabel("IOPs", fontweight="bold")
-    fig.supylabel("Models\n", fontweight="bold")
+    fig.supxlabel("IOPs")
+    fig.supylabel("Models\n")
 
     saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto)
@@ -131,8 +131,8 @@ def plot_uncertainty_heatmap_with_recal(data: pd.DataFrame, data_recal: pd.DataF
     _heatmap(axs[nrows_data:], data_recal, rowparameters=uncertainties_recal, colparameters=scenarios, datarowparameters=c.networks, datacolparameters=variables, apply_titles=False, colorbar_tag="\n(Recalibrated)")
 
     # Labels
-    fig.supxlabel("IOPs", fontweight="bold")
-    fig.supylabel("Models", fontweight="bold")
+    fig.supxlabel("IOPs")
+    fig.supylabel("Models")
 
     saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto)
@@ -216,7 +216,7 @@ def plot_coverage_with_recal(data: pd.DataFrame, data_recal: pd.DataFrame, *,
         add_coverage_k_lines(*axs[0])
 
         # Recal labels
-        sfig.suptitle(title, fontweight="bold", fontsize=12)
+        sfig.suptitle(title)
 
     # Plot legend outside the subplots
     add_legend_below_figure(fig, c.networks)
@@ -247,6 +247,7 @@ def table_miscalibration_area(df: pd.DataFrame, *,
 
 
 ## Plot
+@plt.rc_context({"axes.titleweight": "bold"})
 def miscalibration_area_heatmap(data: pd.DataFrame, data_recal: pd.DataFrame, *,
                                 metric: c.Parameter=c.miscalibration_area, scenarios: Iterable[c.Parameter]=c.scenarios_123, variables: Iterable[c.Parameter]=c.iops,
                                 precision: int=2, diff_range: float=0.4,
@@ -281,10 +282,6 @@ def miscalibration_area_heatmap(data: pd.DataFrame, data_recal: pd.DataFrame, *,
     # Labels
     for ax, label in zip(axs[0], labels):
         ax.set_title(f"{label}\n{ax.get_title()}")
-    for ax in axs.ravel():  # To do: replace with rcParams
-        title = ax.get_title()
-        if title:
-            ax.set_title(title, fontweight="bold")
 
     saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto, bbox_inches="tight")
@@ -342,8 +339,8 @@ def _plot_calibration_curves_base(axs: np.ndarray[plt.Axes], calibration_curves:
         ax.set_xlabel(None)
 
     fig = axs[0, 0].figure  # Assume all axs are in the same figure
-    fig.supxlabel("Observed proportion in interval", fontweight="bold")
-    fig.supylabel("Expected proportion in interval", fontweight="bold")
+    fig.supxlabel("Observed proportion in interval")
+    fig.supylabel("Expected proportion in interval")
     fig.align_ylabels()
 
 

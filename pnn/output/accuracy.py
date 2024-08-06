@@ -67,8 +67,8 @@ def plot_performance_scatter(df: pd.DataFrame, *,
     # Labels
     for ax, iop in zip(axs[0], columns):
         ax.set_title(iop.label)
-    fig.supxlabel("In-situ (actual)", fontsize="x-large", fontweight="bold")
-    fig.supylabel("Model estimate", x=-0.02, fontsize="x-large", fontweight="bold")
+    fig.supxlabel("In-situ (actual)", fontsize="x-large")
+    fig.supylabel("Model estimate", x=-0.02, fontsize="x-large")
     fig.suptitle(title, fontsize="x-large")
 
     # Save result
@@ -143,7 +143,7 @@ def plot_mdsa(data: pd.DataFrame, *,
     _plot_grouped_values(axs, data, colparameters=[metric], groups=scenarios, groupmembers=c.networks, rowparameters=variables, apply_titles=False, ylim_quantile=0.015, **kwargs)
 
     # Adjust axis labels
-    fig.supylabel(metric.label, fontweight="bold", fontsize=12)
+    fig.supylabel(metric.label)
     for ax, var in zip(axs.ravel(), variables):
         ax.set_ylabel(None)
         label_topleft(ax, var.label)

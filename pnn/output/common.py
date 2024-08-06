@@ -15,10 +15,14 @@ from .. import constants as c
 
 ### UNIVERSAL RCPARAMS
 mpl.rcParams.update({
-                    "figure.dpi": 300,
                     "axes.grid": True,
+                    "figure.dpi": 300,
+                    "figure.labelweight": "bold",
+                    "figure.titleweight": "bold",
                     "grid.linestyle": "--",
                     "grid.alpha": 0.5,
+                    "legend.edgecolor": "black",
+                    "legend.framealpha": 1,
                     })
 
 
@@ -34,7 +38,7 @@ def add_legend_below_figure(fig: plt.Figure, items: Iterable[c.Parameter], **kwa
     Add a legend below the subplots, with a patch for each item.
     """
     legend_content = [patches.Patch(color=key.color, label=key.label, **kwargs) for key in items]
-    fig.legend(handles=legend_content, loc="upper center", bbox_to_anchor=(0.5, 0), ncols=len(items), framealpha=1, edgecolor="black")
+    fig.legend(handles=legend_content, loc="upper center", bbox_to_anchor=(0.5, 0), ncols=len(items))
 
 
 def get_axes_size(ax: plt.Axes) -> tuple[float, float]:
