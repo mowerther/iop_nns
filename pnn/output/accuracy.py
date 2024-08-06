@@ -106,7 +106,7 @@ def plot_accuracy_metrics(data: pd.DataFrame, *,
     # Generate figure ; rows are metrics, columns are scenarios
     n_rows = len(_accuracy_metrics)
     n_cols = len(scenarios)
-    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(4*n_cols, 2.3*n_rows), sharex=True, sharey="row", squeeze=False)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, sharex=True, sharey="row", figsize=(3.2*n_cols, 1.8*n_rows), gridspec_kw={"hspace": 0.007, "wspace": 0.007}, layout="constrained", squeeze=False)
 
     # Plot
     _plot_grouped_values(axs, data, colparameters=scenarios, groups=c.iops, groupmembers=c.networks, rowparameters=_accuracy_metrics)
@@ -114,7 +114,6 @@ def plot_accuracy_metrics(data: pd.DataFrame, *,
     # Plot legend outside the subplots
     add_legend_below_figure(fig, c.networks)
 
-    plt.tight_layout()
     saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto, bbox_inches="tight")
     plt.close()
@@ -131,7 +130,7 @@ def plot_mdsa(data: pd.DataFrame, *,
     # Generate figure ; rows are IOPs
     n_rows = len(variables)
     n_groups = len(scenarios)
-    fig, axs = plt.subplots(nrows=n_rows, ncols=1, figsize=(1.6*n_groups, 2.3*n_rows), sharex=True, sharey=True, squeeze=False)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=1, figsize=(1.6*n_groups, 1.8*n_rows), sharex=True, sharey=True, squeeze=False)
 
     # Reorder for boxplot function
     data = data.stack().unstack(level="variable")  # Transpose

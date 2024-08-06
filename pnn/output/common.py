@@ -92,11 +92,7 @@ def _plot_grouped_values(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
         - Free order of parameters
         - Generalise for different plotting functions, e.g. plt.Axes.boxplot, plot_lollipop, etc.
     """
-    # Check inputs
-    assert 1
-
-
-    # Metadata
+    # Setup
     fig = axs[0, 0].figure  # We assume all axes are in the same figure
     n_groups = len(groups)
     n_members = len(groupmembers)
