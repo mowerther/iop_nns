@@ -57,8 +57,9 @@ if args.recal:
     median_indices_recal, median_metrics_recal = pnn.modeloutput.select_median_metrics(metrics_recal)
 
 # Miscalibration area
-pnn.output.table_miscalibration_area(median_metrics, scenarios=scenarios, tag=tag)
-print("Saved miscalibration area table")
+if args.recal:
+    pnn.output.miscalibration_area_heatmap(median_metrics, median_metrics_recal, scenarios=scenarios, tag=tag)
+print("Saved miscalibration area plot")
 
 
 ### INDIVIDUAL MODEL OUTPUTS

@@ -27,8 +27,10 @@ m2 = r"m$^{-2}$"
 
 
 ### PLOTTING
-cmap_uniform = plt.cm.cividis.resampled(10)
-cmap_aleatoric_fraction = managua.resampled(10)
+_CMAP_N = 10
+cmap_uniform = plt.cm.cividis.resampled(_CMAP_N)
+cmap_aleatoric_fraction = managua.resampled(_CMAP_N)
+cmap_difference = plt.cm.BrBG_r.resampled(_CMAP_N)
 
 
 ### PARAMETERS
@@ -75,16 +77,16 @@ gloria = Parameter("gloria", "GLORIA+")
 prisma = Parameter("prisma", "PRISMA")
 
 # Scenarios 1, 2, 3
-random_split = Parameter("random_split", "Random split")
-wd = Parameter("wd_split", "Within-distribution")
-ood = Parameter("ood_split", "Out-of-distribution")
+random_split = Parameter("random_split", "Random split", label_2lines="Random\nsplit")
+wd = Parameter("wd_split", "Within-distribution", label_2lines="Within-\ndistribution")
+ood = Parameter("ood_split", "Out-of-distribution", label_2lines="Out-of-\ndistribution")
 
 scenarios_123 = [random_split, wd, ood]
 wavelengths_123 = list(range(400, 701, 5))
 
 # PRISMA scenarios
 _insitu = r"$\it{in}$ $\it{situ}$"
-prisma_insitu = Parameter("prisma_1", f"{_insitu} vs. {_insitu}", label_2lines=f"{_insitu} vs. {_insitu}\n")
+prisma_insitu = Parameter("prisma_1", f"{_insitu} vs. {_insitu}", label_2lines=f"{_insitu} vs.\n{_insitu}")
 
 prisma_wd = Parameter("prisma_wd", f"Within-distribution")
 prisma_wd_ACOLITE = Parameter("prisma_wd_a", f"Within-distribution: ACOLITE", label_2lines=f"Within-distribution\nACOLITE")
@@ -151,7 +153,7 @@ log_r_squared = Parameter("log_r_squared", r"$R^2$", vmax=1)  # R² of log, not 
 # Uncertainty
 coverage = Parameter("coverage", "Coverage [%]", vmin=100, vmax=0)
 interval_sharpness = Parameter("sharpness", f"Sharpness", vmin=0, vmax=1)
-miscalibration_area = Parameter("MA", "Miscalibration area", vmin=0, vmax=1)
+miscalibration_area = Parameter("MA", "Miscalibration area", vmin=0, vmax=0.4, extend_cbar="max")  # Real max value is 1, but 0.4 is better for plots
 
 
 ### COMBINED KEYS

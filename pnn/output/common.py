@@ -151,8 +151,8 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
              rowparameters: Iterable[c.Parameter], colparameters: Iterable[c.Parameter],
              datarowparameters: Iterable[c.Parameter], datacolparameters: Iterable[c.Parameter],
              *,
-             apply_titles=True, remove_ticks=True,
-             colorbar_tag: Optional[str]="") -> None:
+             apply_titles=True, remove_ticks=True, precision: int=0,
+             colorbar_location: str="right", colorbar_pad: Optional[float]=None, colorbar_tag: Optional[str]="") -> None:
     """
     Plot a heatmap with text.
     For a DataFrame with at least 2 index levels and 1 column level, plot them as follows:
@@ -167,20 +167,33 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
     This function must be called on an existing Axes array, which is modified in-place.
     Do not use this directly; rather, build a function around it that handles figure creation and saving, etc.
     """
-    # Metadata
+    # Setup
     fig = axs[0, 0].figure  # We assume all axes are in the same figure
+    data = data.loc[rowparameters, colparameters, datarowparameters][datacolparameters]  # Remove extraneous variables
+
+    # Color bar settings
+    if colorbar_pad is None:  # More padding if at the bottom
+        colorbar_pad = 0.01 if colorbar_location in ("left", "right") else 0.05
 
     # Plot data
     for ax_row, rowparam in zip(axs, rowparameters):
+        # Color bar settings
+        df_row = data.loc[rowparam]
+        vmin = rowparam.vmin if rowparam.vmin is not None else df_row.min().min()
+        vmax = rowparam.vmax if rowparam.vmax is not None else df_row.max().max()
+        if rowparam.symmetric:
+            maxvalue = max([-vmin, vmax])
+            vmin, vmax = -maxvalue, maxvalue
+        norm = colors.Normalize(vmin, vmax)
+
         for ax, colparam in zip(ax_row, colparameters):
             # Select relevant data
             df = data.loc[rowparam, colparam, datarowparameters][datacolparameters]
 
             # Plot image
-            im = ax.imshow(df, cmap=rowparam.cmap, vmin=rowparam.vmin, vmax=rowparam.vmax)
+            im = ax.imshow(df, cmap=rowparam.cmap, vmin=vmin, vmax=vmax, aspect="auto")
 
             # Plot individual values
-            norm = colors.Normalize(rowparam.vmin, rowparam.vmax)
             for i, x in enumerate(datarowparameters):
                 for j, y in enumerate(datacolparameters):
                     # Ensure text is visible
@@ -188,22 +201,21 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
                     textcolor = pick_textcolor(rowparam.cmap, norm(value))
 
                     # Show text
-                    ax.text(j, i, f"{value:.0f}", ha="center", va="center", color=textcolor)
+                    ax.text(j, i, f"${value:.{precision}f}$", ha="center", va="center", color=textcolor)
 
             # Panel settings
             ax.grid(False)
 
         # Color bar per row
-        cb = fig.colorbar(im, ax=ax_row, fraction=0.1, pad=0.01, shrink=0.96, extend=rowparam.extend_cbar)
+        cb = fig.colorbar(im, ax=ax_row, location=colorbar_location, fraction=0.1, pad=colorbar_pad, extend=rowparam.extend_cbar)
         cb.set_label(label=f"{rowparam.label}{colorbar_tag}", weight="bold")
         cb.locator = ticker.MaxNLocator(nbins=6)
         cb.update_ticks()
 
     # Labels
-    wrap_labels = lambda parameters: list(zip(*enumerate(p.label for p in parameters)))  # (0, 1, ...) (label0, label1, ...)
-    wrap_labels2 = lambda parameters: list(zip(*enumerate(p.label_2lines for p in parameters)))  # (0, 1, ...) (label0, label1, ...)
+    wrap_labels = lambda parameters: list(zip(*enumerate(p.label_2lines for p in parameters)))  # (0, 1, ...) (label0, label1, ...)
     for ax in axs[-1]:
-        ax.set_xticks(*wrap_labels2(datacolparameters))
+        ax.set_xticks(*wrap_labels(datacolparameters))
 
     for ax in axs[:, 0]:
         ax.set_yticks(*wrap_labels(datarowparameters))

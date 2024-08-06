@@ -1,6 +1,7 @@
 """
 Plots that show the uncertainty of estimates.
 """
+from functools import partial
 import itertools
 from pathlib import Path
 from typing import Iterable, Optional
@@ -111,9 +112,6 @@ def plot_uncertainty_heatmap_with_recal(data: pd.DataFrame, data_recal: pd.DataF
     # Find recalibrated uncertainties
     uncertainties_recal = [param for param in uncertainties if param is not c.ale_frac]
 
-    # Combine data
-    data_combined = data
-
     # Create figure
     nrows_data = len(uncertainties)
     nrows_recal = len(uncertainties_recal)
@@ -217,6 +215,7 @@ def plot_coverage_with_recal(data: pd.DataFrame, data_recal: pd.DataFrame, *,
 
 
 ### MISCALIBRATION AREA
+## Table
 def table_miscalibration_area(df: pd.DataFrame, *,
                               scenarios: Iterable[c.Parameter]=c.scenarios_123,
                               saveto: Path | str=c.output_path/"miscalibration_area.csv", tag: Optional[str]=None) -> None:
@@ -233,6 +232,52 @@ def table_miscalibration_area(df: pd.DataFrame, *,
 
     saveto = saveto_append_tag(saveto, tag)
     areas.to_csv(saveto)
+
+
+## Plot
+def miscalibration_area_heatmap(data: pd.DataFrame, data_recal: pd.DataFrame, *,
+                                metric: c.Parameter=c.miscalibration_area, scenarios: Iterable[c.Parameter]=c.scenarios_123, variables: Iterable[c.Parameter]=c.iops,
+                                precision: int=2,
+                                saveto: Path | str=c.output_path/"miscalibration_area.pdf", tag: Optional[str]=None) -> None:
+    """
+    Generate a heatmap showing the miscalibration area without and with recalibration, as well as their difference.
+    Can be used for a different variable by changing `metric`
+    """
+    labels = ["Without recalibration", "With recalibration", "Calibration difference"]
+
+    # Reorder data
+    new_order = [-1, "network", "scenario"]
+    data, data_recal = [df.stack().unstack("variable").reorder_levels(new_order) for df in (data, data_recal)]
+
+    # Calculate miscalibration area difference
+    metric_diff = c.Parameter(f"{metric.name}_diff", f"{metric.label} difference", cmap=c.cmap_difference, symmetric=True)
+    data_diff = data_recal.loc[metric] - data.loc[metric]
+    data_diff = pd.concat({metric_diff.name: data_diff})
+
+    # Create figure
+    nrows = len(c.networks)
+    ncols = 3
+    nrows_data = len(scenarios)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(14, 20), gridspec_kw={"hspace": 0.25, "wspace": 0.02})
+
+    # Plot main metric  --  note that axs is being transposed, so rows <--> columns
+    plot_heatmap = partial(_heatmap, colparameters=c.networks, datarowparameters=scenarios, datacolparameters=variables, colorbar_location="bottom", precision=precision)
+    plot_heatmap(axs[np.newaxis, :, 0], data, rowparameters=[metric], apply_titles=False)
+    plot_heatmap(axs[np.newaxis, :, 1], data_recal, rowparameters=[metric], apply_titles=True)
+    plot_heatmap(axs[np.newaxis, :, 2], data_diff, rowparameters=[metric_diff], apply_titles=False)
+
+    # Labels
+    for ax, label in zip(axs[0], labels):
+        ax.set_title(f"{label}\n{ax.get_title()}")
+    for ax in axs.ravel():  # To do: replace with rcParams
+        title = ax.get_title()
+        if title:
+            ax.set_title(title, fontweight="bold")
+
+    saveto = saveto_append_tag(saveto, tag)
+    plt.savefig(saveto, bbox_inches="tight")
+    plt.close()
+
 
 
 ### CALIBRATION CURVES
