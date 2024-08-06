@@ -134,7 +134,7 @@ def plot_prisma_scatter(results: pd.DataFrame, variable: c.Parameter, *,
             if len(scenarios) == 2:  # Add labels in L2/ACOLITE case
                 metrics_scenario = [f"{sub.label} ({marker})\n{metrics_sub}" for sub, marker, metrics_sub in zip(c._scenarios_prisma_sub, _markers, metrics_scenario)]
             metrics_scenario = "\n\n".join(metrics_scenario)
-            ax.text(0.95, 0.03, metrics_scenario, transform=ax.transAxes, horizontalalignment="right", verticalalignment="bottom", color="black", size=9, bbox={"facecolor": "white", "edgecolor": "black", "alpha": 0.5}, zorder=0)
+            ax.text(0.95, 0.05, metrics_scenario, transform=ax.transAxes, horizontalalignment="right", verticalalignment="bottom", color="black", size=9, bbox={"facecolor": "white", "edgecolor": "black", "alpha": 0.5}, zorder=0)
 
             # Panel settings
             ax.set_aspect("equal")
@@ -173,7 +173,7 @@ def plot_prisma_scatter_multi(results: pd.DataFrame, *,
                               saveto: Path | str=c.output_path/"prisma_scatter.pdf",
                               **kwargs) -> None:
     for variable in variables:
-        saveto_here = saveto.with_stem(f"{saveto.stem}_{variable.name}.pdf")
+        saveto_here = saveto.with_stem(f"{saveto.stem}_{variable.name}")
         plot_prisma_scatter(results, variable, saveto=saveto_here, **kwargs)
 
 
