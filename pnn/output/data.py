@@ -81,7 +81,7 @@ def plot_scenarios(train_sets: Iterable[pd.DataFrame], test_sets: Iterable[pd.Da
     assert len(train_sets) == len(test_sets) == len(scenarios), f"Mismatch between number of scenarios ({len(scenarios)}), number of training datasets ({len(train_sets)}), and number of test datasets ({len(test_sets)})."
 
     # Create figure
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(10, 6), squeeze=False, layout="constrained", gridspec_kw={"hspace": 0.12})
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(10, 5), squeeze=False, layout="constrained", gridspec_kw={"hspace": 0.12})
 
     # Plot data per row
     for ax_row, df_train, df_test in zip(axs, train_sets, test_sets):
