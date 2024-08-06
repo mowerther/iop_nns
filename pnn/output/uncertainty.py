@@ -117,7 +117,7 @@ def plot_uncertainty_heatmap_with_recal(data: pd.DataFrame, data_recal: pd.DataF
     nrows_recal = len(uncertainties_recal)
     nrows = nrows_data + nrows_recal
     ncols = len(scenarios)
-    width, height = 3.7*ncols, 3*nrows
+    width, height = 3.33*ncols, 2.2*nrows
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(width, height), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
 
     # Plot data
@@ -126,7 +126,7 @@ def plot_uncertainty_heatmap_with_recal(data: pd.DataFrame, data_recal: pd.DataF
 
     # Labels
     fig.supxlabel("IOPs", fontweight="bold")
-    fig.supylabel("Models\n", fontweight="bold")
+    fig.supylabel("Models", fontweight="bold")
 
     saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto)
