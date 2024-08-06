@@ -12,7 +12,7 @@ from matplotlib import patches
 from matplotlib.colors import to_rgba
 
 from .. import constants as c
-from .common import IOP_LIMS, IOP_SCALE, label_topleft
+from .common import IOP_LIMS, IOP_SCALE, IOP_TICKS, label_topleft
 
 ### CONSTANTS
 TRAIN_COLOR = "black"
@@ -37,7 +37,7 @@ def plot_full_dataset(df: pd.DataFrame, *,
     nrows = len(variables) // ncols
 
     # Create figure
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(12, 6), squeeze=False, layout="constrained")
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(10, 4), squeeze=False, layout="constrained")
 
     # Plot data per row
     for ax, var in zip(axs.ravel(), variables):
@@ -51,6 +51,7 @@ def plot_full_dataset(df: pd.DataFrame, *,
     # Panel settings
     axs[0, 0].set_xscale(IOP_SCALE)
     axs[0, 0].set_xlim(*IOP_LIMS)
+    axs[0, 0].set_xticks(IOP_TICKS)
 
     # Labels
     fig.supxlabel("In situ value", fontweight="bold")
@@ -80,7 +81,7 @@ def plot_scenarios(train_sets: Iterable[pd.DataFrame], test_sets: Iterable[pd.Da
     assert len(train_sets) == len(test_sets) == len(scenarios), f"Mismatch between number of scenarios ({len(scenarios)}), number of training datasets ({len(train_sets)}), and number of test datasets ({len(test_sets)})."
 
     # Create figure
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(12, 7), squeeze=False, layout="constrained", gridspec_kw={"hspace": 0.15})
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(10, 6), squeeze=False, layout="constrained", gridspec_kw={"hspace": 0.12})
 
     # Plot data per row
     for ax_row, df_train, df_test in zip(axs, train_sets, test_sets):
@@ -94,6 +95,7 @@ def plot_scenarios(train_sets: Iterable[pd.DataFrame], test_sets: Iterable[pd.Da
     # Panel settings
     axs[0, 0].set_xscale(IOP_SCALE)
     axs[0, 0].set_xlim(*IOP_LIMS)
+    axs[0, 0].set_xticks(IOP_TICKS)
 
     # Legend
     trainpatch = patches.Patch(facecolor=to_rgba(TRAIN_COLOR, 0.5), edgecolor=TRAIN_COLOR, label="Train")
