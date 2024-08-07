@@ -99,18 +99,23 @@ _markers = ["o", "x"]
 def plot_prisma_scatter(results: pd.DataFrame, variable: c.Parameter, *,
                         uncertainty: c.Parameter=c.total_unc_pct,
                         metrics: dict[c.Parameter, Callable]={c.mdsa: m.mdsa, c.sspb: m.sspb},
+                        fig: Optional[plt.Figure]=None,
                         saveto: Optional[Path | str]=None,
                         **kwargs) -> None:
     """
     For one IOP, make a scatter plot for every PRISMA subscenario.
+    If `fig` is specified, draw into an existing figure (useful for subfigures).
     """
     # Setup
     norm = plt.Normalize(vmin=uncertainty.vmin, vmax=uncertainty.vmax)
+    NEWFIG = (fig is None)
 
     # Create figure
     nrows = len(c.networks)
     ncols = len(c.scenarios_prisma_sorted)
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(9.2, 16), layout="constrained", gridspec_kw={"hspace": 0.05}, squeeze=False)
+    if NEWFIG:
+        fig = plt.figure(figsize=(9.2, 16), layout="constrained")
+    axs = fig.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, gridspec_kw={"hspace": 0.05}, squeeze=False)
 
     # Loop and plot
     for ax_row, network in zip(axs, c.networks):
@@ -162,17 +167,37 @@ def plot_prisma_scatter(results: pd.DataFrame, variable: c.Parameter, *,
     cb.locator = ticker.MaxNLocator(nbins=5)
     cb.update_ticks()
 
-    if saveto:
-        plt.savefig(saveto, bbox_inches="tight")
-    plt.close()
+    if NEWFIG:
+        if saveto:
+            plt.savefig(saveto, bbox_inches="tight")
+        else:
+            plt.show()
+        plt.close()
 
 
 def plot_prisma_scatter_multi(results: pd.DataFrame, *,
                               variables: Iterable[c.Parameter]=[c.aph_443, c.aph_675],
                               saveto: Path | str=c.output_path/"prisma_scatter.pdf",
                               **kwargs) -> None:
+    """
+    For one IOP, make a scatter plot for every PRISMA subscenario.
+    Option 1: Combine all into one figure (note: can get very wide).
+    Option 2: One file for each.
+    """
+    # Plot in one figure
+    nvars = len(variables)
+    fig = plt.figure(figsize=(9.2*nvars, 16), layout="constrained")
+    subfigs = fig.subfigures(ncols=nvars, wspace=0.04)
+
+    for sfig, variable in zip(subfigs, variables):
+        plot_prisma_scatter(results, variable, fig=sfig, **kwargs)
+
+    plt.savefig(saveto)
+    plt.close()
+
+    # Plot separately
     for variable in variables:
-        saveto_here = saveto.with_stem(f"{saveto.stem}_{variable.name}")
+        saveto_here = saveto.with_stem(f"{saveto.stem}_{variable}")
         plot_prisma_scatter(results, variable, saveto=saveto_here, **kwargs)
 
 
