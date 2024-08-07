@@ -89,13 +89,13 @@ wavelengths_123 = list(range(400, 701, 5))
 _insitu = r"$\it{in}$ $\it{situ}$"
 prisma_insitu = Parameter("prisma_1", f"{_insitu} vs. {_insitu}", label_2lines=f"{_insitu} vs.\n{_insitu}")
 
-prisma_wd = Parameter("prisma_wd", f"Within-distribution")
-prisma_wd_ACOLITE = Parameter("prisma_wd_a", f"Within-distribution: ACOLITE", label_2lines=f"Within-distribution\nACOLITE")
-prisma_wd_L2 = Parameter("prisma_wd_l", f"Within-distribution: L2", label_2lines=f"Within-distribution\nL2")
+prisma_wd = Parameter("prisma_wd", f"Local knowledge")
+prisma_wd_ACOLITE = Parameter("prisma_wd_a", f"Local knowledge: ACOLITE", label_2lines=f"Local knowledge\nACOLITE")
+prisma_wd_L2 = Parameter("prisma_wd_l", f"Local knowledge: L2", label_2lines=f"Local knowledge\nL2")
 
-prisma_ood = Parameter("prisma_ood", f"Out-of-distribution")
-prisma_ood_ACOLITE = Parameter("prisma_ood_a", f"Out-of-distribution: ACOLITE", label_2lines=f"Out-of-distribution\nACOLITE")
-prisma_ood_L2 = Parameter("prisma_ood_l", f"Out-of-distribution: L2", label_2lines=f"Out-of-distribution\nL2")
+prisma_ood = Parameter("prisma_ood", f"General")
+prisma_ood_ACOLITE = Parameter("prisma_ood_a", f"General: ACOLITE", label_2lines=f"General\nACOLITE")
+prisma_ood_L2 = Parameter("prisma_ood_l", f"General: L2", label_2lines=f"General\nL2")
 
 _prisma_ACOLITE = Parameter("prisma_a", f"ACOLITE")
 _prisma_L2 = Parameter("prisma_l", f"L2")
