@@ -97,9 +97,3 @@ if args.recal:
 else:
     pnn.output.plot_calibration_curves(calibration_curves, rows=scenarios, tag=tag)
 print("Saved calibration curve plot")
-
-# y vs y_hat scatter plots
-pnn.output.plot_performance_scatter_multi(results, scenarios=scenarios, tag=tag)
-if args.recal:
-    pnn.output.plot_performance_scatter_multi(results_recal, scenarios=scenarios, tag=f"{tag}_recal")
-print("Saved match-up (scatter) plots")
