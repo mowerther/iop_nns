@@ -53,9 +53,16 @@ print("Saved coverage plot")
 
 
 ### SELECT MEDIAN MODELS
+print("\n\n\n--- AVERAGE-PERFORMING MODEL ---")
 median_indices, median_metrics = pnn.modeloutput.select_median_metrics(metrics)
 if args.recal:
     median_indices_recal, median_metrics_recal = pnn.modeloutput.select_median_metrics(metrics_recal)
+
+# MdSA
+pnn.output.print_metric(median_metrics)
+if args.recal:
+    print("Recalibration difference:")
+    pnn.output.print_metric_difference(metrics, metrics_recal, median_metrics, median_metrics_recal)
 
 # Miscalibration area
 if args.recal:
@@ -64,7 +71,7 @@ print("Saved miscalibration area plot")
 
 
 ### INDIVIDUAL MODEL OUTPUTS
-print("\n\n\n--- INDIVIDUAL (MEDIAN) MODEL OUTPUTS ---")
+print("\n\n\n--- INDIVIDUAL (AVERAGE-PERFORMING) MODEL OUTPUTS ---")
 
 # Load data
 results = pnn.modeloutput.read_all_model_outputs(pnn.model_estimates_path, scenarios=scenarios, subfolder_indices=median_indices)

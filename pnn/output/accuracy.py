@@ -3,6 +3,7 @@ Plots that show the accuracy of estimates.
 """
 from itertools import product
 from pathlib import Path
+from sys import stdout
 from typing import Callable, Iterable, Optional
 
 import numpy as np
@@ -262,3 +263,53 @@ def plot_mdsa(data: pd.DataFrame, *,
     saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto, bbox_inches="tight")
     plt.close()
+
+
+## Print metrics
+def _format_float(number: float) -> str:
+    return f"{number:.1f}"
+
+def _dataframe_to_string(data: pd.DataFrame, **kwargs) -> str:
+    return data.to_string(float_format=_format_float, **kwargs)
+
+def _select_metric(data: pd.DataFrame, metric: c.Parameter, columns: Iterable[c.Parameter]=c.iops) -> pd.DataFrame:
+    return data[metric].unstack()[columns]
+
+
+def print_metric(data: pd.DataFrame, *,
+                 metric: c.Parameter=c.mdsa, variables: Iterable[c.Parameter]=c.iops,
+                 saveto: Path | str=stdout) -> None:
+    """
+    Print the values for one metric.
+    Optionally save to a file.
+    """
+    data = _select_metric(data, metric, columns=variables)
+    print()
+    print(f"{metric.label}:")
+    print(_dataframe_to_string(data), file=saveto)
+    print()
+
+
+def print_metric_difference(metrics_all: pd.DataFrame, metrics_all_recal: pd.DataFrame, metrics_median: pd.DataFrame, metrics_median_recal: pd.DataFrame, *,
+                            metric: c.Parameter=c.mdsa, variables: Iterable[c.Parameter]=c.iops,
+                            saveto: Path | str=stdout) -> None:
+    """
+    For one metric, print the difference between the without-recalibration and with-recalibration cases, in absolute terms and relative to the standard deviation between model instances.
+    """
+    # Select this metric
+    metrics_all, metrics_all_recal, metrics_median, metrics_median_recal = [_select_metric(df, metric, columns=variables) for df in (metrics_all, metrics_all_recal, metrics_median, metrics_median_recal)]
+
+    # Absolute difference
+    metrics_diff = metrics_median_recal - metrics_median
+    print()
+    print(f"Difference in {metric.label}:")
+    print(_dataframe_to_string(metrics_diff), file=saveto)
+    print()
+
+    # Relative difference
+    metrics_std, metrics_std_recal = [df.groupby(c.scenario_network).std() for df in (metrics_all, metrics_all_recal)]
+    metrics_diff_relative = metrics_diff / metrics_std * 100
+    print()
+    print(f"Difference in {metric.label} -- as % of the standard deviation:")
+    print(_dataframe_to_string(metrics_diff_relative), file=saveto)
+    print()
