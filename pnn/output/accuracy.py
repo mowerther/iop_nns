@@ -95,7 +95,7 @@ def plot_performance_scatter_multi(results: pd.DataFrame, *,
 
 ## PRISMA scatter plot - accuracy for one IOP, for each network and scenario (combining 2a-2b, 3a-3b)
 _markers = ["o", "x"]
-@plt.rc_context({"axes.labelweight": "bold", "axes.titleweight": "bold"})
+@plt.rc_context({"axes.labelweight": "bold", "axes.labelsize": "large", "axes.titleweight": "bold"})
 def plot_prisma_scatter(results: pd.DataFrame, variable: c.Parameter, *,
                         uncertainty: c.Parameter=c.total_unc_pct,
                         metrics: dict[c.Parameter, Callable]={c.mdsa: m.mdsa, c.sspb: m.sspb},
