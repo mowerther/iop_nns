@@ -38,10 +38,11 @@ pnn.output.plot_accuracy_metrics(metrics, scenarios=scenarios, tag=tag)
 print("Saved accuracy metric plot")
 
 # MdSA plot
-pnn.output.plot_mdsa(metrics, scenarios=scenarios, tag=tag)
-if args.recal:
-    pnn.output.plot_mdsa(metrics_recal, scenarios=scenarios, tag=f"{tag}_recal")
-print("Saved MdSA plot")
+if args.prisma:
+    pnn.output.plot_mdsa(metrics, scenarios=scenarios, tag=tag)
+    if args.recal:
+        pnn.output.plot_mdsa(metrics_recal, scenarios=scenarios, tag=f"{tag}_recal")
+    print("Saved MdSA plot")
 
 # Coverage plot
 if args.recal:
