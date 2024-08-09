@@ -38,7 +38,8 @@ print("Loaded data.")
 # Loop over different data-split scenarios
 for scenario_train, data_train, scenarios_and_data_test in datascenarios:
     ### SETUP
-    saveto_model = pnn.model_path/f"{scenario_train}.keras"
+    tag_train = f"{args.pnn_type}_{scenario_train}"
+    saveto_model = pnn.model_path/f"{tag_train}.keras"
     print("\n\n----------")
     print(f"Now training: {scenario_train.label}")
     print(f"Models will be saved to {saveto_model.absolute()}")
@@ -76,12 +77,12 @@ for scenario_train, data_train, scenarios_and_data_test in datascenarios:
     ## Loop over assessment scenarios
     for scenario_test, data_test in scenarios_and_data_test.items():
         # Set up save folders
-        tag = f"{args.pnn_type}_{scenario_test}"
+        tag_test = f"{args.pnn_type}_{scenario_test}"
         if args.recalibrate:
-            tag += "_recal"
+            tag_test += "_recal"
 
-        saveto_estimates = pnn.model_estimates_path/f"{tag}_estimates.csv"
-        saveto_metrics = pnn.model_estimates_path/f"{tag}_metrics.csv"
+        saveto_estimates = pnn.model_estimates_path/f"{tag_test}_estimates.csv"
+        saveto_metrics = pnn.model_estimates_path/f"{tag_test}_metrics.csv"
 
         print("\n----------")
         print(f"Now testing: {scenario_test.label}")
@@ -123,5 +124,5 @@ for scenario_train, data_train, scenarios_and_data_test in datascenarios:
         print("Mean prediction metrics for best-performing model:")
         print(mean_metrics)
 
-        pnn.nn.scatterplot(y_test, mean_predictions, title=tag)
-        pnn.nn.uncertainty_histogram(mean_predictions, total_variance, aleatoric_variance, epistemic_variance, title=tag)
+        pnn.nn.scatterplot(y_test, mean_predictions, title=tag_test)
+        pnn.nn.uncertainty_histogram(mean_predictions, total_variance, aleatoric_variance, epistemic_variance, title=tag_test)
