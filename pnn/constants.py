@@ -110,7 +110,7 @@ training_prisma = list(testing_prisma.keys())
 scenarios_prisma = [s for sub in testing_prisma.values() for s in sub]  # Flattened version of testing scenarios
 
 scenarios_prisma_overview = [prisma_insitu] + training_prisma  # General scenario descriptions
-scenarios_prisma_scatter = [prisma_insitu] + [sub[-2:] for sub in testing_prisma.values()]  # Specifically for scatter plots
+scenarios_prisma_scatter = [[prisma_insitu]] + [sub[-2:] for sub in testing_prisma.values()]  # Specifically for scatter plots
 
 wavelengths_prisma = [406, 415, 423, 431, 438, 446, 453, 460, 468, 475, 482, 489, 497, 504, 512, 519, 527, 535, 542, 550, 559, 567, 575, 583, 592, 601, 609, 618, 627, 636, 645, 655, 664, 674, 684, 694]
 

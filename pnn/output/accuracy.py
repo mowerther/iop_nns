@@ -113,7 +113,7 @@ def plot_prisma_scatter(results: pd.DataFrame, variable: c.Parameter, *,
 
     # Create figure
     nrows = len(c.networks)
-    ncols = len(c.scenarios_prisma_sorted)
+    ncols = len(c.scenarios_prisma_scatter)
     if NEWFIG:
         fig = plt.figure(figsize=(9.2, 16), layout="constrained")
     axs = fig.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, gridspec_kw={"hspace": 0.05}, squeeze=False)
@@ -121,7 +121,7 @@ def plot_prisma_scatter(results: pd.DataFrame, variable: c.Parameter, *,
     # Loop and plot
     for ax_row, network in zip(axs, c.networks):
         # Scatter plot
-        for ax, scenarios in zip(ax_row, c.scenarios_prisma_sorted):
+        for ax, scenarios in zip(ax_row, c.scenarios_prisma_scatter):
             # Setup
             metrics_scenario = []
 

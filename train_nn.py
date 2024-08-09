@@ -95,7 +95,6 @@ for scenario_train, data_train, scenarios_and_data_test in datascenarios:
         # Pre-process data
         X_test, y_test = pnn.data.extract_inputs_outputs(data_test)
 
-
         # Calculate estimates
         estimates = pnn.nn.estimate_N_models(models, X_test, scaler_y)
 
