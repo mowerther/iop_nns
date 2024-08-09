@@ -39,6 +39,9 @@ print("Loaded data.")
 for scenario_train, data_train, scenarios_and_data_test in datascenarios:
     ### SETUP
     tag_train = f"{args.pnn_type}_{scenario_train}"
+    if args.recalibrate:
+        tag_train += "_recal"
+
     saveto_model = pnn.model_path/f"{tag_train}.keras"
     print("\n\n----------")
     print(f"Now training: {scenario_train.label}")
