@@ -30,43 +30,38 @@ PNN = pnn.nn.select_nn(args.pnn_type)
 
 ### LOAD DATA
 # Load from file
-label, scenarios, load_data = pnn.data.select_scenarios(prisma=args.prisma)
-train_sets, test_sets = load_data()
+label, *_, load_data = pnn.data.select_scenarios(prisma=args.prisma)
+datascenarios = load_data()
 print("Loaded data.")
 
-# Split data if recalibrating
-if args.recalibrate:
-    train_sets, calibration_sets = pnn.recalibration.split(train_sets)
-else:
-    calibration_sets = [None] * len(train_sets)
 
 # Loop over different data-split scenarios
-for scenario, data_train, data_test, data_cal in zip(scenarios, train_sets, test_sets, calibration_sets):
-    tag = f"{args.pnn_type}_{scenario}"
+for scenario_train, data_train, scenarios_and_data_test in datascenarios:
+    ### SETUP
+    saveto_model = pnn.model_path/f"{scenario_train}.keras"
+    print("\n\n----------")
+    print(f"Now training: {scenario_train.label}")
+    print(f"Models will be saved to {saveto_model.absolute()}")
+    print(f"Number of testing scenarios: {len(scenarios_and_data_test)}")
+    print("----------\n\n")
+
+    # Set up recalibration
     if args.recalibrate:
-        tag += "_recal"
-
-    # Set up save folders
-    saveto_model = pnn.model_path/f"{tag}.keras"
-    saveto_estimates = pnn.model_estimates_path/f"{tag}_estimates.csv"
-    saveto_metrics = pnn.model_estimates_path/f"{tag}_metrics.csv"
-
-    print(f"\n\n\n   --- Now running: {tag} ---")
-    print(f"Models will be saved to {saveto_model.absolute() / 'x/'}")
-    print(f"Metrics will be saved to {saveto_metrics.absolute()}")
+        data_train, data_cal = pnn.recalibration.split(data_train)
+        print(f"Split training data into training ({len(data_train)}) and recalibration ({len(data_cal)}) sets.")
 
     # Select Rrs values in 5 nm steps, IOP columns
     X_train, y_train = pnn.data.extract_inputs_outputs(data_train)
-    X_test, y_test = pnn.data.extract_inputs_outputs(data_test)
 
     # Rescale y data (log, minmax)
-    y_train_scaled, y_test_scaled, scaler_y = pnn.data.scale_y(y_train, y_test)
+    scaler_y, y_train_scaled = pnn.data.scale_y(y_train)
     print("Rescaled data.")
+
 
     ### TRAINING
     # Train multiple models
     models = pnn.nn.train_N_models(PNN, X_train, y_train_scaled, n_models=args.n_models)
-    print(f"Trained {args.n_models} models.")
+    print(f"Trained {len(models)}/{args.n_models} models.")
 
     # Optional: Train recalibration
     if args.recalibrate:
@@ -75,39 +70,58 @@ for scenario, data_train, data_test, data_cal in zip(scenarios, train_sets, test
 
     # Save models to file
     pnn.nn.save_models(models, saveto_model)
-    print(f"Models saved to {saveto_model.absolute()} and subfolders")
+    print(f"Models saved to {saveto_model.absolute()} in subfolders 0--{len(models)-1}.")
 
     ### ASSESSMENT
-    # Calculate estimates
-    estimates = pnn.nn.estimate_N_models(models, X_test, scaler_y)
+    ## Loop over assessment scenarios
+    for scenario_test, data_test in scenarios_and_data_test.items():
+        # Set up save folders
+        tag = f"{args.pnn_type}_{scenario_test}"
+        if args.recalibrate:
+            tag += "_recal"
 
-    # Save estimates to file
-    pnn.nn.save_estimates(y_test, estimates, saveto_estimates)
-    print(f"Model predictions saved to {saveto_estimates.absolute()} and subfolders")
+        saveto_estimates = pnn.model_estimates_path/f"{tag}_estimates.csv"
+        saveto_metrics = pnn.model_estimates_path/f"{tag}_metrics.csv"
 
-    # Calculate metrics
-    model_metrics = pnn.nn.calculate_N_metrics(y_test, estimates)
+        print("\n----------")
+        print(f"Now testing: {scenario_test.label}")
+        print(f"Metrics will be saved to {saveto_metrics.absolute()}")
+        print("----------")
 
-    # Sanity check
-    mdsa_all = model_metrics[["MdSA"]].unstack()
-    print()
-    print("MdSA values for all models:")
-    print(mdsa_all.to_string())
+        # Pre-process data
+        X_test, y_test = pnn.data.extract_inputs_outputs(data_test)
 
-    # Save metrics to file
-    model_metrics.to_csv(saveto_metrics)
-    print()
-    print(f"Model metrics saved to {saveto_metrics.absolute()}")
 
-    # Find best model and plot its results
-    best_index = mdsa_all["MdSA"]["aph_443"].argmin()  # Temporary - refactor later
-    mean_predictions, total_variance, aleatoric_variance, epistemic_variance = estimates[best_index]
+        # Calculate estimates
+        estimates = pnn.nn.estimate_N_models(models, X_test, scaler_y)
 
-    # Sanity check
-    mean_metrics = pnn.nn.calculate_metrics(y_test, mean_predictions, total_variance)
-    print()
-    print("Mean prediction metrics for best-performing model:")
-    print(mean_metrics)
+        # Save estimates to file
+        pnn.nn.save_estimates(y_test, estimates, saveto_estimates)
+        print(f"Model predictions saved to {saveto_estimates.absolute()} and subfolders")
 
-    pnn.nn.scatterplot(y_test, mean_predictions, title=tag)
-    pnn.nn.uncertainty_histogram(mean_predictions, total_variance, aleatoric_variance, epistemic_variance, title=tag)
+        # Calculate metrics
+        model_metrics = pnn.nn.calculate_N_metrics(y_test, estimates)
+
+        # Sanity check
+        mdsa_all = model_metrics[["MdSA"]].unstack()
+        print()
+        print("MdSA values for all models:")
+        print(mdsa_all.to_string())
+
+        # Save metrics to file
+        model_metrics.to_csv(saveto_metrics)
+        print()
+        print(f"Model metrics saved to {saveto_metrics.absolute()}")
+
+        # Find best model and plot its results
+        best_index = mdsa_all["MdSA"]["aph_443"].argmin()  # Temporary - refactor later
+        mean_predictions, total_variance, aleatoric_variance, epistemic_variance = estimates[best_index]
+
+        # Sanity check
+        mean_metrics = pnn.nn.calculate_metrics(y_test, mean_predictions, total_variance)
+        print()
+        print("Mean prediction metrics for best-performing model:")
+        print(mean_metrics)
+
+        pnn.nn.scatterplot(y_test, mean_predictions, title=tag)
+        pnn.nn.uncertainty_histogram(mean_predictions, total_variance, aleatoric_variance, epistemic_variance, title=tag)

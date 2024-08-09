@@ -13,14 +13,23 @@ from sklearn.preprocessing import MinMaxScaler
 from . import constants as c
 
 ### DATA HANDLING
-def split(training_data: Iterable[pd.DataFrame], *, recalibration_fraction=0.2) -> tuple[list[pd.DataFrame], list[pd.DataFrame]]:
+def split(training_data: Iterable[pd.DataFrame] | pd.DataFrame, *, recalibration_fraction=0.2) -> tuple[list[pd.DataFrame], list[pd.DataFrame]]:
     """
     Split the training data into training and recalibration data.
     """
+    # Handle the case where a single DataFrame is being split
+    SINGLE = isinstance(training_data, pd.DataFrame)
+    if SINGLE:
+        training_data = [training_data]
+
     # Split individually - cannot be done with train_test_split(*args) because of differing array sizes.
     individual_splits = [train_test_split(df, test_size=recalibration_fraction, random_state=9) for df in training_data]
     training_data = [l[0] for l in individual_splits]
     recalibration_data = [l[1] for l in individual_splits]
+
+    if SINGLE:
+        training_data, recalibration_data = training_data[0], recalibration_data[0]
+
     return training_data, recalibration_data
 
 

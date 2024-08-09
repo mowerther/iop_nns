@@ -77,33 +77,41 @@ networks = [bnn_mcd, bnn_dc, mdn, ensemble, rnn]
 gloria = Parameter("gloria", "GLORIA+")
 prisma = Parameter("prisma", "PRISMA")
 
-# Scenarios 1, 2, 3
+# Scenarios 1, 2, 3 (GLORIA+)
 random_split = Parameter("random_split", "Random split", label_2lines="Random\nsplit")
 wd = Parameter("wd_split", "Within-distribution", label_2lines="Within-\ndistribution")
 ood = Parameter("ood_split", "Out-of-distribution", label_2lines="Out-of-\ndistribution")
 
-scenarios_123 = [random_split, wd, ood]
+training_123 = [random_split, wd, ood]
+testing_123 = {s: [s] for s in training_123}  # 1:1 match between training and testing scenarios
+scenarios_123 = training_123  # Scenarios for assessment
+
 wavelengths_123 = list(range(400, 701, 5))
 
 # PRISMA scenarios
 _insitu = r"$\it{in}$ $\it{situ}$"
-prisma_insitu = Parameter("prisma_1", f"{_insitu} vs. {_insitu}", label_2lines=f"{_insitu} vs.\n{_insitu}")
+prisma_insitu = Parameter("prisma_insitu", f"{_insitu} vs. {_insitu}", label_2lines=f"{_insitu} vs.\n{_insitu}")
 
-prisma_wd = Parameter("prisma_wd", f"Local knowledge")
-prisma_wd_ACOLITE = Parameter("prisma_wd_a", f"Local knowledge: ACOLITE", label_2lines=f"Local knowledge\nACOLITE")
-prisma_wd_L2 = Parameter("prisma_wd_l", f"Local knowledge: L2", label_2lines=f"Local knowledge\nL2")
+prisma_gen = Parameter("prisma_gen", "PRISMA: General")
+prisma_gen_L2 = Parameter("prisma_gen_l2", "General: L2", label_2lines="General\nL2")
+prisma_gen_ACOLITE = Parameter("prisma_gen_aco", "General: ACOLITE", label_2lines="General\nACOLITE")
 
-prisma_ood = Parameter("prisma_ood", f"General")
-prisma_ood_ACOLITE = Parameter("prisma_ood_a", f"General: ACOLITE", label_2lines=f"General\nACOLITE")
-prisma_ood_L2 = Parameter("prisma_ood_l", f"General: L2", label_2lines=f"General\nL2")
+prisma_lk = Parameter("prisma_lk", "PRISMA: Local knowledge")
+prisma_lk_L2 = Parameter("prisma_lk_2l", "Local knowledge: L2", label_2lines="Local knowledge\nL2")
+prisma_lk_ACOLITE = Parameter("prisma_lk_aco", "Local knowledge: ACOLITE", label_2lines="Local knowledge\nACOLITE")
 
-_prisma_ACOLITE = Parameter("prisma_a", f"ACOLITE")
-_prisma_L2 = Parameter("prisma_l", f"L2")
-
-scenarios_prisma = [prisma_insitu, prisma_wd_L2, prisma_wd_ACOLITE, prisma_ood_L2, prisma_ood_ACOLITE]
-scenarios_prisma_overview = [prisma_insitu, prisma_wd, prisma_ood]
-scenarios_prisma_sorted = [[prisma_insitu], [prisma_wd_L2, prisma_wd_ACOLITE], [prisma_ood_L2, prisma_ood_ACOLITE]]
+_prisma_L2 = Parameter("prisma_l2", "L2")
+_prisma_ACOLITE = Parameter("prisma_aco", "ACOLITE")
 _scenarios_prisma_sub = [_prisma_L2, _prisma_ACOLITE]
+
+testing_prisma = {prisma_gen: [prisma_insitu, prisma_gen_L2, prisma_gen_ACOLITE],
+                  prisma_lk: [prisma_lk_L2, prisma_lk_ACOLITE],}
+training_prisma = list(testing_prisma.keys())
+scenarios_prisma = [s for sub in testing_prisma.values() for s in sub]  # Flattened version of testing scenarios
+
+scenarios_prisma_overview = [prisma_insitu] + training_prisma  # General scenario descriptions
+scenarios_prisma_scatter = [prisma_insitu] + [sub[-2:] for sub in testing_prisma.values()]  # Specifically for scatter plots
+
 wavelengths_prisma = [406, 415, 423, 431, 438, 446, 453, 460, 468, 475, 482, 489, 497, 504, 512, 519, 527, 535, 542, 550, 559, 567, 575, 583, 592, 601, 609, 618, 627, 636, 645, 655, 664, 674, 684, 694]
 
 
