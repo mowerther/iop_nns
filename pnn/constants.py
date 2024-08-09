@@ -97,7 +97,7 @@ prisma_gen_L2 = Parameter("prisma_gen_l2", "General: L2", label_2lines="General\
 prisma_gen_ACOLITE = Parameter("prisma_gen_aco", "General: ACOLITE", label_2lines="General\nACOLITE")
 
 prisma_lk = Parameter("prisma_lk", "PRISMA: Local knowledge")
-prisma_lk_L2 = Parameter("prisma_lk_2l", "Local knowledge: L2", label_2lines="Local knowledge\nL2")
+prisma_lk_L2 = Parameter("prisma_lk_l2", "Local knowledge: L2", label_2lines="Local knowledge\nL2")
 prisma_lk_ACOLITE = Parameter("prisma_lk_aco", "Local knowledge: ACOLITE", label_2lines="Local knowledge\nACOLITE")
 
 _prisma_L2 = Parameter("prisma_l2", "L2")
