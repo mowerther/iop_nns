@@ -44,6 +44,9 @@ if args.prisma:
         pnn.output.plot_mdsa(metrics_recal, scenarios=scenarios, tag=f"{tag}_recal")
     print("Saved MdSA plot")
 
+# MdSA stats
+pnn.output.print_mdsa_range(metrics, scenarios=scenarios, variables=iops)
+
 # Coverage plot
 if args.recal:
     pnn.output.plot_coverage_with_recal(metrics, metrics_recal, scenarios=scenarios, groups=iops, tag=tag)
@@ -59,10 +62,10 @@ if args.recal:
     median_indices_recal, median_metrics_recal = pnn.modeloutput.select_median_metrics(metrics_recal)
 
 # MdSA
-pnn.output.print_metric(median_metrics)
+pnn.output.print_mdsa(median_metrics)
 if args.recal:
     print("Recalibration difference:")
-    pnn.output.print_metric_difference(metrics, metrics_recal, median_metrics, median_metrics_recal)
+    pnn.output.print_mdsa_difference(metrics, metrics_recal, median_metrics, median_metrics_recal)
 
 # Miscalibration area
 if args.recal:

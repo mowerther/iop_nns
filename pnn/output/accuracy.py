@@ -1,6 +1,7 @@
 """
 Plots that show the accuracy of estimates.
 """
+from functools import partial
 from itertools import product
 from pathlib import Path
 from sys import stdout
@@ -265,7 +266,7 @@ def plot_mdsa(data: pd.DataFrame, *,
     plt.close()
 
 
-## Print metrics
+### PRINT METRICS
 def _format_float(number: float) -> str:
     return f"{number:.1f}"
 
@@ -275,9 +276,42 @@ def _dataframe_to_string(data: pd.DataFrame, **kwargs) -> str:
 def _select_metric(data: pd.DataFrame, metric: c.Parameter, columns: Iterable[c.Parameter]=c.iops) -> pd.DataFrame:
     return data[metric].unstack()[columns]
 
+## Compare metrics across scenarios, architectures, etc.
+def print_metric_range(metrics_all: pd.DataFrame, metric: c.Parameter, *,
+                         scenarios: Iterable[c.Parameter]=c.scenarios_123, variables: Iterable[c.Parameter]=c.iops) -> None:
+    """
+    For one metric, print its median, maximum etc. across the N different model instances.
+    """
+    data = _select_metric(metrics_all, metric)
+    data_over_instances = data.groupby(c.scenario_network, sort=False)
 
-def print_metric(data: pd.DataFrame, *,
-                 metric: c.Parameter=c.mdsa, variables: Iterable[c.Parameter]=c.iops,
+    # Median value between N instances
+    median_over_instances = data_over_instances.median()
+    print()
+    print(f"Median {metric.label}:")
+    print(_dataframe_to_string(median_over_instances))
+    print()
+
+    # Maximum value between N instances
+    max_over_instances = data_over_instances.max()
+    print()
+    print(f"Maximum {metric.label}:")
+    print(_dataframe_to_string(max_over_instances))
+    print()
+
+    # Relative range
+    std_over_instances = data_over_instances.std()
+    std_over_instances_pct = 100 * std_over_instances / median_over_instances
+    print()
+    print(f"Standard deviation in {metric.label}, relative to the median [%]:")
+    print(_dataframe_to_string(std_over_instances_pct))
+    print()
+
+print_mdsa_range = partial(print_metric_range, metric=c.mdsa)
+
+## Print difference between normal and recalibrated models
+def print_metric(data: pd.DataFrame, metric: c.Parameter, *,
+                 variables: Iterable[c.Parameter]=c.iops,
                  saveto: Path | str=stdout) -> None:
     """
     Print the values for one metric.
@@ -290,8 +324,8 @@ def print_metric(data: pd.DataFrame, *,
     print()
 
 
-def print_metric_difference(metrics_all: pd.DataFrame, metrics_all_recal: pd.DataFrame, metrics_median: pd.DataFrame, metrics_median_recal: pd.DataFrame, *,
-                            metric: c.Parameter=c.mdsa, variables: Iterable[c.Parameter]=c.iops,
+def print_metric_difference(metrics_all: pd.DataFrame, metrics_all_recal: pd.DataFrame, metrics_median: pd.DataFrame, metrics_median_recal: pd.DataFrame, metric: c.Parameter, *,
+                            variables: Iterable[c.Parameter]=c.iops,
                             saveto: Path | str=stdout) -> None:
     """
     For one metric, print the difference between the without-recalibration and with-recalibration cases, in absolute terms and relative to the standard deviation between model instances.
@@ -313,3 +347,6 @@ def print_metric_difference(metrics_all: pd.DataFrame, metrics_all_recal: pd.Dat
     print(f"Difference in {metric.label} -- as % of the standard deviation:")
     print(_dataframe_to_string(metrics_diff_relative), file=saveto)
     print()
+
+print_mdsa = partial(print_metric, metric=c.mdsa)
+print_mdsa_difference = partial(print_metric_difference, metric=c.mdsa)
