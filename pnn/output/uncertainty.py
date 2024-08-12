@@ -332,7 +332,9 @@ def _plot_calibration_curves_base(axs: np.ndarray[plt.Axes], calibration_curves:
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.set_aspect("equal")
-        ax.locator_params(axis="both", nbins=5)  # Creates one spurious xtick that I have no idea how to deal with, but probably no one will notice
+        ax.set_xticks(np.linspace(0, 1, 6))
+        ax.set_yticks(np.linspace(0, 1, 6))
+        ax.tick_params(axis="x", rotation=90)
 
     # Labels
     for ax, title in zip(axs[0], columns):
@@ -378,9 +380,14 @@ def plot_calibration_curves_with_recal(calibration_curves: pd.DataFrame, calibra
     """
     Plot calibration curves (expected vs. observed).
     """
+    # Setup: choose horizontal or vertical stacking
+    STACK_HORIZONTALLY = (len(columns) < 3)
+    figsize = (4*len(columns), 1.5*len(rows)) if STACK_HORIZONTALLY else (2*len(columns), 4*len(rows))
+    subfig_layout = (1, 2) if STACK_HORIZONTALLY else (2, 1)
+
     # Create figure
-    fig = plt.figure(figsize=(2*len(columns), 4*len(rows)), layout="constrained")
-    subfigs = fig.subfigures(nrows=2, hspace=1.0/fig.get_figheight())
+    fig = plt.figure(figsize=figsize, layout="constrained")
+    subfigs = fig.subfigures(*subfig_layout, hspace=1.0/fig.get_figheight(), wspace=1.0/fig.get_figwidth())
     labels = ["Without recalibration", "With recalibration"]
 
     nrows = len(rows)
