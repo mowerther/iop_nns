@@ -16,7 +16,7 @@ args = parser.parse_args()
 
 
 ### SELECT GLORIA OR PRISMA
-tag, scenarios, _ = pnn.data.select_scenarios(prisma=args.prisma)
+tag, scenarios, iops, *_ = pnn.data.select_scenarios(prisma=args.prisma)
 
 
 ### MODEL METRICS
@@ -46,7 +46,7 @@ if args.prisma:
 
 # Coverage plot
 if args.recal:
-    pnn.output.plot_coverage_with_recal(metrics, metrics_recal, scenarios=scenarios, tag=tag)
+    pnn.output.plot_coverage_with_recal(metrics, metrics_recal, scenarios=scenarios, groups=iops, tag=tag)
 else:
     pnn.output.plot_coverage(metrics, scenarios=scenarios, tag=tag)
 print("Saved coverage plot")
@@ -66,7 +66,7 @@ if args.recal:
 
 # Miscalibration area
 if args.recal:
-    pnn.output.miscalibration_area_heatmap(median_metrics, median_metrics_recal, scenarios=scenarios, tag=tag)
+    pnn.output.miscalibration_area_heatmap(median_metrics, median_metrics_recal, scenarios=scenarios, variables=iops, tag=tag)
 print("Saved miscalibration area plot")
 
 
@@ -94,14 +94,14 @@ uncertainty_averages = pnn.aggregate.average_uncertainty(results)
 pnn.output.plot_uncertainty_heatmap(uncertainty_averages, scenarios=scenarios, tag=tag)
 if args.recal:
     uncertainty_averages_recal = pnn.aggregate.average_uncertainty(results_recal)
-    pnn.output.plot_uncertainty_heatmap_with_recal(uncertainty_averages, uncertainty_averages_recal, scenarios=scenarios, tag=tag)
+    pnn.output.plot_uncertainty_heatmap_with_recal(uncertainty_averages, uncertainty_averages_recal, scenarios=scenarios, variables=iops, tag=tag)
 print("Saved uncertainty heatmap plot")
 
 # Calibration curves
 calibration_curves = pnn.aggregate.calibration_curve(results)
 if args.recal:
     calibration_curves_recal = pnn.aggregate.calibration_curve(results_recal)
-    pnn.output.plot_calibration_curves_with_recal(calibration_curves, calibration_curves_recal, rows=scenarios, tag=tag)
+    pnn.output.plot_calibration_curves_with_recal(calibration_curves, calibration_curves_recal, rows=scenarios, columns=iops, tag=tag)
 else:
     pnn.output.plot_calibration_curves(calibration_curves, rows=scenarios, tag=tag)
 print("Saved calibration curve plot")

@@ -21,18 +21,19 @@ def _find_rrs_columns(data: pd.DataFrame) -> list[str]:
 
 
 ### PRE-PROCESSING
-def select_scenarios(prisma: bool) -> tuple[c.Parameter, list[c.Parameter], Callable]:
+def select_scenarios(prisma: bool) -> tuple[c.Parameter, list[c.Parameter], list[c.Parameter], Callable]:
     """
     Select the desired scenarios - GLORIA (`prisma=False`) or PRISMA (`prisma=True`).
     Returns:
         - Label (GLORIA or PRISMA)
         - Scenarios for plotting: flat list
+        - IOPs for plotting: flat list
         - Function to load data
     """
     if prisma:
-        return c.prisma, c.scenarios_prisma, read_prisma_data
+        return c.prisma, c.scenarios_prisma, c.iops_aph, read_prisma_data
     else:
-        return c.gloria, c.scenarios_123, read_scenario123_data
+        return c.gloria, c.scenarios_123, c.iops, read_scenario123_data
 
 
 @dataclass

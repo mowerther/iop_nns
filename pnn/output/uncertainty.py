@@ -123,7 +123,9 @@ def plot_uncertainty_heatmap_with_recal(data: pd.DataFrame, data_recal: pd.DataF
     nrows_recal = len(uncertainties_recal)
     nrows = nrows_data + nrows_recal
     ncols = len(scenarios)
-    width, height = 3.33*ncols, 2.2*nrows
+    ncols_data = len(variables)
+    width = max(0.5*ncols*ncols_data, 9.6)
+    height = 2.2*nrows
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(width, height), gridspec_kw={"wspace": -1, "hspace": 0}, layout="constrained", squeeze=False)
 
     # Plot data
@@ -192,7 +194,7 @@ def plot_coverage(data: pd.DataFrame, *,
 
 ## Plot coverage per IOP, network, scenario -- with recalibrated data
 def plot_coverage_with_recal(data: pd.DataFrame, data_recal: pd.DataFrame, *,
-                             scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                             scenarios: Iterable[c.Parameter]=c.scenarios_123, groups: Iterable[c.Parameter]=c.iops,
                              saveto: Path | str=c.output_path/"uncertainty_coverage_recal.pdf", tag: Optional[str]=None) -> None:
     """
     Box plot showing the coverage factor (pre-calculated).
@@ -203,14 +205,16 @@ def plot_coverage_with_recal(data: pd.DataFrame, data_recal: pd.DataFrame, *,
     # Generate figure ; columns are split types
     nrows = 2
     ncols = len(scenarios)
-    fig = plt.figure(figsize=(3*ncols, 5.7), layout="constrained")
+    ngroups = len(groups)
+    width = max(0.5*ngroups*ncols, 8.5)  # Dynamic width, with a minimum value
+    fig = plt.figure(figsize=(width, 5.7), layout="constrained")
     subfigs = fig.subfigures(nrows=nrows, hspace=0.1)
     labels = ["Without recalibration", "With recalibration"]
 
     # Plot
     for sfig, df, title in zip(subfigs, [data, data_recal], labels):
         axs = sfig.subplots(nrows=1, ncols=ncols, sharex=True, sharey=True, squeeze=False)
-        _plot_grouped_values(axs, df, colparameters=scenarios, rowparameters=[c.coverage], groups=c.iops, groupmembers=c.networks, apply_titles=title_type)
+        _plot_grouped_values(axs, df, colparameters=scenarios, rowparameters=[c.coverage], groups=groups, groupmembers=c.networks, apply_titles=title_type)
 
         # k lines
         add_coverage_k_lines(*axs[0])
@@ -263,18 +267,20 @@ def miscalibration_area_heatmap(data: pd.DataFrame, data_recal: pd.DataFrame, *,
     data, data_recal = [df.stack().unstack("variable").reorder_levels(new_order) for df in (data, data_recal)]
 
     # Calculate miscalibration area difference
-    metric_diff = c.Parameter(f"{metric.name}_diff", f"{metric.label} difference", cmap=c.cmap_difference, symmetric=True, vmin=-diff_range, vmax=diff_range)
+    metric_diff = c.Parameter(f"{metric.name}_diff", f"{metric.label}\ndifference", cmap=c.cmap_difference, symmetric=True, vmin=-diff_range, vmax=diff_range)
     data_diff = data_recal.loc[metric] - data.loc[metric]
     data_diff = pd.concat({metric_diff.name: data_diff})
 
     # Create figure
     nrows = len(c.networks)
-    ncols = 3
     nrows_data = len(scenarios)
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(13, 14), gridspec_kw={"hspace": 0.25, "wspace": 0.02})
+    ncols = 3
+    ncols_data = len(variables)
+    width = max(0.72*ncols*ncols_data, 8)
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(width, 14), gridspec_kw={"hspace": 0.25, "wspace": 0.02})
 
     # Plot main metric  --  note that axs is being transposed, so rows <--> columns
-    plot_heatmap = partial(_heatmap, colparameters=c.networks, datarowparameters=scenarios, datacolparameters=variables, colorbar_location="bottom", precision=precision)
+    plot_heatmap = partial(_heatmap, colparameters=c.networks, datarowparameters=scenarios, datacolparameters=variables, colorbar_location="bottom", precision=precision, colorbar_tick_rotation=45)
     plot_heatmap(axs[np.newaxis, :, 0], data, rowparameters=[metric], apply_titles=False)
     plot_heatmap(axs[np.newaxis, :, 1], data_recal, rowparameters=[metric], apply_titles=True)
     plot_heatmap(axs[np.newaxis, :, 2], data_diff, rowparameters=[metric_diff], apply_titles=False)

@@ -182,7 +182,7 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
              datarowparameters: Iterable[c.Parameter], datacolparameters: Iterable[c.Parameter],
              *,
              apply_titles: int=2, remove_ticks=True, precision: int=0,
-             colorbar_location: str="right", colorbar_pad: Optional[float]=None, colorbar_shrink: Optional[float]=None, colorbar_tag: Optional[str]="") -> None:
+             colorbar_location: str="right", colorbar_pad: Optional[float]=None, colorbar_shrink: Optional[float]=None, colorbar_tag: Optional[str]="", colorbar_tick_rotation: Optional[float]=0) -> None:
     """
     Plot a heatmap with text.
     For a DataFrame with at least 2 index levels and 1 column level, plot them as follows:
@@ -243,6 +243,7 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
         cb = fig.colorbar(im, ax=ax_row, location=colorbar_location, fraction=0.1, pad=colorbar_pad, shrink=colorbar_shrink, extend=rowparam.extend_cbar)
         cb.set_label(label=f"{rowparam.label}{colorbar_tag}", weight="bold")
         cb.locator = ticker.MaxNLocator(nbins=5)
+        cb.ax.tick_params(rotation=colorbar_tick_rotation)
         cb.update_ticks()
 
     # Labels

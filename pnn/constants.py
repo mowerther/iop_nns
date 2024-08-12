@@ -153,8 +153,13 @@ aNAP_675 = Parameter("aNAP_675", f"$a_{_NAP}$(675)", label_2lines=f"$a_{_NAP}$\n
 
 iops = [aph_443, aph_675, aCDOM_443, aCDOM_675, aNAP_443, aNAP_675]
 iops_names = [iop.name for iop in iops]
-iops_443 = [iop for iop in iops if "443" in iop.name]
-iops_675 = [iop for iop in iops if "675" in iop.name]
+
+_iop_subset = lambda substring: [iop for iop in iops if substring in iop.name]
+iops_aph = _iop_subset("aph")
+iops_aCDOM = _iop_subset("aCDOM")
+iops_aNAP = _iop_subset("aNAP")
+iops_443 = _iop_subset("443")
+iops_675 = _iop_subset("675")
 
 
 ### METRICS
