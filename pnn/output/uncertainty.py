@@ -401,6 +401,14 @@ def plot_calibration_curves_with_recal(calibration_curves: pd.DataFrame, calibra
         # Recal labels
         sfig.suptitle(title, fontweight="bold", fontsize=12)
 
+    # Remove duplicate labels for horizontal plot
+    if STACK_HORIZONTALLY:
+        fig.supxlabel(subfigs[0].get_supxlabel())
+        fig.supylabel(subfigs[0].get_supylabel())
+        for sfig in subfigs:
+            sfig.supxlabel(None)
+            sfig.supylabel(None)
+
     # Plot legend outside the subplots
     add_legend_below_figure(fig, c.networks)
 
