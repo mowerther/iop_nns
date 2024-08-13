@@ -106,6 +106,14 @@ def _apply_titles(axs: Iterable[plt.Axes], parameters: Iterable[c.Parameter] | c
         ax.set_title(getattr(param, label_type))
 
 
+def _format_float(number: float) -> str:
+    return f"{number:.1f}"
+
+
+def _dataframe_to_string(data: pd.DataFrame, **kwargs) -> str:
+    return data.to_string(float_format=_format_float, **kwargs)
+
+
 ### PLOTTING FUNCTIONS
 ## Grouped metrics - useful for boxplots, lollipops, etc.
 def _plot_grouped_values(axs: np.ndarray[plt.Axes], data: pd.DataFrame,

@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 from matplotlib import transforms
 
 from .. import constants as c
-from .common import IOP_SCALE, _heatmap, _plot_grouped_values, add_legend_below_figure, saveto_append_tag, title_type_for_scenarios
+from .common import IOP_SCALE, _dataframe_to_string, _heatmap, _plot_grouped_values, add_legend_below_figure, saveto_append_tag, title_type_for_scenarios
 
 
 ### IOP VALUE VS. UNCERTAINTY (BINNED)
@@ -407,3 +407,19 @@ def plot_calibration_curves_with_recal(calibration_curves: pd.DataFrame, calibra
     saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto, bbox_inches="tight")
     plt.close()
+
+
+### PRINT STATISTICS
+## Ratios between scenarios
+def compare_uncertainty_scenarios_123(data: pd.DataFrame, *,
+                                      uncertainty: c.Parameter=c.total_unc_pct, variables: Iterable[c.Parameter]=c.iops) -> None:
+    """
+    Compare the predicted uncertainty across the three scenarios.
+    `data` should be averaged uncertainties.
+    """
+    data = data.loc[uncertainty]
+    ratios = data.loc[[c.wd, c.ood]] / data.loc[c.random_split]
+    print()
+    print(f"Median {uncertainty.label}, ratio between scenario and {c.random_split}:")
+    print(_dataframe_to_string(ratios))
+    print()

@@ -15,7 +15,7 @@ from matplotlib import ticker
 
 from .. import constants as c
 from .. import metrics as m
-from .common import IOP_LIMS, IOP_LIMS_PRISMA, IOP_SCALE, _plot_grouped_values, add_legend_below_figure, label_topleft, saveto_append_tag, title_type_for_scenarios
+from .common import IOP_LIMS, IOP_LIMS_PRISMA, IOP_SCALE, _dataframe_to_string, _plot_grouped_values, add_legend_below_figure, label_topleft, saveto_append_tag, title_type_for_scenarios
 
 
 ### SCATTER PLOTS
@@ -267,12 +267,6 @@ def plot_mdsa(data: pd.DataFrame, *,
 
 
 ### PRINT METRICS
-def _format_float(number: float) -> str:
-    return f"{number:.1f}"
-
-def _dataframe_to_string(data: pd.DataFrame, **kwargs) -> str:
-    return data.to_string(float_format=_format_float, **kwargs)
-
 def _select_metric(data: pd.DataFrame, metric: c.Parameter, columns: Iterable[c.Parameter]=c.iops) -> pd.DataFrame:
     return data[metric].unstack()[columns]
 

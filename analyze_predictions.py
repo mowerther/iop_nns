@@ -100,6 +100,10 @@ if args.recal:
     pnn.output.plot_uncertainty_heatmap_with_recal(uncertainty_averages, uncertainty_averages_recal, scenarios=scenarios, variables=iops, tag=tag)
 print("Saved uncertainty heatmap plot")
 
+# Average uncertainty: ratios between scenarios
+if not args.prisma:
+    pnn.output.compare_uncertainty_scenarios_123(uncertainty_averages)
+
 # Calibration curves
 calibration_curves = pnn.aggregate.calibration_curve(results)
 if args.recal:
