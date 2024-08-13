@@ -54,6 +54,9 @@ else:
     pnn.output.plot_coverage(metrics, scenarios=scenarios, tag=tag)
 print("Saved coverage plot")
 
+# Coverage text
+pnn.output.print_coverage_range(metrics)
+
 
 ### SELECT MEDIAN MODELS
 print("\n\n\n--- AVERAGE-PERFORMING MODEL ---")

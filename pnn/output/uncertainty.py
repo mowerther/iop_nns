@@ -15,6 +15,7 @@ from matplotlib import transforms
 
 from .. import constants as c
 from .common import IOP_SCALE, _dataframe_to_string, _heatmap, _plot_grouped_values, add_legend_below_figure, saveto_append_tag, title_type_for_scenarios
+from .common import print_metric_range
 
 
 ### IOP VALUE VS. UNCERTAINTY (BINNED)
@@ -431,3 +432,6 @@ def compare_uncertainty_scenarios_123(data: pd.DataFrame, *,
     print(f"Median {uncertainty.label}, ratio between scenario and {c.random_split}:")
     print(_dataframe_to_string(ratios))
     print()
+
+## Coverage range
+print_coverage_range = partial(print_metric_range, metric=c.coverage)

@@ -6,6 +6,8 @@ from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
+from pandas.core.groupby import GroupBy
+
 from matplotlib import pyplot as plt
 from matplotlib import colors, patches, ticker
 import matplotlib as mpl
@@ -85,6 +87,7 @@ def title_type_for_scenarios(scenarios: Iterable[c.Parameter]) -> int:
 
 
 ### HIDDEN HELPER FUNCTIONS
+## Plotting
 _label_types = {1: "label", 2: "label_2lines"}
 def _apply_titles(axs: Iterable[plt.Axes], parameters: Iterable[c.Parameter] | c.Parameter, label_type: int=2) -> None:
     """
@@ -106,12 +109,15 @@ def _apply_titles(axs: Iterable[plt.Axes], parameters: Iterable[c.Parameter] | c
         ax.set_title(getattr(param, label_type))
 
 
+## Text output
 def _format_float(number: float) -> str:
     return f"{number:.1f}"
 
-
 def _dataframe_to_string(data: pd.DataFrame, **kwargs) -> str:
     return data.to_string(float_format=_format_float, **kwargs)
+
+def _select_metric(data: pd.DataFrame, metric: c.Parameter, columns: Iterable[c.Parameter]=c.iops) -> pd.DataFrame:
+    return data[metric].unstack()[columns]
 
 
 ### PLOTTING FUNCTIONS
@@ -273,3 +279,39 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
             # Check for unlabelled yticks
             if not ax.yaxis.get_majorticklabels():
                 ax.tick_params(axis="y", which="both", left=False)
+
+
+### TEXT OUTPUT
+## Compare metrics across scenarios, architectures, etc.
+_metric_statistics = {"Minimum": GroupBy.min, "Median": GroupBy.median, "Maximum": GroupBy.max}
+def print_metric_range(metrics_all: pd.DataFrame, metric: c.Parameter, *,
+                       scenarios: Iterable[c.Parameter]=c.scenarios_123, variables: Iterable[c.Parameter]=c.iops) -> None:
+    """
+    For one metric, print its median, maximum etc. across the N different model instances.
+    """
+    # Setup
+    data = _select_metric(metrics_all, metric)
+    data_over_instances = data.groupby(c.scenario_network, sort=False)
+
+    print("----------")
+    print(f"Statistics for {metric.label}")
+
+    # Statistics over instances
+    for label, func in _metric_statistics.items():
+        stats_over_instances = func(data_over_instances)
+        print()
+        print(f"{label} {metric.label}:")
+        print(_dataframe_to_string(stats_over_instances))
+
+    # Relative range over instances
+    std_over_instances_pct = 100 * data_over_instances.std() / data_over_instances.median()
+    print()
+    print(f"Standard deviation in {metric.label}, relative to the median [%]:")
+    print(_dataframe_to_string(std_over_instances_pct))
+
+    # Median by scenario/network/IOP
+    for level in ["scenario", "network", "variable"]:
+        median_by_level = metrics_all[metric].groupby(level, sort=False).median()
+        print()
+        print(f"Median {metric.label} by {level}:")
+        print(_dataframe_to_string(median_by_level))

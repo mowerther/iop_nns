@@ -15,7 +15,8 @@ from matplotlib import ticker
 
 from .. import constants as c
 from .. import metrics as m
-from .common import IOP_LIMS, IOP_LIMS_PRISMA, IOP_SCALE, _dataframe_to_string, _plot_grouped_values, add_legend_below_figure, label_topleft, saveto_append_tag, title_type_for_scenarios
+from .common import IOP_LIMS, IOP_LIMS_PRISMA, IOP_SCALE, _plot_grouped_values, add_legend_below_figure, label_topleft, saveto_append_tag, title_type_for_scenarios
+from .common import _dataframe_to_string, _select_metric, print_metric_range
 
 
 ### SCATTER PLOTS
@@ -267,40 +268,7 @@ def plot_mdsa(data: pd.DataFrame, *,
 
 
 ### PRINT METRICS
-def _select_metric(data: pd.DataFrame, metric: c.Parameter, columns: Iterable[c.Parameter]=c.iops) -> pd.DataFrame:
-    return data[metric].unstack()[columns]
-
 ## Compare metrics across scenarios, architectures, etc.
-def print_metric_range(metrics_all: pd.DataFrame, metric: c.Parameter, *,
-                         scenarios: Iterable[c.Parameter]=c.scenarios_123, variables: Iterable[c.Parameter]=c.iops) -> None:
-    """
-    For one metric, print its median, maximum etc. across the N different model instances.
-    """
-    data = _select_metric(metrics_all, metric)
-    data_over_instances = data.groupby(c.scenario_network, sort=False)
-
-    # Median value between N instances
-    median_over_instances = data_over_instances.median()
-    print()
-    print(f"Median {metric.label}:")
-    print(_dataframe_to_string(median_over_instances))
-    print()
-
-    # Maximum value between N instances
-    max_over_instances = data_over_instances.max()
-    print()
-    print(f"Maximum {metric.label}:")
-    print(_dataframe_to_string(max_over_instances))
-    print()
-
-    # Relative range
-    std_over_instances = data_over_instances.std()
-    std_over_instances_pct = 100 * std_over_instances / median_over_instances
-    print()
-    print(f"Standard deviation in {metric.label}, relative to the median [%]:")
-    print(_dataframe_to_string(std_over_instances_pct))
-    print()
-
 print_mdsa_range = partial(print_metric_range, metric=c.mdsa)
 
 ## Print difference between normal and recalibrated models
