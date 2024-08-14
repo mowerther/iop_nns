@@ -503,22 +503,87 @@ recalibration_change_in_mdsa = partial(recalibration_improvement, statistic=c.md
 
 
 ## Threshold for applying recalibration
+def bin_by_column(data: pd.DataFrame, column: c.Parameter, *,
+                  vmin: Optional[float]=None, vmax: Optional[float]=None, binsize: float=0.01, N: Optional[int]=None, log=False) -> Callable:
+    """
+    Generate a function for grouping data into bins, as determined by one column (e.g. an IOP or a metric).
+    If N is specified, use a linear/logarithmic spacing.
+    If vmin and vmax are not specified, use the information from the Parameter object.
+    """
+    # Determine min/max if none were provided
+    if vmin is None:
+        vmin = column.vmin
+    if vmax is None:
+        vmax = column.vmax
+
+    # Log-transform if desired
+    if log:
+        vmin, vmax = np.log10(vmin), np.log10(vmax)
+
+    # Create bins
+    if N is None:
+        func = partial(np.arange, step=binsize)
+    else:
+        func = partial(np.linspace, num=N)
+    bins = func(vmin, vmax)
+    if log:
+        bins = 10**bins
+
+    # Create cut and groupby function
+    cut = pd.cut(data[column], bins)
+    group = partial(pd.DataFrame.groupby, by=cut, observed=False, sort=True)
+
+    return bins, cut, group
+
+def plot_recalibration_MA(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
+                          binsize: float=0.01,
+                          saveto: str | Path=c.output_path/"miscalibration_scatter.pdf", tag: Optional[str]=None) -> None:
+    """
+    Based on the without- and with-recalibration metrics, plot the miscalibration improvement as a function of original miscalibration area.
+    """
+    # Setup: data
+    bins, cut, group = bin_by_column(metrics, c.miscalibration_area, vmax=1, binsize=binsize)
+    diff = metrics_recal[c.miscalibration_area] - metrics[c.miscalibration_area]
+    diff_binned = group(diff)
+    diff_median_ci = median_with_confidence_interval(diff_binned)
+
+    # Setup: figure
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4), layout="constrained")
+
+    # Plot data
+    x = diff_median_ci.index.categories.mid
+    ax.scatter(metrics[c.miscalibration_area], diff, s=1, color="C2", label="Individual\ncomparisons")
+    ax.plot(x, diff_median_ci["median"], linewidth=3, label="Binned median", color="black")
+    ax.fill_between(x, diff_median_ci["ci_lower"], diff_median_ci["ci_upper"], alpha=0.7, label="Binned CI", color="grey", edgecolor="black")
+    ax.axhline(0, color="black", linewidth=2)
+
+    # Labels
+    ax.set_xlabel(f"{c.miscalibration_area.label}\n(without recalibration)")
+    ax.set_ylabel(f"Difference in {c.miscalibration_area.label.lower()}")
+    ax.set_xlim(0, metrics[c.miscalibration_area].max())
+    ax.set_aspect("equal")
+    ax.legend(loc="upper right", scatterpoints=5)
+
+    # Save
+    saveto = saveto_append_tag(saveto, tag)
+    plt.savefig(saveto, bbox_inches="tight")
+    plt.close()
+
+
 def recalibration_MA_threshold(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *, binsize: float=0.01) -> None:
     """
     Based on the without- and with-recalibration metrics, determine the threshold miscalibration area at which recalibration becomes useful.
     """
     # Setup
-    bins = np.arange(0, 1, binsize)  # Bins in MA
-    cut = pd.cut(metrics[c.miscalibration_area], bins)  # Bin indices
-    _group = partial(pd.DataFrame.groupby, by=cut, observed=True, sort=True)
+    *_, group = bin_by_column(metrics, c.miscalibration_area, vmax=1, binsize=binsize)
 
     # Calculate statistics
     diff = metrics_recal[c.miscalibration_area] - metrics[c.miscalibration_area]
-    diff_binned = _group(diff)
+    diff_binned = group(diff)
     diff_median_ci = median_with_confidence_interval(diff_binned)
 
     # Fraction improved
-    number_total, number_improved, percentage_improved = calculate_number_improved(diff, _group, improve_is_increase=False)
+    number_total, number_improved, percentage_improved = calculate_number_improved(diff, group, improve_is_increase=False)
 
     # Combine results
     results = diff_median_ci.copy()

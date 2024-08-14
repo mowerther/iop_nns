@@ -60,6 +60,7 @@ print("Saved coverage plot")
 if args.recal:
     pnn.output.recalibration_improvement(metrics, metrics_recal)
     pnn.output.recalibration_MA_threshold(metrics, metrics_recal)
+    pnn.output.plot_recalibration_MA(metrics, metrics_recal, tag=tag)
 
 ### SELECT MEDIAN MODELS
 print("\n\n\n--- AVERAGE-PERFORMING MODEL ---")
