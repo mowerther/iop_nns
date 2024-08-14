@@ -529,6 +529,7 @@ def recalibration_MA_threshold(metrics: pd.DataFrame, metrics_recal: pd.DataFram
     ci_upper_improved = (results["ci_upper"] < 0).idxmax()
     percentage_over_50 = (results[percentage_improved.name] > 50).idxmax()  # Essentially equivalent to median_improved
     percentage_over_75 = (results[percentage_improved.name] > 75).idxmax()
+    threshold = ci_upper_improved.left  # Lower limit of interval
 
     print()
     print(dash)
@@ -537,4 +538,14 @@ def recalibration_MA_threshold(metrics: pd.DataFrame, metrics_recal: pd.DataFram
     print(f"The upper CI is < 0: {ci_upper_improved}")
     print(f"More than 50% are improved: {percentage_over_50}")
     print(f"More than 75% are improved: {percentage_over_75}")
+    print(f"Recommended threshold: {threshold}")
+    print()
+
+    # Coverage above and below threshold  -- note: this needs to be improved because it currently assumes a 1-to-1 relationship between without- and with-recalibration models, which is not correct
+    coverage_below = median_with_confidence_interval(metrics_recal.loc[metrics[c.miscalibration_area] <= threshold][[c.coverage]])
+    coverage_above = median_with_confidence_interval(metrics_recal.loc[metrics[c.miscalibration_area] >  threshold][[c.coverage]])
+    print(f"Coverage below threshold:\n{coverage_below}")
+    print()
+    print(f"Coverage above threshold:\n{coverage_above}")
+
     print(dash)
