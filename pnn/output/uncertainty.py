@@ -562,7 +562,7 @@ def plot_recalibration_MA(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
     ax.set_ylabel(f"Difference in {c.miscalibration_area.label.lower()}")
     ax.set_xlim(0, metrics[c.miscalibration_area].max())
     ax.set_aspect("equal")
-    ax.legend(loc="upper right", scatterpoints=5)
+    ax.legend(loc="upper right", scatterpoints=5, fontsize="small")
 
     # Save
     saveto = saveto_append_tag(saveto, tag)
