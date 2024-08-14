@@ -15,7 +15,7 @@ from matplotlib import transforms
 
 from .. import constants as c
 from .common import IOP_SCALE, _dataframe_to_string, _heatmap, _plot_grouped_values, add_legend_below_figure, saveto_append_tag, title_type_for_scenarios
-from .common import print_metric_range
+from .common import dash, print_metric_range
 
 
 ### IOP VALUE VS. UNCERTAINTY (BINNED)
@@ -421,17 +421,69 @@ def plot_calibration_curves_with_recal(calibration_curves: pd.DataFrame, calibra
 ### PRINT STATISTICS
 ## Ratios between scenarios
 def compare_uncertainty_scenarios_123(data: pd.DataFrame, *,
-                                      uncertainty: c.Parameter=c.total_unc_pct, variables: Iterable[c.Parameter]=c.iops) -> None:
+                                      uncertainty: c.Parameter=c.total_unc_pct) -> None:
     """
     Compare the predicted uncertainty across the three scenarios.
     `data` should be averaged uncertainties.
     """
     data = data.loc[uncertainty]
     ratios = data.loc[[c.wd, c.ood]] / data.loc[c.random_split]
-    print()
+    print(dash)
     print(f"Median {uncertainty.label}, ratio between scenario and {c.random_split}:")
     print(_dataframe_to_string(ratios))
     print()
 
 ## Coverage range
 print_coverage_range = partial(print_metric_range, metric=c.coverage)
+
+## Improvement from recalibration
+def recalibration_improvement(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
+                              statistic: c.Parameter=c.miscalibration_area, improve_is_increase=False,
+                              variables: Iterable[c.Parameter]=c.iops) -> None:
+    """
+    Compare the metrics before and after recalibration and see if a certain statistic (default: miscalibration area) increased or decreased.
+    If `improve_is_increase` is True (default: False), then an increase in the statistic is treated as an improvement; if False, a decrease.
+        Use False for MdSA, Miscalibration area, etc. Use True for R², etc.
+    """
+    print()
+    print(dash)
+    _group = partial(pd.DataFrame.groupby, by=c.scenario_network, sort=False)
+
+    diff = metrics_recal[statistic] - metrics[statistic]
+    diff = diff.unstack()[variables]
+
+    # Median change
+    median_diff = _group(diff).median()
+    print(f"Median change in {statistic} with recalibration:")
+    print(_dataframe_to_string(median_diff))
+    print()
+
+    # Fraction increased - per scenario/network/variable
+    number_total = _group(diff).count()
+    number_decreased = _group(diff < 0).sum()  # sum adds up the Trues
+    number_increased = _group(diff > 0).sum()  # sum adds up the Trues
+    number_improved = number_increased if improve_is_increase else number_decreased  # Get inverse if increase is desired
+    percentage_improved = 100 * number_improved / number_total
+
+    print(f"Percentage of models where {statistic} improved with recalibration:")
+    print(_dataframe_to_string(percentage_improved))
+
+    # Fraction increased: group by individual levels
+    for level in ["scenario", "network"]:
+        # Median change
+        diff_level = diff.stack().groupby(level, sort=False).median()
+        print(f"Median change in {statistic} with recalibration:")
+        print(_dataframe_to_string(diff_level, precision=3))
+        print()
+
+        # Percentage improved
+        _aggregate = lambda df: df.groupby(level, sort=False).sum().sum(axis=1)
+        percentage_improved_level = 100 * _aggregate(number_improved) / _aggregate(number_total)
+        print(f"Percentage of models where {statistic} improved with recalibration:")
+        print(_dataframe_to_string(percentage_improved_level))
+        print()
+
+    print(dash)
+
+
+recalibration_change_in_mdsa = partial(recalibration_improvement, statistic=c.mdsa, improve_is_increase=False)

@@ -1,6 +1,7 @@
 """
 Anything that needs to be shared between modules.
 """
+from functools import partial
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -111,11 +112,12 @@ def _apply_titles(axs: Iterable[plt.Axes], parameters: Iterable[c.Parameter] | c
 
 
 ## Text output
-def _format_float(number: float) -> str:
-    return f"{number:.1f}"
+def _format_float(number: float, *, precision: int=1) -> str:
+    return f"{number:.{precision}f}"
 
-def _dataframe_to_string(data: pd.DataFrame, **kwargs) -> str:
-    return data.to_string(float_format=_format_float, **kwargs)
+def _dataframe_to_string(data: pd.DataFrame, *, precision: int=1, **kwargs) -> str:
+    float_format = partial(_format_float, precision=precision)
+    return data.to_string(float_format=float_format, **kwargs)
 
 def _select_metric(data: pd.DataFrame, metric: c.Parameter, columns: Iterable[c.Parameter]=c.iops) -> pd.DataFrame:
     return data[metric].unstack()[columns]

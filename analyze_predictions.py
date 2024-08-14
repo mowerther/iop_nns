@@ -45,6 +45,9 @@ if args.prisma:
         pnn.output.plot_mdsa(metrics_recal, scenarios=scenarios, tag=f"{tag}_recal")
     print("Saved MdSA plot")
 
+if args.recal:
+    pnn.output.recalibration_change_in_mdsa(metrics, metrics_recal)
+
 # Coverage
 pnn.output.print_coverage_range(metrics)
 if args.recal:
@@ -52,6 +55,10 @@ if args.recal:
 else:
     pnn.output.plot_coverage(metrics, scenarios=scenarios, tag=tag)
 print("Saved coverage plot")
+
+# Miscalibration area
+if args.recal:
+    pnn.output.recalibration_improvement(metrics, metrics_recal)
 
 
 ### SELECT MEDIAN MODELS
