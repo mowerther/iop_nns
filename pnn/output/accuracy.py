@@ -288,6 +288,7 @@ def print_metric(data: pd.DataFrame, metric: c.Parameter, *,
 
 def print_metric_difference(metrics_all: pd.DataFrame, metrics_all_recal: pd.DataFrame, metrics_median: pd.DataFrame, metrics_median_recal: pd.DataFrame, metric: c.Parameter, *,
                             variables: Iterable[c.Parameter]=c.iops,
+                            precision: int=1,
                             saveto: Path | str=stdout) -> None:
     """
     For one metric, print the difference between the without-recalibration and with-recalibration cases, in absolute terms and relative to the standard deviation between model instances.
@@ -299,16 +300,16 @@ def print_metric_difference(metrics_all: pd.DataFrame, metrics_all_recal: pd.Dat
     metrics_diff = metrics_median_recal - metrics_median
     print()
     print(f"Difference in {metric.label}:")
-    print(_dataframe_to_string(metrics_diff), file=saveto)
+    print(_dataframe_to_string(metrics_diff, precision=precision), file=saveto)
     print()
 
     # Relative difference
     metrics_std, metrics_std_recal = [df.groupby(c.scenario_network).std() for df in (metrics_all, metrics_all_recal)]
-    metrics_diff_relative = metrics_diff / metrics_std * 100
+    metrics_diff_relative = metrics_diff / metrics_std
     print()
-    print(f"Difference in {metric.label} -- as % of the standard deviation:")
-    print(_dataframe_to_string(metrics_diff_relative), file=saveto)
+    print(f"Difference in {metric.label} -- relative to the standard deviation:")
+    print(_dataframe_to_string(metrics_diff_relative, precision=precision), file=saveto)
     print()
 
 print_mdsa = partial(print_metric, metric=c.mdsa)
-print_mdsa_difference = partial(print_metric_difference, metric=c.mdsa)
+print_mdsa_difference = partial(print_metric_difference, metric=c.mdsa, precision=0)
