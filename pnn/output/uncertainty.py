@@ -4,7 +4,7 @@ Plots that show the uncertainty of estimates.
 from functools import partial
 import itertools
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Callable, Iterable, Optional
 
 import numpy as np
 import pandas as pd
@@ -437,6 +437,23 @@ def compare_uncertainty_scenarios_123(data: pd.DataFrame, *,
 print_coverage_range = partial(print_metric_range, metric=c.coverage)
 
 ## Improvement from recalibration
+def calculate_number_improved(differences: pd.DataFrame, group_func: Callable, *, improve_is_increase=False) -> pd.DataFrame:
+    """
+    Calculate the percentage of improved values.
+    If `improve_is_increase` is True (default: False), then an increase in the statistic is treated as an improvement; if False, a decrease.
+        Use False for MdSA, Miscalibration area, etc. Use True for R², etc.
+    """
+    number_total = group_func(differences).count()
+    number_decreased = group_func(differences < 0).sum()  # sum adds up the Trues
+    number_increased = group_func(differences > 0).sum()  # sum adds up the Trues
+
+    number_improved = number_increased if improve_is_increase else number_decreased  # Get inverse if increase is desired
+    percentage_improved = 100 * number_improved / number_total
+
+    percentage_improved.name = "% improved"
+
+    return number_total, number_improved, percentage_improved
+
 def recalibration_improvement(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
                               statistic: c.Parameter=c.miscalibration_area, improve_is_increase=False,
                               variables: Iterable[c.Parameter]=c.iops) -> None:
@@ -458,13 +475,8 @@ def recalibration_improvement(metrics: pd.DataFrame, metrics_recal: pd.DataFrame
     print(_dataframe_to_string(median_diff))
     print()
 
-    # Fraction increased - per scenario/network/variable
-    number_total = _group(diff).count()
-    number_decreased = _group(diff < 0).sum()  # sum adds up the Trues
-    number_increased = _group(diff > 0).sum()  # sum adds up the Trues
-    number_improved = number_increased if improve_is_increase else number_decreased  # Get inverse if increase is desired
-    percentage_improved = 100 * number_improved / number_total
-
+    # Fraction improved - per scenario/network/variable
+    number_total, number_improved, percentage_improved = calculate_number_improved(diff, _group, improve_is_increase=improve_is_increase)
     print(f"Percentage of models where {statistic} improved with recalibration:")
     print(_dataframe_to_string(percentage_improved))
 
@@ -488,3 +500,41 @@ def recalibration_improvement(metrics: pd.DataFrame, metrics_recal: pd.DataFrame
 
 
 recalibration_change_in_mdsa = partial(recalibration_improvement, statistic=c.mdsa, improve_is_increase=False)
+
+
+## Threshold for applying recalibration
+def recalibration_MA_threshold(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *, binsize: float=0.01) -> None:
+    """
+    Based on the without- and with-recalibration metrics, determine the threshold miscalibration area at which recalibration becomes useful.
+    """
+    # Setup
+    bins = np.arange(0, 1, binsize)  # Bins in MA
+    cut = pd.cut(metrics[c.miscalibration_area], bins)  # Bin indices
+    _group = partial(pd.DataFrame.groupby, by=cut, observed=True, sort=True)
+
+    # Calculate statistics
+    diff = metrics_recal[c.miscalibration_area] - metrics[c.miscalibration_area]
+    diff_binned = _group(diff)
+    diff_median_ci = median_with_confidence_interval(diff_binned)
+
+    # Fraction improved
+    number_total, number_improved, percentage_improved = calculate_number_improved(diff, _group, improve_is_increase=False)
+
+    # Combine results
+    results = diff_median_ci.copy()
+    results[percentage_improved.name] = percentage_improved
+
+    # Find threshold indices
+    median_improved = (results["median"] < 0).idxmax()  # Index of first occurence of the maximum (True)
+    ci_upper_improved = (results["ci_upper"] < 0).idxmax()
+    percentage_over_50 = (results[percentage_improved.name] > 50).idxmax()  # Essentially equivalent to median_improved
+    percentage_over_75 = (results[percentage_improved.name] > 75).idxmax()
+
+    print()
+    print(dash)
+    print(f"{c.miscalibration_area.label} -- First interval in which")
+    print(f"The median is < 0: {median_improved}")
+    print(f"The upper CI is < 0: {ci_upper_improved}")
+    print(f"More than 50% are improved: {percentage_over_50}")
+    print(f"More than 75% are improved: {percentage_over_75}")
+    print(dash)
