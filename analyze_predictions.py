@@ -38,24 +38,20 @@ pnn.output.plot_accuracy_metrics(metrics, scenarios=scenarios, tag=tag)
 print("Saved accuracy metric plot")
 
 # MdSA plot
+pnn.output.print_mdsa_range(metrics, scenarios=scenarios, variables=iops)
 if args.prisma:
     pnn.output.plot_mdsa(metrics, scenarios=scenarios, tag=tag)
     if args.recal:
         pnn.output.plot_mdsa(metrics_recal, scenarios=scenarios, tag=f"{tag}_recal")
     print("Saved MdSA plot")
 
-# MdSA stats
-pnn.output.print_mdsa_range(metrics, scenarios=scenarios, variables=iops)
-
-# Coverage plot
+# Coverage
+pnn.output.print_coverage_range(metrics)
 if args.recal:
     pnn.output.plot_coverage_with_recal(metrics, metrics_recal, scenarios=scenarios, groups=iops, tag=tag)
 else:
     pnn.output.plot_coverage(metrics, scenarios=scenarios, tag=tag)
 print("Saved coverage plot")
-
-# Coverage text
-pnn.output.print_coverage_range(metrics)
 
 
 ### SELECT MEDIAN MODELS
