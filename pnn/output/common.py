@@ -286,6 +286,16 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
 
 ### TEXT OUTPUT
 ## Compare metrics across scenarios, architectures, etc.
+def median_with_confidence_interval(df: pd.DataFrame | GroupBy, **kwargs) -> pd.DataFrame:
+    """
+    Calculate the median with lower and upper bounds for a 1-sigma confidence interval.
+    """
+    stats = {"median": df.median(**kwargs),
+             "ci_lower": df.quantile(c.k1_lower, **kwargs),
+             "ci_upper": df.quantile(c.k1_upper, **kwargs)}
+    stats = pd.DataFrame(stats)
+    return stats
+
 _relative_std = lambda df: 100 * df.std() / df.median()  # df can also be a groupby
 _metric_statistics = {"Minimum": GroupBy.min, "Median": GroupBy.median, "Maximum": GroupBy.max,
                       "Standard deviation relative to the median [%]": _relative_std}
@@ -310,10 +320,11 @@ def print_metric_range(metrics_all: pd.DataFrame, metric: c.Parameter, *,
 
     # Median by scenario/network/IOP
     for level in ["scenario", "network", "variable"]:
-        median_by_level = metrics_all[metric].groupby(level, sort=False).median()
+        metrics_by_level = metrics_all[metric].groupby(level, sort=False)
+        median_and_ci = median_with_confidence_interval(metrics_by_level)
         print()
-        print(f"Median {metric.label} by {level}:")
-        print(_dataframe_to_string(median_by_level))
+        print(f"Median {metric.label}, with CI, by {level}:")
+        print(_dataframe_to_string(median_and_ci))
 
     print(dash)
     print()

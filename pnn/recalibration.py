@@ -62,7 +62,7 @@ def apply_recalibration_single(recalibrator: Callable, predicted_mean: np.ndarra
     valid = np.isfinite(total_uncertainty)
 
     # Recalibrate
-    lower, upper = recalibrator(predicted_mean[valid], total_uncertainty[valid], 0.15865525393), recalibrator(predicted_mean[valid], total_uncertainty[valid], 0.84134474606)
+    lower, upper = recalibrator(predicted_mean[valid], total_uncertainty[valid], c.k1_lower), recalibrator(predicted_mean[valid], total_uncertainty[valid], c.k1_upper)
     new_uncertainty = (upper - lower) / 2
 
     # Convert back to variance, accounting for NaNs

@@ -15,7 +15,7 @@ from matplotlib import transforms
 
 from .. import constants as c
 from .common import IOP_SCALE, _dataframe_to_string, _heatmap, _plot_grouped_values, add_legend_below_figure, saveto_append_tag, title_type_for_scenarios
-from .common import dash, print_metric_range
+from .common import dash, median_with_confidence_interval, print_metric_range
 
 
 ### IOP VALUE VS. UNCERTAINTY (BINNED)
@@ -471,7 +471,8 @@ def recalibration_improvement(metrics: pd.DataFrame, metrics_recal: pd.DataFrame
     # Fraction increased: group by individual levels
     for level in ["scenario", "network"]:
         # Median change
-        diff_level = diff.stack().groupby(level, sort=False).median()
+        diff_level = diff.stack().groupby(level, sort=False)
+        diff_level = median_with_confidence_interval(diff_level)
         print(f"Median change in {statistic} with recalibration:")
         print(_dataframe_to_string(diff_level, precision=3))
         print()

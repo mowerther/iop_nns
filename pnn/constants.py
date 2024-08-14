@@ -26,6 +26,11 @@ m1 = r"m$^{-1}$"
 m2 = r"m$^{-2}$"
 
 
+### CONSTANTS
+k1_lower = 0.15865525393
+k1_upper = 0.84134474606
+
+
 ### PLOTTING
 _CMAP_N = 10
 cmap_uniform = plt.cm.cividis.resampled(_CMAP_N)
