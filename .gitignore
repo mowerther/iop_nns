@@ -1,3 +1,6 @@
+# Temporary folder for MDN verification
+mdn_redux/
+
 # Folders for input/output
 pnn_model_estimates/
 pnn_tf_models/
