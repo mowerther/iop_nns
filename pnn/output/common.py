@@ -33,6 +33,7 @@ IOP_LIMS = (1e-5, 1e1)
 IOP_LIMS_PRISMA = (1e-2, 1e1)
 IOP_SCALE = "log"
 IOP_TICKS = 10**np.arange(np.log10(IOP_LIMS[0]), np.log10(IOP_LIMS[1])+0.01)  # 10^-5, 10^-4, ..., 10^1
+dash = "----------"  # nmixx-approved
 
 
 ### HELPER FUNCTIONS
@@ -283,7 +284,9 @@ def _heatmap(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
 
 ### TEXT OUTPUT
 ## Compare metrics across scenarios, architectures, etc.
-_metric_statistics = {"Minimum": GroupBy.min, "Median": GroupBy.median, "Maximum": GroupBy.max}
+_relative_std = lambda df: 100 * df.std() / df.median()  # df can also be a groupby
+_metric_statistics = {"Minimum": GroupBy.min, "Median": GroupBy.median, "Maximum": GroupBy.max,
+                      "Standard deviation relative to the median [%]": _relative_std}
 def print_metric_range(metrics_all: pd.DataFrame, metric: c.Parameter, *,
                        scenarios: Iterable[c.Parameter]=c.scenarios_123, variables: Iterable[c.Parameter]=c.iops) -> None:
     """
@@ -293,7 +296,7 @@ def print_metric_range(metrics_all: pd.DataFrame, metric: c.Parameter, *,
     data = _select_metric(metrics_all, metric)
     data_over_instances = data.groupby(c.scenario_network, sort=False)
 
-    print("----------")
+    print(dash)
     print(f"Statistics for {metric.label}")
 
     # Statistics over instances
@@ -303,15 +306,12 @@ def print_metric_range(metrics_all: pd.DataFrame, metric: c.Parameter, *,
         print(f"{label} {metric.label}:")
         print(_dataframe_to_string(stats_over_instances))
 
-    # Relative range over instances
-    std_over_instances_pct = 100 * data_over_instances.std() / data_over_instances.median()
-    print()
-    print(f"Standard deviation in {metric.label}, relative to the median [%]:")
-    print(_dataframe_to_string(std_over_instances_pct))
-
     # Median by scenario/network/IOP
     for level in ["scenario", "network", "variable"]:
         median_by_level = metrics_all[metric].groupby(level, sort=False).median()
         print()
         print(f"Median {metric.label} by {level}:")
         print(_dataframe_to_string(median_by_level))
+
+    print(dash)
+    print()
