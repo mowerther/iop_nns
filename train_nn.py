@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser("Script for loading data and training a neural 
 parser.add_argument("pnn_type", help="PNN architecture to use")
 parser.add_argument("-p", "--prisma", help="use PRISMA data", action="store_true")
 parser.add_argument("-c", "--recalibrate", help="apply recalibration", action="store_true")
-parser.add_argument("-n", "--n_models", help="number of models to train per scenario (default: 10)", type=int, default=10)
+parser.add_argument("-n", "--n_models", help="number of models to train per scenario (default: 25)", type=int, default=25)
 args = parser.parse_args()
 
 # Select PNN class
