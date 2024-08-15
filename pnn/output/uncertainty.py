@@ -551,11 +551,12 @@ def plot_recalibration_MA(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
     fig, ax = plt.subplots(1, 1, figsize=(4, 4), layout="constrained")
 
     # Plot data
+    # Zorder is as follows: grid 1.5 (default) -> hline 1.6 -> scatter 1.7 -> fill_between 1.8 -> plot 2.0 (default)
     x = diff_median_ci.index.categories.mid
-    ax.scatter(metrics[c.miscalibration_area], diff, s=1, color="C2", rasterized=True, label="Individual\ncomparisons")
+    ax.scatter(metrics[c.miscalibration_area], diff, s=1, color="C2", rasterized=True, label="Individual\ncomparisons", zorder=1.7)
     ax.plot(x, diff_median_ci["median"], linewidth=3, label="Binned median", color="black")
-    ax.fill_between(x, diff_median_ci["ci_lower"], diff_median_ci["ci_upper"], alpha=0.7, label="Binned CI", color="grey", edgecolor="black")
-    ax.axhline(0, color="black", linewidth=2)
+    ax.fill_between(x, diff_median_ci["ci_lower"], diff_median_ci["ci_upper"], alpha=0.7, label="Binned CI", color="grey", edgecolor="black", zorder=1.8)
+    ax.axhline(0, color="C1", linewidth=2, zorder=1.6)
 
     # Labels
     ax.set_xlabel(f"{c.miscalibration_area.label}\n(without recalibration)")
