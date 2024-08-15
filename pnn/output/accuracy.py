@@ -274,7 +274,7 @@ print_mdsa_range = partial(print_metric_range, metric=c.mdsa)
 ## Print difference between normal and recalibrated models
 def print_metric(data: pd.DataFrame, metric: c.Parameter, *,
                  variables: Iterable[c.Parameter]=c.iops,
-                 saveto: Path | str=stdout) -> None:
+                 precision: int=1, saveto: Path | str=stdout) -> None:
     """
     Print the values for one metric.
     Optionally save to a file.
@@ -282,7 +282,7 @@ def print_metric(data: pd.DataFrame, metric: c.Parameter, *,
     data = _select_metric(data, metric, columns=variables)
     print()
     print(f"{metric.label}:")
-    print(_dataframe_to_string(data), file=saveto)
+    print(_dataframe_to_string(data, precision=precision), file=saveto)
     print()
 
 
@@ -311,5 +311,5 @@ def print_metric_difference(metrics_all: pd.DataFrame, metrics_all_recal: pd.Dat
     print(_dataframe_to_string(metrics_diff_relative, precision=precision), file=saveto)
     print()
 
-print_mdsa = partial(print_metric, metric=c.mdsa)
+print_mdsa = partial(print_metric, metric=c.mdsa, precision=0)
 print_mdsa_difference = partial(print_metric_difference, metric=c.mdsa, precision=0)

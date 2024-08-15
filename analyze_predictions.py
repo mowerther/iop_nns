@@ -49,7 +49,7 @@ if args.recal:
     pnn.output.recalibration_change_in_mdsa(metrics, metrics_recal)
 
 # Coverage
-pnn.output.print_coverage_range(metrics)
+pnn.output.print_coverage_range(metrics, variables=iops)
 if args.recal:
     pnn.output.plot_coverage_with_recal(metrics, metrics_recal, scenarios=scenarios, groups=iops, tag=tag)
 else:

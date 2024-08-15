@@ -305,7 +305,7 @@ def print_metric_range(metrics_all: pd.DataFrame, metric: c.Parameter, *,
     For one metric, print its median, maximum etc. across the N different model instances.
     """
     # Setup
-    data = _select_metric(metrics_all, metric)
+    data = _select_metric(metrics_all, metric)[variables]
     data_over_instances = data.groupby(c.scenario_network, sort=False)
 
     print(dash)
@@ -320,7 +320,7 @@ def print_metric_range(metrics_all: pd.DataFrame, metric: c.Parameter, *,
 
     # Median by scenario/network/IOP
     for level in ["scenario", "network", "variable"]:
-        metrics_by_level = metrics_all[metric].groupby(level, sort=False)
+        metrics_by_level = data.stack().groupby(level, sort=False)  # .stack() puts the variables back into the index
         median_and_ci = median_with_confidence_interval(metrics_by_level)
         print()
         print(f"Median {metric.label}, with CI, by {level}:")
