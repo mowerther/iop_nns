@@ -11,4 +11,4 @@ We evaluated the generalization ability of PNNs across optimal conditions with s
 
 [plot_calibration_example.py](plot_calibration_example.py) - Generate the figure explaining uncertainty calibration.
 
-[analyze_predictions.py](analyze_predictions.py) - Generate figures relating to the PNN model outputs.
+[analyze_estimates.py](analyze_estimates.py) - Generate figures relating to the PNN model outputs.
