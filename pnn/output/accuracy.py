@@ -227,6 +227,11 @@ def plot_accuracy_metrics(data: pd.DataFrame, *,
     # Plot legend outside the subplots
     add_legend_below_figure(fig, c.networks)
 
+    # Uncomment this to hard-code ylims for the paper
+    # axs[0, 0].set_ylim(0.0, 323.7820046049724)
+    # axs[1, 0].set_ylim(-216.63075107785068, 216.63075107785068)
+    # axs[2, 0].set_ylim(-0.7656951212425851, 1.0)
+
     saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto, bbox_inches="tight")
     plt.close()
