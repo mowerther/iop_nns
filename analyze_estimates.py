@@ -1,6 +1,7 @@
 """
 Script for loading PNN outputs and generating plots.
-The individual results files are combined into a single DataFrame (`results`) which is then used for plotting and aggregation.
+First loads and analyzes the model metrics from all runs combined.
+Next finds and analyzes the average-performing model (by median MdSA) for each network-scenario combination.
 
 To plot the PRISMA data, use the -p flag.
 To include recalibrated data, use the -c flag.
@@ -61,6 +62,7 @@ if args.recal:
     pnn.output.recalibration_improvement(metrics, metrics_recal)
     pnn.output.recalibration_MA_threshold(metrics, metrics_recal)
     pnn.output.plot_recalibration_MA(metrics, metrics_recal, tag=tag)
+
 
 ### SELECT MEDIAN MODELS
 print("\n\n\n--- AVERAGE-PERFORMING MODEL ---")
