@@ -3,6 +3,9 @@ Script for loading PNN outputs and generating plots.
 First loads and analyzes the model metrics from all runs combined.
 Next finds and analyzes the average-performing model (by median MdSA) for each network-scenario combination.
 
+Data are loaded from pnn.c.model_estimates_path by default, but a custom folder can be supplied using the -f flag (e.g. `python analyze_estimates.py -f /path/to/my/folder`).
+Please note that figures will still be saved to the same location.
+
 To plot the PRISMA data, use the -p flag.
 To include recalibrated data, use the -c flag.
 """
@@ -11,7 +14,8 @@ import pnn
 ### Parse command line arguments
 import argparse
 parser = argparse.ArgumentParser("Script for loading PNN outputs and generating plots.")
-parser.add_argument("-p", "--prisma", help="use PRSIMA data", action="store_true")
+parser.add_argument("-f", "--folder", help="folder to load data from", type=pnn.c.Path, default=pnn.c.model_estimates_path)
+parser.add_argument("-p", "--prisma", help="use PRISMA data", action="store_true")
 parser.add_argument("-c", "--recal", help="use recalibrated data", action="store_true")
 args = parser.parse_args()
 
@@ -24,13 +28,13 @@ tag, scenarios, iops, *_ = pnn.data.select_scenarios(prisma=args.prisma)
 print("\n\n\n--- MODEL METRICS ---")
 
 # Load data
-metrics = pnn.modeloutput.read_all_model_metrics(scenarios=scenarios)
+metrics = pnn.modeloutput.read_all_model_metrics(args.folder, scenarios=scenarios)
 print("Read metrics into `metrics` DataFrame:")
 print(metrics)
 
 # Load recalibrated data
 if args.recal:
-    metrics_recal = pnn.modeloutput.read_all_model_metrics(scenarios=scenarios, use_recalibration_data=True)
+    metrics_recal = pnn.modeloutput.read_all_model_metrics(args.folder, scenarios=scenarios, use_recalibration_data=True)
     print("\n\nRead recalibration metrics into `metrics_recal` DataFrame:")
     print(metrics_recal)
 
@@ -86,13 +90,13 @@ print("Saved miscalibration area plot")
 print("\n\n\n--- INDIVIDUAL (AVERAGE-PERFORMING) MODEL OUTPUTS ---")
 
 # Load data
-results = pnn.modeloutput.read_all_model_outputs(pnn.model_estimates_path, scenarios=scenarios, subfolder_indices=median_indices)
+results = pnn.modeloutput.read_all_model_outputs(args.folder, pnn.model_estimates_path, scenarios=scenarios, subfolder_indices=median_indices)
 print("Read results into `results` DataFrame:")
 print(results)
 
 # Load recalibrated data
 if args.recal:
-    results_recal = pnn.modeloutput.read_all_model_outputs(pnn.model_estimates_path, scenarios=scenarios, subfolder_indices=median_indices_recal, use_recalibration_data=True)
+    results_recal = pnn.modeloutput.read_all_model_outputs(args.folder, pnn.model_estimates_path, scenarios=scenarios, subfolder_indices=median_indices_recal, use_recalibration_data=True)
     print("Read recalibration results into `results_recal` DataFrame:")
     print(results_recal)
 
