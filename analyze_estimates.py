@@ -90,7 +90,7 @@ print("Saved miscalibration area plot")
 print("\n\n\n--- INDIVIDUAL (AVERAGE-PERFORMING) MODEL OUTPUTS ---")
 
 # Load data
-results = pnn.modeloutput.read_all_model_outputs(args.folder, pnn.model_estimates_path, scenarios=scenarios, subfolder_indices=median_indices)
+results = pnn.modeloutput.read_all_model_outputs(args.folder, scenarios=scenarios, subfolder_indices=median_indices)
 print("Read results into `results` DataFrame:")
 print(results)
 

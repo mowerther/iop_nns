@@ -164,7 +164,7 @@ def read_model_outputs(filename: Path | str, **kwargs) -> pd.DataFrame:
     return df
 
 
-def read_all_model_outputs(folder: Path | str, *,
+def read_all_model_outputs(folder: Path | str=c.model_estimates_path, *,
                            scenarios: Iterable[c.Parameter]=c.scenarios_123,
                            subfolder_indices: Optional[pd.Series]=None,
                            use_recalibration_data=False) -> pd.DataFrame:
