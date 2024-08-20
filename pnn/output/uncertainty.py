@@ -535,20 +535,19 @@ def bin_by_column(data: pd.DataFrame, column: c.Parameter, *,
 
     return bins, cut, group
 
-def plot_recalibration_MA(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
-                          binsize: float=0.01,
-                          saveto: str | Path=c.output_path/"miscalibration_scatter.pdf", tag: Optional[str]=None) -> None:
+
+def _plot_recalibration_MA_difference(ax: plt.Axes, metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
+                                      binsize: float=0.01,
+                                      legend=True) -> None:
     """
     Based on the without- and with-recalibration metrics, plot the miscalibration improvement as a function of original miscalibration area.
+    This function only does the plotting into an existing panel.
     """
     # Setup: data
     bins, cut, group = bin_by_column(metrics, c.miscalibration_area, vmax=1, binsize=binsize)
     diff = metrics_recal[c.miscalibration_area] - metrics[c.miscalibration_area]
     diff_binned = group(diff)
     diff_median_ci = median_with_confidence_interval(diff_binned)
-
-    # Setup: figure
-    fig, ax = plt.subplots(1, 1, figsize=(4, 4), layout="constrained")
 
     # Plot data
     # Zorder is as follows: grid 1.5 (default) -> hline 1.6 -> scatter 1.7 -> fill_between 1.8 -> plot 2.0 (default)
@@ -563,7 +562,19 @@ def plot_recalibration_MA(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
     ax.set_ylabel(f"Difference in {c.miscalibration_area.label.lower()}")
     ax.set_xlim(0, metrics[c.miscalibration_area].max())
     ax.set_aspect("equal")
-    ax.legend(loc="upper right", scatterpoints=5, fontsize="small")
+
+    if legend:
+        ax.legend(loc="upper right", scatterpoints=5, fontsize="small")
+
+
+def plot_recalibration_MA(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
+                          binsize: float=0.01,
+                          saveto: str | Path=c.output_path/"miscalibration_scatter.pdf", tag: Optional[str]=None) -> None:
+    """
+    Based on the without- and with-recalibration metrics, plot the miscalibration improvement as a function of original miscalibration area.
+    """
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4), layout="constrained")
+    _plot_recalibration_MA_difference(ax, metrics, metrics_recal)
 
     # Save
     saveto = saveto_append_tag(saveto, tag)
