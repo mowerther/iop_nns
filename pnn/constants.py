@@ -97,20 +97,22 @@ wavelengths_123 = list(range(400, 701, 5))
 _insitu = r"$\it{in}$ $\it{situ}$"
 prisma_insitu = Parameter("prisma_insitu", f"{_insitu} vs. {_insitu}", label_2lines=f"{_insitu} vs.\n{_insitu}")
 
-prisma_gen = Parameter("prisma_gen", "PRISMA: General")
+prisma_gen = Parameter("prisma_gen", "General")
 prisma_gen_L2 = Parameter("prisma_gen_l2", "General: L2", label_2lines="General\nL2")
 prisma_gen_ACOLITE = Parameter("prisma_gen_aco", "General: ACOLITE", label_2lines="General\nACOLITE")
+prisma_gen_all = [prisma_gen_L2, prisma_gen_ACOLITE]
 
-prisma_lk = Parameter("prisma_lk", "PRISMA: Local knowledge")
+prisma_lk = Parameter("prisma_lk", "Local knowledge", label_2lines="Local\nknowledge")
 prisma_lk_L2 = Parameter("prisma_lk_l2", "Local knowledge: L2", label_2lines="Local knowledge\nL2")
 prisma_lk_ACOLITE = Parameter("prisma_lk_aco", "Local knowledge: ACOLITE", label_2lines="Local knowledge\nACOLITE")
+prisma_lk_all = [prisma_lk_L2, prisma_lk_ACOLITE]
 
 _prisma_L2 = Parameter("prisma_l2", "L2")
 _prisma_ACOLITE = Parameter("prisma_aco", "ACOLITE")
 _scenarios_prisma_sub = [_prisma_L2, _prisma_ACOLITE]
 
-testing_prisma = {prisma_gen: [prisma_insitu, prisma_gen_L2, prisma_gen_ACOLITE],
-                  prisma_lk: [prisma_lk_L2, prisma_lk_ACOLITE],}
+testing_prisma = {prisma_gen: [prisma_insitu, *prisma_gen_all],
+                  prisma_lk: prisma_lk_all,}
 training_prisma = list(testing_prisma.keys())
 scenarios_prisma = [s for sub in testing_prisma.values() for s in sub]  # Flattened version of testing scenarios
 

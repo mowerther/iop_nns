@@ -557,10 +557,9 @@ def _plot_recalibration_MA_difference(ax: plt.Axes, metrics: pd.DataFrame, metri
     ax.fill_between(x, diff_median_ci["ci_lower"], diff_median_ci["ci_upper"], alpha=0.7, label="Binned CI", color="grey", edgecolor="black", zorder=1.8)
     ax.axhline(0, color="C1", linewidth=2, zorder=1.6)
 
-    # Labels
-    ax.set_xlabel(f"{c.miscalibration_area.label}\n(without recalibration)")
-    ax.set_ylabel(f"Difference in {c.miscalibration_area.label.lower()}")
-    ax.set_xlim(0, metrics[c.miscalibration_area].max())
+    # Panel settings
+    ax.set_xlim(0, 0.5)
+    ax.set_ylim(-0.5, 0.5)
     ax.set_aspect("equal")
 
     if legend:
@@ -576,8 +575,36 @@ def plot_recalibration_MA(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
     fig, ax = plt.subplots(1, 1, figsize=(4, 4), layout="constrained")
     _plot_recalibration_MA_difference(ax, metrics, metrics_recal)
 
+    # Labels
+    ax.set_xlabel(f"{c.miscalibration_area.label}\n(without recalibration)")
+    ax.set_ylabel(f"Difference in {c.miscalibration_area.label.lower()}")
+
     # Save
     saveto = saveto_append_tag(saveto, tag)
+    plt.savefig(saveto, bbox_inches="tight")
+    plt.close()
+
+
+def plot_recalibration_MA_PRISMA(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
+                                 binsize: float=0.01,
+                                 saveto: str | Path=c.output_path/"miscalibration_scatter_PRISMA.pdf") -> None:
+    """
+    Based on the without- and with-recalibration metrics, plot the miscalibration improvement as a function of original miscalibration area.
+    Specific to PRISMA: general scenarios in one panel, local knowledge in another.
+    """
+    fig, axs = plt.subplots(ncols=2, figsize=(4, 4), sharex=True, sharey=True, layout="constrained")
+
+    # Plot data
+    scenarios_in_order = {c.prisma_gen: c.prisma_gen_all, c.prisma_lk: c.prisma_lk_all}
+    for ax, (title, scenarios) in zip(axs, scenarios_in_order.items()):
+        _plot_recalibration_MA_difference(ax, metrics.loc[scenarios], metrics_recal.loc[scenarios], legend=(ax is axs[-1]))
+        ax.set_title(title.label_2lines)
+
+    # Labels
+    fig.supxlabel(f"{c.miscalibration_area.label} (without recalibration)", fontweight=plt.rcParams["axes.labelweight"], fontsize=plt.rcParams["axes.labelsize"])
+    axs[0].set_ylabel(f"Difference in {c.miscalibration_area.label.lower()}")
+
+    # Save
     plt.savefig(saveto, bbox_inches="tight")
     plt.close()
 
