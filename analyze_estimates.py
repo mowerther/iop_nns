@@ -96,7 +96,7 @@ print(results)
 
 # Load recalibrated data
 if args.recal:
-    results_recal = pnn.modeloutput.read_all_model_outputs(args.folder, pnn.model_estimates_path, scenarios=scenarios, subfolder_indices=median_indices_recal, use_recalibration_data=True)
+    results_recal = pnn.modeloutput.read_all_model_outputs(args.folder, scenarios=scenarios, subfolder_indices=median_indices_recal, use_recalibration_data=True)
     print("Read recalibration results into `results_recal` DataFrame:")
     print(results_recal)
 
