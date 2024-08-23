@@ -65,7 +65,10 @@ print("Saved coverage plot")
 if args.recal:
     pnn.output.recalibration_improvement(metrics, metrics_recal)
     pnn.output.recalibration_MA_threshold(metrics, metrics_recal)
-    pnn.output.plot_recalibration_MA(metrics, metrics_recal, tag=tag)
+    if args.prisma:
+        pnn.output.plot_recalibration_MA_PRISMA(metrics, metrics_recal)
+    else:
+        pnn.output.plot_recalibration_MA(metrics, metrics_recal, tag=tag)
 
 
 ### SELECT MEDIAN MODELS
