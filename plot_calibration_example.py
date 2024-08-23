@@ -186,7 +186,7 @@ def custom_plot_intervals_ordered(
     # Plot with updated colors
     # errorbar and scatter are separate to allow for transparent errorbars
     ax.plot(xs, y_true, linewidth=3, c="orange", label="Reference values", zorder=0)
-    ax.errorbar(xs, y_pred, intervals, fmt="none", ecolor="black", alpha=0.5, lw=0.7, zorder=1)
+    ax.errorbar(xs, y_pred, intervals, fmt="none", ecolor="black", alpha=0.5, lw=0.7, zorder=1, label="PNN uncertainty")
     ax.scatter(xs, y_pred,  c="black", s=15, label="PNN estimates", zorder=2)
 
     #ax.legend(loc="lower right")
