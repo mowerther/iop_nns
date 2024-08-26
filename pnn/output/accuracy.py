@@ -219,18 +219,20 @@ def plot_accuracy_metrics(data: pd.DataFrame, *,
     # Generate figure ; rows are metrics, columns are scenarios
     n_rows = len(_accuracy_metrics)
     n_cols = len(scenarios)
-    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, sharex=True, sharey="row", figsize=(3.2*n_cols, 1.8*n_rows), gridspec_kw={"hspace": 0.007, "wspace": 0.007}, layout="constrained", squeeze=False)
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, sharex=True, sharey="row", figsize=(3.2*n_cols, 2.7*n_rows), gridspec_kw={"hspace": 0.007, "wspace": 0.007}, layout="constrained", squeeze=False)
 
     # Plot
-    _plot_grouped_values(axs, data, colparameters=scenarios, groups=c.iops, groupmembers=c.networks, rowparameters=_accuracy_metrics, apply_titles=title_type)
+    _plot_grouped_values(axs, data, colparameters=scenarios, groups=c.iops, groupmembers=c.networks, rowparameters=_accuracy_metrics, apply_titles=title_type, ylim_quantile=0.05)
 
     # Plot legend outside the subplots
     add_legend_below_figure(fig, c.networks)
 
     # Uncomment this to hard-code ylims for the paper
-    # axs[0, 0].set_ylim(0.0, 323.7820046049724)
-    # axs[1, 0].set_ylim(-216.63075107785068, 216.63075107785068)
-    # axs[2, 0].set_ylim(-0.7656951212425851, 1.0)
+    # for ax in axs[:, 0]:
+    #     print(ax.get_ylim())
+    # axs[0, 0].set_ylim(0.0, 261.30135461802803)
+    # axs[1, 0].set_ylim(-129.25408967980127, 129.25408967980127)
+    # axs[2, 0].set_ylim(-0.3521689766272721, 1.0)
 
     saveto = saveto_append_tag(saveto, tag)
     plt.savefig(saveto, bbox_inches="tight")

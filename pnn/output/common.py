@@ -160,9 +160,12 @@ def _plot_grouped_values(axs: np.ndarray[plt.Axes], data: pd.DataFrame,
 
                 locations = np.arange(n_groups) - (spacing * (n_members - 1) / 2) + member_idx * spacing
 
-                bplot = ax.boxplot(df, positions=locations, whis=(0, 100), widths=spacing*0.9, zorder=3, medianprops={"color": "black"}, patch_artist=True)
-                for patch in bplot["boxes"]:
-                    patch.set_facecolor(member.color)
+                ax.boxplot(df, positions=locations, whis=(0, 100), widths=spacing*0.9, zorder=3, patch_artist=True,
+                           boxprops={"facecolor": member.color, "edgecolor": member.color},
+                           capprops={"color": member.color},
+                           medianprops={"color": "black"},
+                           whiskerprops={"color": member.color},
+                           )
 
             # Panel settings
             ax.grid(False, axis="x")

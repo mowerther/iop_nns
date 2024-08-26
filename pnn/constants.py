@@ -70,9 +70,9 @@ class Parameter:
 ### NETWORKS
 bnn_dc = Parameter("bnn_dc", "BNN-DC", "#997700")
 bnn_mcd = Parameter("bnn_mcd", "BNN-MCD", "#6699CC")
-ensemble = Parameter("ens_nn", "ENS-NN", "#EE99AA")
-rnn = Parameter("rnn", "RNN", "#EECC66")
 mdn = Parameter("mdn", "MDN", "#994455")
+ensemble = Parameter("ens_nn", "ENS-NN", "#DD8899")
+rnn = Parameter("rnn", "RNN", "#DDAA33")
 
 networks = [bnn_mcd, bnn_dc, mdn, ensemble, rnn]
 
