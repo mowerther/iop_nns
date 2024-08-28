@@ -6,9 +6,9 @@ from typing import Callable, Iterable, Self
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
-from tensorflow.keras.callbacks import EarlyStopping, History
-from tensorflow.keras.layers import Concatenate, Dense, Input
-from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.layers import Concatenate, Dense, Dropout, Input
+from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l2
 from sklearn.preprocessing import MinMaxScaler
 
@@ -121,7 +121,8 @@ class MDN(BasePNN):
     ### CREATION
     @classmethod
     def build(cls, input_shape: tuple, output_size: int, *,
-              n_mix: int=5, hidden_layers: Iterable[int]=5*[100], lr: float=1e-3, l2_reg=1e-3, activation="relu") -> Self:
+              n_mix: int=5, hidden_layers: Iterable[int]=5*[100], lr: float=1e-3, l2_reg=1e-3, activation="relu",
+              dropout=True, dropout_rate: float=0.25) -> Self:
         """
         Build the MDN.
 
@@ -133,6 +134,8 @@ class MDN(BasePNN):
             lr (float): The learning rate for the optimizer (default is 1e-3).
             l2_reg (float): The L2 regularization factor (default is 1e-3).
             activation (str): The activation function to use in the hidden layers (default is "relu").
+            dropout (bool): Use dropout in training (never in application/testing).
+            dropout_rate (float): Dropout rate (0--1) if `dropout` is True.
 
         Returns:
             MDN(Model): ready for training.
@@ -142,6 +145,8 @@ class MDN(BasePNN):
 
         for units in hidden_layers:
             x = Dense(units, activation=activation, kernel_regularizer=l2(l2_reg))(x)
+            if dropout:
+                x = Dropout(dropout_rate)(x)
 
         pi = Dense(n_mix, activation="softmax", name="pi")(x)
         mu = Dense(n_mix * output_size, activation=None, name="mu")(x)
