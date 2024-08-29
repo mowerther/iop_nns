@@ -122,7 +122,7 @@ class MDN(BasePNN):
     @classmethod
     def build(cls, input_shape: tuple, output_size: int, *,
               n_mix: int=5, hidden_layers: Iterable[int]=5*[100], lr: float=1e-3, l2_reg=1e-3, activation="relu",
-              dropout=True, dropout_rate: float=0.25) -> Self:
+              dropout=False, dropout_rate: float=0.25) -> Self:
         """
         Build the MDN.
 
