@@ -147,7 +147,7 @@ def plot_uncertainty_heatmap_with_recal(data: pd.DataFrame, data_recal: pd.DataF
 ## Helper function: Lines at k=1, 2, ...
 k_to_percentage = lambda k: 100*erf(k/np.sqrt(2))
 
-def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=2) -> None:
+def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=1) -> None:
     """
     Add horizontal lines at k=1, k=2, ... coverage.
     """
