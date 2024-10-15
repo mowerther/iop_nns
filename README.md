@@ -7,12 +7,12 @@ The median symmetric accuracy (MdSA) declines from ≥20% in interpolation scena
 The uncertainty is predominantly aleatoric (inherent to the observations). Therefore, increasing the number of measurements from the same distribution does not enhance model accuracy. Similarly, selecting a different neural network architecture, trained on the same data, is unlikely to significantly improve retrieval accuracy. Instead, we propose that advancement in IOP estimation through neural networks lies in integrating the physical principles of IOPs into model architectures, thereby creating physics-informed neural networks.
 
 ## Scripts
-[dataset_split.py](dataset_split.py) - Split the *in situ* dataset into training and test set (random split, within and out-of-distribution).
+[dataset_split.py](dataset_split.py) - Split an *in situ* dataset into training and test set (random split, within-distribution, and out-of-distribution).
+
+[plot_data.py](plot_data.py) - Generate figures showing the training and test set IOP distributions.
+
+[plot_calibration_example.py](plot_calibration_example.py) - Generate a figure explaining uncertainty calibration.
 
 [train_nn.py](train_nn.py) - Train a PNN of choice (out of `bnn_dc`, `bnn_mcd`, `ens_nn`, `mdn`, `rnn`).
 
-[plot_data.py](plot_data.py) - Generate the figures showing the training and test set IOP distributions.
-
-[plot_calibration_example.py](plot_calibration_example.py) - Generate the figure explaining uncertainty calibration.
-
-[analyze_estimates.py](analyze_estimates.py) - Generate figures relating to the PNN model outputs.
+[analyze_estimates.py](analyze_estimates.py) - Analyze PNN model outputs to generate figures and statistics.
