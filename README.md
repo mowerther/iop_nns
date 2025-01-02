@@ -9,11 +9,21 @@ The median symmetric accuracy (MdSA) declines from ≥20% in interpolation scena
 The uncertainty is predominantly aleatoric (inherent to the observations). Therefore, increasing the number of measurements from the same distribution does not enhance model accuracy. Similarly, selecting a different neural network architecture, trained on the same data, is unlikely to significantly improve retrieval accuracy. Instead, we propose that advancement in IOP estimation through neural networks lies in integrating the physical principles of IOPs into model architectures, thereby creating physics-informed neural networks.
 
 
-## Input data
-Folders, file types, structure, licenses.
+## _In situ_ data
+The core _in situ_ datasets used in our study originate from [GLORIA](https://doi.org/10.1038/s41597-023-01973-y) and [SeaBASS](https://seabass.gsfc.nasa.gov/).
+These datasets are not currently hosted within this repository for licensing reasons; we aim to make them available so the study can be reproduced.
+
+_Splitting: data format, data location, data handling._
+
+The resulting split data files (random, within-distribution, out-of-distribution) are read using the [`pnn.data.read_scenario123_data`](pnn/data.py#L59) function.
+This function can load files from any folder on your computer; it will try to load 6 CSV files (`"random_df_train_org.csv"`, `"random_df_test_org.csv"`, `"wd_train_set_org.csv"`, `"wd_test_set_org.csv"`, `"ood_train_set_2.csv"`, `"ood_test_set_2.csv"`) from the given folder.
+By default, it uses the [datasets_train_test](datasets_train_test) folder within the repository folder; this setting can be changed at [`pnn.constants.data_path`](pnn/constants.py#L14).
+
+## PRISMA data
+
 
 ## Outputs
-Folders, file types, structure.
+_Folders, file types, structure._
 
 ## Dataset splitting
 [dataset_split.py](dataset_split.py) - Split an *in situ* dataset into training and test set (random split, within-distribution, and out-of-distribution).
