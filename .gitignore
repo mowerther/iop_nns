@@ -4,9 +4,11 @@ mdn_redux/
 # Folders for input/output
 pnn_model_estimates/
 pnn_tf_models/
+prisma_map_data/
 
 # Input/output files in the main folder, used for testing only
 *.csv
+*.nc
 *.pdf
 *.png
 *.zip

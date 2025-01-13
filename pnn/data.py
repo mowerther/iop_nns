@@ -1,5 +1,5 @@
 """
-Functions for reading the (split) input data.
+Functions for reading (split) input data.
 """
 from dataclasses import dataclass
 from pathlib import Path

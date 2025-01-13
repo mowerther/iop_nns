@@ -13,6 +13,7 @@ from cmcrameri.cm import managua
 ### FILENAMES
 data_path = Path("datasets_train_test/")
 prisma_path = Path("prisma_subscenarios/")
+map_data_path = Path("prisma_map_data/")
 
 model_path = Path("pnn_tf_models/")
 model_estimates_path = Path("pnn_model_estimates/")
