@@ -4,6 +4,7 @@ Functions for reading and processing spatial (map) data.
 from pathlib import Path
 
 import xarray as xr
+from cartopy.crs import PlateCarree
 
 from cmcrameri.cm import batlow as default_cmap
 from matplotlib import pyplot as plt
@@ -40,9 +41,17 @@ def _load_l2(filename: Path | str) -> xr.Dataset:
     data = _load_general(filename)
 
 
-# plt.figure(figsize=(14, 6))
-# ax = plt.axes(projection=ccrs.PlateCarree())
-# data.Rrs_446.plot.pcolormesh(
-#     ax=ax, transform=ccrs.PlateCarree(), x="lon", y="lat", add_colorbar=False
-# )
-# ax.coastlines()
+### PLOTTING
+def plot_Rrs(data: xr.Dataset, **kwargs) -> None:
+    """
+    Plot Rrs (default: 446 nm) for the given dataset.
+    """
+    # Create figure
+    fig = plt.figure(figsize=(14, 6))
+    ax = plt.axes(projection=PlateCarree())
+
+    # Plot data
+    data.Rrs_446.plot.pcolormesh(ax=ax, transform=PlateCarree(), x="lon", y="lat", vmin=0, cmap=default_cmap)
+
+    plt.show()
+    plt.close()

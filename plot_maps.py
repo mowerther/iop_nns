@@ -25,6 +25,5 @@ for filename in filenames_l2c:
     data = pnn.maps._load_general(filename)
     print(f"Read data from `{filename.absolute()}`")
 
-    data.Rrs_446.plot(vmin=0, cmap=pnn.maps.default_cmap)
-    pnn.maps.plt.show()
-    pnn.maps.plt.close()
+    # Plot Rrs for reference
+    pnn.maps.plot_Rrs(data)
