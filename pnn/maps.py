@@ -5,6 +5,9 @@ from pathlib import Path
 
 import xarray as xr
 
+from cmcrameri.cm import batlow as default_cmap
+from matplotlib import pyplot as plt
+
 from . import constants as c
 
 
