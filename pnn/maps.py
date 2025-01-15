@@ -22,8 +22,12 @@ def _load_general(filename: Path | str) -> xr.Dataset:
     """
     Load and pre-process NetCDF files.
     """
+    # Data loading
     data = xr.open_dataset(filename)
     data = data.set_coords(["lon", "lat"])
+
+    # Select columns PNNs were trained on
+
     return data
 
 
@@ -33,12 +37,16 @@ def _load_acolite(filename: Path | str) -> xr.Dataset:
     """
     data = _load_general(filename)
 
+    # Convert rho_w to R_rs; division by pi
+
+    return data
 
 def _load_l2(filename: Path | str) -> xr.Dataset:
     """
     Load L2C processed data.
     """
     data = _load_general(filename)
+    return data
 
 
 ### PLOTTING

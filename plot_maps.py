@@ -27,3 +27,17 @@ for filename in filenames_l2c:
 
     # Plot Rrs for reference
     pnn.maps.plot_Rrs(data)
+
+    # Convert Rrs to list of spectra
+
+    # Rescale Rrs
+
+    # Load PNN
+
+    # Apply PNN
+
+    # Rescale IOPs
+
+    # Convert IOPs to maps
+
+    # Plot IOP maps - main output
