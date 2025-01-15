@@ -2,6 +2,7 @@
 Functions for reading and processing spatial (map) data.
 """
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import xarray as xr
@@ -83,7 +84,8 @@ def load_prisma_map(filename: Path | str, acolite=False) -> xr.Dataset:
 
 
 ### PLOTTING
-def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446", **kwargs) -> None:
+def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446",
+             title: Optional[str]=None, **kwargs) -> None:
     """
     Plot Rrs (default: 446 nm) for the given dataset.
     """
@@ -93,6 +95,9 @@ def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446", **kwargs) -> None:
 
     # Plot data
     data[col].plot.pcolormesh(ax=ax, transform=PlateCarree(), x="lon", y="lat", vmin=0, cmap=default_cmap)
+
+    # Plot parameters
+    ax.set_title(title)
 
     plt.show()
     plt.close()

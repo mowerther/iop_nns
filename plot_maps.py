@@ -27,7 +27,7 @@ for filename in filenames:
     print(f"Read data from `{filename.absolute()}`")
 
     # Plot Rrs for reference
-    pnn.maps.plot_Rrs(data)
+    pnn.maps.plot_Rrs(data, title=filename.stem)
 
     # Convert Rrs to list of spectra
 
