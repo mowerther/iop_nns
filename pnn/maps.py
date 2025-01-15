@@ -3,11 +3,12 @@ Functions for reading and processing spatial (map) data.
 """
 from pathlib import Path
 
+import numpy as np
 import xarray as xr
-from cartopy.crs import PlateCarree
 
-from cmcrameri.cm import batlow as default_cmap
 from matplotlib import pyplot as plt
+from cartopy.crs import PlateCarree
+from cmcrameri.cm import batlow as default_cmap
 
 from . import constants as c
 
@@ -25,7 +26,11 @@ def _load_general(filename: Path | str) -> xr.Dataset:
     # Data loading
     data = xr.open_dataset(filename)
     data = data.set_coords(["lon", "lat"])
+    return data
 
+
+### REFLECTANCE
+def select_prisma_columns(data: xr.Dataset) -> xr.Dataset:
     # Select columns PNNs were trained on
     # Note that there are rounding differences between the data and pnn.constants -- we simply select on the min and max
     lmin, lmax = c.wavelengths_prisma[0], c.wavelengths_prisma[-1]
@@ -50,20 +55,23 @@ def _load_acolite(filename: Path | str) -> xr.Dataset:
     """
     data = _load_general(filename)
 
-    # Convert rho_w to R_rs; division by pi
+    # Convert rho_w to R_rs
+    data /= np.pi
 
     return data
+
 
 def _load_l2(filename: Path | str) -> xr.Dataset:
     """
     Load L2C processed data.
     """
     data = _load_general(filename)
+    data = select_prisma_columns(data)
     return data
 
 
 ### PLOTTING
-def plot_Rrs(data: xr.Dataset, **kwargs) -> None:
+def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446", **kwargs) -> None:
     """
     Plot Rrs (default: 446 nm) for the given dataset.
     """
@@ -72,7 +80,7 @@ def plot_Rrs(data: xr.Dataset, **kwargs) -> None:
     ax = plt.axes(projection=PlateCarree())
 
     # Plot data
-    data.Rrs_446.plot.pcolormesh(ax=ax, transform=PlateCarree(), x="lon", y="lat", vmin=0, cmap=default_cmap)
+    data[col].plot.pcolormesh(ax=ax, transform=PlateCarree(), x="lon", y="lat", vmin=0, cmap=default_cmap)
 
     plt.show()
     plt.close()
