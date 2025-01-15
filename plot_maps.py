@@ -14,15 +14,16 @@ import pnn
 import argparse
 parser = argparse.ArgumentParser(__doc__.splitlines()[1])
 parser.add_argument("-f", "--folder", help="folder to load data from", type=pnn.c.Path, default=pnn.c.map_data_path)
+parser.add_argument("-a", "--acolite", help="use acolite data (if False: use L2C)", action="store_true")
 args = parser.parse_args()
 
 
 ### Load data
-filenames_l2c = args.folder.glob(pnn.maps.pattern_prisma_l2)
+filenames = args.folder.glob(pnn.maps.pattern_prisma_acolite if args.acolite else pnn.maps.pattern_prisma_l2)
 
-
-for filename in filenames_l2c:
-    data = pnn.maps._load_general(filename)
+for filename in filenames:
+    # Load reflectance
+    data = pnn.maps.load_prisma_map(filename, acolite=args.acolite)
     print(f"Read data from `{filename.absolute()}`")
 
     # Plot Rrs for reference

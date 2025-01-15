@@ -29,15 +29,14 @@ def _load_general(filename: Path | str) -> xr.Dataset:
     return data
 
 
-### REFLECTANCE
-def select_prisma_columns(data: xr.Dataset) -> xr.Dataset:
+def select_prisma_columns(data: xr.Dataset, key: str="Rrs") -> xr.Dataset:
     # Select columns PNNs were trained on
     # Note that there are rounding differences between the data and pnn.constants -- we simply select on the min and max
     lmin, lmax = c.wavelengths_prisma[0], c.wavelengths_prisma[-1]
     def column_in_scope(column_name: str) -> bool:
-        is_Rrs = ("Rrs_" in column_name)
-        if is_Rrs:
-            wavelength = float(column_name.split("_")[1])
+        is_reflectance = (key in column_name)
+        if is_reflectance:
+            wavelength = float(column_name.split("_")[-1])
             in_range = (lmin <= wavelength <= lmax)
             return in_range
         else:
@@ -56,18 +55,31 @@ def _load_acolite(filename: Path | str) -> xr.Dataset:
     data = _load_general(filename)
 
     # Convert rho_w to R_rs
-    data /= np.pi
+    data_Rrs = select_prisma_columns(data, key="rhos_l2c")
+    data_Rrs = data_Rrs / np.pi
+    renamer = {rhos: f"Rrs_{rhos[9:]}" for rhos in data_Rrs.keys()}
+    data_Rrs = data_Rrs.rename(renamer)
 
-    return data
+    return data_Rrs
 
 
-def _load_l2(filename: Path | str) -> xr.Dataset:
+def _load_l2c(filename: Path | str) -> xr.Dataset:
     """
     Load L2C processed data.
     """
     data = _load_general(filename)
-    data = select_prisma_columns(data)
-    return data
+    data_Rrs = select_prisma_columns(data, key="Rrs")
+    return data_Rrs
+
+
+def load_prisma_map(filename: Path | str, acolite=False) -> xr.Dataset:
+    """
+    Load a PRISMA scene from a netCDF file.
+    If `acolite`, use the ACOLITE file loader (including rho_s -> R_rs conversion), else the L2C one
+    """
+    load_data = _load_acolite if acolite else _load_l2c
+    data_Rrs = load_data(filename)
+    return data_Rrs
 
 
 ### PLOTTING
