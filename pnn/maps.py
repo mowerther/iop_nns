@@ -27,6 +27,19 @@ def _load_general(filename: Path | str) -> xr.Dataset:
     data = data.set_coords(["lon", "lat"])
 
     # Select columns PNNs were trained on
+    # Note that there are rounding differences between the data and pnn.constants -- we simply select on the min and max
+    lmin, lmax = c.wavelengths_prisma[0], c.wavelengths_prisma[-1]
+    def column_in_scope(column_name: str) -> bool:
+        is_Rrs = ("Rrs_" in column_name)
+        if is_Rrs:
+            wavelength = float(column_name.split("_")[1])
+            in_range = (lmin <= wavelength <= lmax)
+            return in_range
+        else:
+            return False
+
+    cols = [col for col in data.keys() if column_in_scope(col)]
+    data = data[cols]
 
     return data
 
