@@ -30,6 +30,7 @@ for filename in filenames:
     pnn.maps.plot_Rrs(data, title=filename.stem)
 
     # Convert Rrs to list of spectra
+    spectra, map_shape = pnn.maps.map_to_spectra(data)
 
     # Rescale Rrs
 

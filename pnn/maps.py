@@ -83,6 +83,19 @@ def load_prisma_map(filename: Path | str, acolite=False) -> xr.Dataset:
     return data_Rrs
 
 
+### MAPS <-> SPECTRA
+def map_to_spectra(data: xr.Dataset) -> np.ndarray:
+    """
+    Extract the spectrum from each pixel in an (x, y)-shaped image into an (x * y)-length array of spectra.
+    Note that this loses information on variable names, coordinates, etc, so take care to keep this around elsewhere.
+    """
+    data_as_numpy = data.to_array().values
+    map_shape = data_as_numpy.shape
+    data_as_numpy = data_as_numpy.reshape((map_shape[0], -1))
+    data_as_numpy = data_as_numpy.T
+    return data_as_numpy, map_shape
+
+
 ### PLOTTING
 def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446",
              title: Optional[str]=None, **kwargs) -> None:
