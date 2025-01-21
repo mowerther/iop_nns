@@ -1,6 +1,7 @@
 """
 Functions for reading and processing spatial (map) data.
 """
+from functools import partial
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -8,9 +9,9 @@ import numpy as np
 import xarray as xr
 
 from matplotlib import pyplot as plt
-from matplotlib.colors import LogNorm
+from matplotlib.colors import LogNorm, Normalize
 from cartopy.crs import PlateCarree
-from cmcrameri.cm import batlow as default_cmap
+from cmcrameri.cm import batlow
 
 from . import constants as c
 
@@ -18,6 +19,7 @@ from . import constants as c
 ### CONSTANTS
 pattern_prisma_acolite = "PRISMA_*_converted_L2C.nc"
 pattern_prisma_l2 = "PRISMA_*_L2W.nc"
+projection = PlateCarree()
 
 
 ### DATA LOADING
@@ -149,20 +151,51 @@ def create_iop_map(iop_mean: np.ndarray, iop_variance: np.ndarray, reference_sce
 
 
 ### PLOTTING
+_create_map_figure = partial(plt.subplots, subplot_kw={"projection": projection})
+
 def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446",
              title: Optional[str]=None, **kwargs) -> None:
     """
     Plot Rrs (default: 446 nm) for the given dataset.
     """
     # Create figure
-    fig = plt.figure(figsize=(14, 6))
-    ax = plt.axes(projection=PlateCarree())
+    fig, ax = _create_map_figure(1, 1, figsize=(14, 6))
 
     # Plot data
-    data[col].plot.pcolormesh(ax=ax, transform=PlateCarree(), x="lon", y="lat", vmin=0, cmap=default_cmap)
+    data[col].plot.pcolormesh(ax=ax, transform=projection, x="lon", y="lat", vmin=0, vmax=0.10, cmap=batlow)
 
     # Plot parameters
     ax.set_title(title)
+
+    plt.show()
+    plt.close()
+
+
+def plot_IOP_single(data: xr.Dataset, iop=c.aph_443, *,
+                    axs: Optional[Iterable[plt.Axes]]=None,
+                    title: Optional[str]=None, **kwargs) -> None:
+    """
+    For one IOP (default: aph at 443 nm), plot the mean prediction and % uncertainty.
+    """
+    # Create new figure if no axs are given
+    newfig = (axs is None)
+    if newfig:
+        fig, axs = _create_map_figure(ncols=2, figsize=(14, 6))
+
+    # Setup
+    norm_mean = LogNorm(vmin=1e-5, vmax=1e1)
+    norm_std_pct = Normalize(vmin=c.total_unc_pct.vmin, vmax=c.total_unc_pct.vmax)
+
+    # Plot data
+    kwargs = {"transform": projection, "x": "lon", "y": "lat", "cmap": "cividis", "robust": True}
+    data[iop].plot.pcolormesh(ax=axs[0], norm=norm_mean, **kwargs)
+    data[f"{iop}_std_pct"].plot.pcolormesh(ax=axs[1], norm=norm_std_pct, **kwargs)
+
+    # Plot parameters
+    axs[0].set_title(f"{iop.label}: mean")
+    axs[1].set_title(f"{iop.label}: uncertainty [%]")
+    if newfig:
+        fig.suptitle(title)
 
     plt.show()
     plt.close()

@@ -68,3 +68,4 @@ for filename in filenames:
     iop_map = pnn.maps.create_iop_map(iop_mean, iop_variance, scene)
 
     # Plot IOP maps - main output
+    pnn.maps.plot_IOP_single(iop_map, title=filename.stem)
