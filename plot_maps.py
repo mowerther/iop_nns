@@ -11,7 +11,6 @@ Recalibrated models are not currently supported.
 Example:
     python plot_maps.py bnn_mcd
 """
-import numpy as np
 import pnn
 
 ### Parse command line arguments
@@ -50,9 +49,12 @@ for filename in filenames:
     *_, y_train = pnn.data.extract_inputs_outputs(model_scenario.train_data)
     scaler_y, *_ = pnn.data.scale_y(y_train)
 
-    # Load average-performing PNN
+    # Set up output label
     PNN = pnn.nn.select_nn(args.pnn_type)
     scenario_for_average = pnn.c.prisma_gen_ACOLITE if args.acolite else pnn.c.prisma_gen_L2
+    label = f"{filename.stem}-{PNN.name}-{scenario_for_average}"
+
+    # Load average-performing PNN
     metrics = pnn.modeloutput.read_all_model_metrics(pnn.c.model_estimates_path, scenarios=[scenario_for_average])
     median_indices, *_ = pnn.modeloutput.select_median_metrics(metrics)
     median_index = median_indices.loc[scenario_for_average, args.pnn_type]
@@ -67,5 +69,9 @@ for filename in filenames:
     # Convert IOPs to maps
     iop_map = pnn.maps.create_iop_map(iop_mean, iop_variance, scene)
 
+    # Save IOP map
+    pnn.maps.save_iop_map(iop_map, saveto=pnn.c.map_output_path/f"{label}_iops.nc")
+
     # Plot IOP maps - main output
-    pnn.maps.plot_IOP_single(iop_map, title=filename.stem)
+    pnn.maps.plot_IOP_single(iop_map, title=filename.stem, saveto=pnn.c.map_output_path/f"{label}_aph443.pdf")
+    pnn.maps.plot_IOP_all(iop_map, title=filename.stem, saveto=pnn.c.map_output_path/f"{label}_iops.pdf")

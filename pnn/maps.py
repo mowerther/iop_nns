@@ -150,6 +150,15 @@ def create_iop_map(iop_mean: np.ndarray, iop_variance: np.ndarray, reference_sce
     return iop_map
 
 
+### OUTPUT
+def save_iop_map(data: xr.Dataset, saveto: Path | str, **kwargs) -> None:
+    """
+    Save a Dataset to file.
+    Thin wrapper to allow future functionality to be added.
+    """
+    data.to_netcdf(saveto, **kwargs)
+
+
 ### PLOTTING
 _create_map_figure = partial(plt.subplots, subplot_kw={"projection": projection})
 
@@ -173,29 +182,59 @@ def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446",
 
 def plot_IOP_single(data: xr.Dataset, iop=c.aph_443, *,
                     axs: Optional[Iterable[plt.Axes]]=None,
-                    title: Optional[str]=None, **kwargs) -> None:
+                    title: Optional[str]=None,
+                    saveto: Optional[Path | str]=None, **kwargs) -> None:
     """
     For one IOP (default: aph at 443 nm), plot the mean prediction and % uncertainty.
     """
     # Create new figure if no axs are given
     newfig = (axs is None)
     if newfig:
-        fig, axs = _create_map_figure(ncols=2, figsize=(14, 6))
+        fig, axs = _create_map_figure(ncols=2, figsize=(14, 6), layout="constrained")
 
     # Setup
     norm_mean = LogNorm(vmin=1e-5, vmax=1e1)
     norm_std_pct = Normalize(vmin=c.total_unc_pct.vmin, vmax=c.total_unc_pct.vmax)
 
     # Plot data
-    kwargs = {"transform": projection, "x": "lon", "y": "lat", "cmap": "cividis", "robust": True}
-    data[iop].plot.pcolormesh(ax=axs[0], norm=norm_mean, **kwargs)
-    data[f"{iop}_std_pct"].plot.pcolormesh(ax=axs[1], norm=norm_std_pct, **kwargs)
+    map_kwargs = {"transform": projection, "x": "lon", "y": "lat", "cmap": "cividis", "robust": True, "rasterized": True}
+    data[iop].plot.pcolormesh(ax=axs[0], norm=norm_mean, **map_kwargs)
+    data[f"{iop}_std_pct"].plot.pcolormesh(ax=axs[1], norm=norm_std_pct, **map_kwargs)
 
     # Plot parameters
     axs[0].set_title(f"{iop.label}: mean")
     axs[1].set_title(f"{iop.label}: uncertainty [%]")
     if newfig:
         fig.suptitle(title)
+
+    if newfig:
+        if saveto:
+            plt.savefig(saveto)
+
+        plt.show()
+        plt.close()
+
+
+def plot_IOP_all(data: xr.Dataset, *,
+                 iops=c.iops,
+                 title: Optional[str]=None,
+                 saveto: Optional[Path | str]=None, **kwargs) -> None:
+    """
+    For all IOPs, plot the mean prediction and % uncertainty.
+    """
+    # Create figure
+    nrows = len(iops)
+    fig, axs = _create_map_figure(ncols=2, nrows=nrows, figsize=(14, 6*nrows), layout="constrained")
+
+    # Plot individual rows
+    for ax_row, iop in zip(axs, iops):
+        plot_IOP_single(data, iop=iop, axs=ax_row)
+
+    # Plot parameters
+    fig.suptitle(title)
+
+    if saveto:
+        plt.savefig(saveto)
 
     plt.show()
     plt.close()
