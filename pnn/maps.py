@@ -2,12 +2,13 @@
 Functions for reading and processing spatial (map) data.
 """
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional
 
 import numpy as np
 import xarray as xr
 
 from matplotlib import pyplot as plt
+from matplotlib.colors import LogNorm
 from cartopy.crs import PlateCarree
 from cmcrameri.cm import batlow as default_cmap
 
@@ -96,14 +97,24 @@ def map_to_spectra(data: xr.Dataset) -> np.ndarray:
     return data_as_numpy, map_shape
 
 
+def _list_to_dataset_shape(data_list: np.ndarray, reference_scene: xr.Dataset) -> np.ndarray:
+    """
+    Convert a list into a map corresponding to the dimensions of a given xarray Dataset.
+    The first dimension of data_list is converted into 2D spatial dimensions.
+    The list is first transposed so that other variables become indices in the result.
+    """
+    new_shape = tuple(reference_scene.sizes.values())
+    data_as_map = data_list.T.reshape(-1, *new_shape)
+    return data_as_map
+
+
 def spectra_to_map(data: np.ndarray, map_shape: tuple[int] | xr.Dataset) -> np.ndarray | xr.Dataset:
     """
     Reshape a list of spectra back into a pre-defined map shape.
     If `map_shape` is an xarray Dataset, copy its georeferencing etc.
     """
     if isinstance(map_shape, xr.Dataset):
-        new_shape = tuple(map_shape.sizes.values())
-        data_as_map = data.T.reshape(-1, *new_shape)
+        data_as_map = _list_to_dataset_shape(data, map_shape)
         data_as_dict = {var: (map_shape.dims, arr) for var, arr in zip(map_shape.variables, data_as_map)}
         new_scene = xr.Dataset(data_as_dict, coords=map_shape.coords)
         data_as_map = new_scene
@@ -112,6 +123,29 @@ def spectra_to_map(data: np.ndarray, map_shape: tuple[int] | xr.Dataset) -> np.n
         data_as_map = data.T.reshape(map_shape)
 
     return data_as_map
+
+
+def create_iop_map(iop_mean: np.ndarray, iop_variance: np.ndarray, reference_scene: xr.Dataset, *,
+                   iop_labels: Optional[Iterable[c.Parameter]]=c.iops) -> xr.Dataset:
+    """
+    Convert IOP estimates (mean and variance -> uncertainty) into an xarray Dataset like a provided scene.
+    """
+    # Reshape to 2D
+    iop_mean = _list_to_dataset_shape(iop_mean, reference_scene)
+    iop_variance = _list_to_dataset_shape(iop_variance, reference_scene)
+
+    # Calculate uncertainty
+    iop_std = np.sqrt(iop_variance)
+    iop_std_pct = iop_std / iop_mean * 100
+
+    # Cast into xarray
+    mean_dict = {f"{iop}": (reference_scene.dims, arr) for iop, arr in zip(iop_labels, iop_mean)}
+    std_dict = {f"{iop}_std": (reference_scene.dims, arr) for iop, arr in zip(iop_labels, iop_std)}
+    std_pct_dict = {f"{iop}_std_pct": (reference_scene.dims, arr) for iop, arr in zip(iop_labels, iop_std_pct)}
+    combined_dict = mean_dict | std_dict | std_pct_dict
+    iop_map = xr.Dataset(combined_dict, coords=reference_scene.coords)
+
+    return iop_map
 
 
 ### PLOTTING

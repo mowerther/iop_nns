@@ -11,6 +11,7 @@ Recalibrated models are not currently supported.
 Example:
     python plot_maps.py bnn_mcd
 """
+import numpy as np
 import pnn
 
 ### Parse command line arguments
@@ -64,5 +65,6 @@ for filename in filenames:
     iop_mean, iop_variance, *_ = model.predict_with_uncertainty(spectra_trans, scaler_y)
 
     # Convert IOPs to maps
+    iop_map = pnn.maps.create_iop_map(iop_mean, iop_variance, scene)
 
     # Plot IOP maps - main output
