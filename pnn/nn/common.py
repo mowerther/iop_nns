@@ -55,7 +55,7 @@ def calculate_N_metrics(y_true: np.ndarray, estimates: Iterable[tuple[np.ndarray
 
 
 ### LOADING / SAVING
-def _saveto_iteration(saveto: Path | str, i) -> Path:
+def _saveto_iteration(saveto: Path | str, i: int) -> Path:
     """
     For a given path, create a variant in subfolder `i`.
     The subfolder is recursively created if it does not exist yet.
@@ -78,6 +78,20 @@ def save_models(models: Iterable[BasePNN], saveto: Path | str, **kwargs) -> None
     for i, model in enumerate(models):
         saveto_i = _saveto_iteration(saveto, i)
         model.save(saveto_i, **kwargs)
+
+
+def load_model_iteration(pnn_type: type, i: int, scenario: c.Parameter | str,
+                         *, saveto: Optional[Path | str]=c.model_path) -> BasePNN:
+    """
+    From a given save folder, load the i'th model for a given scenario.
+    Convenience function for dealing with multi-model save folders.
+    Example:
+        load_model_iteration(BNN_DC, 16, c.prisma_gen) will load the model at c.model_path/16/bnn_dc_prisma_gen.keras
+    """
+    saveto = Path(saveto)
+    saveto_i = saveto / str(i)
+    filename = saveto_i / f"{pnn_type.name}_{scenario}.keras"
+    return pnn_type.load(filename)
 
 
 def save_estimates(y_true: np.ndarray, estimates: Iterable[tuple[np.ndarray]], saveto: Path | str, **kwargs) -> None:
