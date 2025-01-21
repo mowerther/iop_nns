@@ -40,10 +40,12 @@ def select_scenarios(prisma: bool) -> tuple[c.Parameter, list[c.Parameter], list
 class DataScenario:
     """
     Simple class to combine training/testing data, ensuring they are always in the correct order.
+    Optionally includes a re-scaler for X, so that it may be used again later.
     """
     train_scenario: c.Parameter
     train_data: pd.DataFrame
     test_scenarios_and_data: dict[c.Parameter, pd.DataFrame]
+    X_scaler: Optional[RobustScaler] = None
 
     def __iter__(self):
         """
@@ -90,7 +92,8 @@ def read_prisma_data(folder: Path | str=c.prisma_path) -> tuple[DataScenario]:
     """
     Read the PRISMA subscenario 1--3 data from a given folder into a number of DataFrames.
     The output consists of DataScenario objects which can be iterated over.
-    Note that the data in the CSV files have NOT been rescaled, so this must be done here.
+    Note that the data in the CSV files have NOT been rescaled, so this must be done here;
+        the scalers are included in the DataScenarios for re-use if desired.
     Filenames are hardcoded.
     """
     ### LOAD DATA AND RENAME COLUMNS TO CONSISTENT FORMAT
@@ -134,10 +137,10 @@ def read_prisma_data(folder: Path | str=c.prisma_path) -> tuple[DataScenario]:
     ### ORGANISE TRAIN/TEST SETS
     general = DataScenario(c.prisma_gen, gloria_resampled, {c.prisma_insitu: prisma_insitu,
                                                             c.prisma_gen_L2: prisma_l2_gen,
-                                                            c.prisma_gen_ACOLITE: prisma_acolite_gen})
+                                                            c.prisma_gen_ACOLITE: prisma_acolite_gen}, X_scaler=gloria_scaler)
 
     local_knowledge = DataScenario(c.prisma_lk, combined_insitu, {c.prisma_lk_L2: prisma_l2_lk,
-                                                                  c.prisma_lk_ACOLITE: prisma_acolite_lk})
+                                                                  c.prisma_lk_ACOLITE: prisma_acolite_lk}, X_scaler=combined_scaler)
 
     return general, local_knowledge
 

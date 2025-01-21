@@ -29,10 +29,15 @@ for filename in filenames:
     # Plot Rrs for reference
     pnn.maps.plot_Rrs(data, title=filename.stem)
 
+    # Mask land
+
     # Convert Rrs to list of spectra
     spectra, map_shape = pnn.maps.map_to_spectra(data)
 
-    # Rescale Rrs
+    # Rescale Rrs to the same scale the models were trained on
+    prisma_scenarios = pnn.data.read_prisma_data()
+    X_scaler = prisma_scenarios[0].X_scaler
+    spectra_trans = X_scaler.transform(spectra)
 
     # Load PNN
 

@@ -96,6 +96,13 @@ def map_to_spectra(data: xr.Dataset) -> np.ndarray:
     return data_as_numpy, map_shape
 
 
+def spectra_to_map(data: np.ndarray, map_shape: tuple[int]) -> np.ndarray:
+    """
+    Reshape a list of spectra back into a pre-defined map shape.
+    """
+    return data.T.reshape(map_shape)
+
+
 ### PLOTTING
 def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446",
              title: Optional[str]=None, **kwargs) -> None:
