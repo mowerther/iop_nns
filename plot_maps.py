@@ -46,6 +46,9 @@ for filename in filenames:
     X_scaler = model_scenario.X_scaler
     spectra_trans = X_scaler.transform(spectra)
 
+    *_, y_train = pnn.data.extract_inputs_outputs(model_scenario.train_data)
+    scaler_y, *_ = pnn.data.scale_y(y_train)
+
     # Load average-performing PNN
     PNN = pnn.nn.select_nn(args.pnn_type)
     scenario_for_average = pnn.c.prisma_gen_ACOLITE if args.acolite else pnn.c.prisma_gen_L2
@@ -58,8 +61,7 @@ for filename in filenames:
     print(f"Loaded model: {model}")
 
     # Apply PNN
-
-    # Rescale IOPs
+    iop_mean, iop_variance, *_ = model.predict_with_uncertainty(spectra_trans, scaler_y)
 
     # Convert IOPs to maps
 
