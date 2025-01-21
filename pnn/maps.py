@@ -96,11 +96,22 @@ def map_to_spectra(data: xr.Dataset) -> np.ndarray:
     return data_as_numpy, map_shape
 
 
-def spectra_to_map(data: np.ndarray, map_shape: tuple[int]) -> np.ndarray:
+def spectra_to_map(data: np.ndarray, map_shape: tuple[int] | xr.Dataset) -> np.ndarray | xr.Dataset:
     """
     Reshape a list of spectra back into a pre-defined map shape.
+    If `map_shape` is an xarray Dataset, copy its georeferencing etc.
     """
-    return data.T.reshape(map_shape)
+    if isinstance(map_shape, xr.Dataset):
+        new_shape = tuple(map_shape.sizes.values())
+        data_as_map = data.T.reshape(-1, *new_shape)
+        data_as_dict = {var: (map_shape.dims, arr) for var, arr in zip(map_shape.variables, data_as_map)}
+        new_scene = xr.Dataset(data_as_dict, coords=map_shape.coords)
+        data_as_map = new_scene
+
+    elif isinstance(map_shape, tuple):
+        data_as_map = data.T.reshape(map_shape)
+
+    return data_as_map
 
 
 ### PLOTTING
