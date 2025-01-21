@@ -40,19 +40,22 @@ for filename in filenames:
 
     # Rescale Rrs to the same scale the models were trained on
     prisma_scenarios = pnn.data.read_prisma_data()
-    X_scaler = prisma_scenarios[0].X_scaler
+    model_scenario = prisma_scenarios[0]
+    print(f"Model training scenario: {model_scenario.train_scenario}")
+
+    X_scaler = model_scenario.X_scaler
     spectra_trans = X_scaler.transform(spectra)
 
     # Load average-performing PNN
     PNN = pnn.nn.select_nn(args.pnn_type)
-    model_scenario = pnn.c.prisma_gen
     scenario_for_average = pnn.c.prisma_gen_ACOLITE if args.acolite else pnn.c.prisma_gen_L2
     metrics = pnn.modeloutput.read_all_model_metrics(pnn.c.model_estimates_path, scenarios=[scenario_for_average])
     median_indices, *_ = pnn.modeloutput.select_median_metrics(metrics)
     median_index = median_indices.loc[scenario_for_average, args.pnn_type]
     print(f"Model number {median_index} is the average-performing {args.pnn_type} in the '{scenario_for_average}' scenario")
 
-    model = pnn.nn.load_model_iteration(PNN, median_index, model_scenario)
+    model = pnn.nn.load_model_iteration(PNN, median_index, model_scenario.train_scenario)
+    print(f"Loaded model: {model}")
 
     # Apply PNN
 
