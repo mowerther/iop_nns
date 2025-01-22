@@ -177,16 +177,21 @@ def save_iop_map(data: xr.Dataset, saveto: Path | str, **kwargs) -> None:
 ### PLOTTING
 _create_map_figure = partial(plt.subplots, subplot_kw={"projection": projection})
 
-def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446",
+def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446", mask_land=True,
              title: Optional[str]=None, **kwargs) -> None:
     """
     Plot Rrs (default: 446 nm) for the given dataset.
+    Mask land if desired.
     """
     # Create figure
     fig, ax = _create_map_figure(1, 1, figsize=(14, 6))
 
-    # Plot data
-    data[col].plot.pcolormesh(ax=ax, transform=projection, x="lon", y="lat", vmin=0, vmax=0.04, cmap=batlow)
+    # Plot
+    if mask_land:
+        data_to_plot = data.where(data["water"])[col]
+    else:
+        data_to_plot = data[col]
+    data_to_plot.plot.pcolormesh(ax=ax, transform=projection, x="lon", y="lat", vmin=0, vmax=0.04, cmap=batlow)
 
     # Plot parameters
     ax.set_title(title)

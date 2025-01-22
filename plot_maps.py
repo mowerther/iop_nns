@@ -30,8 +30,12 @@ for filename in filenames:
     scene = pnn.maps.load_prisma_map(filename, acolite=args.acolite)
     print(f"Read data from `{filename.absolute()}`")
 
+    # Assess mask
+    if scene["water"].sum() < 1000:  # Skip scenes where land/water masking doesn't work
+        continue
+
     # Plot Rrs for reference
-    pnn.maps.plot_Rrs(scene.where(scene["water"]), title=filename.stem)
+    pnn.maps.plot_Rrs(scene, title=filename.stem)
     continue
 
     # Convert Rrs to list of spectra
