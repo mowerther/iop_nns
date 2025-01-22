@@ -33,6 +33,20 @@ def _load_general(filename: Path | str) -> xr.Dataset:
     return data
 
 
+def NDWI(data: xr.Dataset) -> xr.DataArray:
+    green, nir = data["Rrs_559"], data["Rrs_860"]
+    return (green - nir) / (green + nir)
+
+
+def NDWI_threshold(data: xr.Dataset, *, threshold: float=0.3) -> xr.DataArray:
+    """
+    Calculate NDWI and check if it is above a threshold (above -> water).
+    """
+    ndwi = NDWI(data)
+    ndwi_over_threshold = (ndwi >= threshold)
+    return ndwi_over_threshold
+
+
 def select_prisma_columns(data: xr.Dataset, key: str="Rrs") -> xr.Dataset:
     # Select columns PNNs were trained on
     # Note that there are rounding differences between the data and pnn.constants -- we simply select on the min and max
@@ -72,7 +86,14 @@ def _load_l2c(filename: Path | str) -> xr.Dataset:
     Load L2C processed data.
     """
     data = _load_general(filename)
+
+    # Filter Rrs
     data_Rrs = select_prisma_columns(data, key="Rrs")
+
+    # Add mask based on original data
+    mask = NDWI_threshold(data)
+    data_Rrs["water"] = mask
+
     return data_Rrs
 
 

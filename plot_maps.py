@@ -34,6 +34,9 @@ for filename in filenames:
     pnn.maps.plot_Rrs(scene, title=filename.stem)
 
     # Mask land
+    # from matplotlib import pyplot as plt
+    # fig, ax = pnn.maps._create_map_figure(1,1, figsize=(8, 8)) ; scene["water"].plot.pcolormesh(ax=ax, transform=pnn.maps.projection, x="lon", y="lat", vmin=0, vmax=1) ; plt.show() ; plt.close()
+    # continue
 
     # Convert Rrs to list of spectra
     spectra, map_shape = pnn.maps.map_to_spectra(scene)
