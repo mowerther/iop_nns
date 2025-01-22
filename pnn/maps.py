@@ -52,19 +52,12 @@ def select_prisma_columns(data: xr.Dataset, key: str="Rrs") -> xr.Dataset:
     return data
 
 
-def _load_acolite(filename: Path | str) -> xr.Dataset:
+def mask_water(data: xr.Dataset, *, key="l2_flags") -> xr.DataArray:
     """
-    Load ACOLITE-processed data and convert rho_w to R_rs.
+    Using the L2 flags, generate a mask that is True for water pixels and False for land pixels.
     """
-    data = _load_general(filename)
-
-    # Convert rho_w to R_rs
-    data_Rrs = select_prisma_columns(data, key="rhos_l2c")
-    data_Rrs = data_Rrs / np.pi
-    renamer = {rhos: f"Rrs_{rhos[9:]}" for rhos in data_Rrs.keys()}
-    data_Rrs = data_Rrs.rename(renamer)
-
-    return data_Rrs
+    water_mask = (data[key] == 0) | (data[key] == 8)
+    return water_mask
 
 
 def _load_l2c(filename: Path | str) -> xr.Dataset:
@@ -77,8 +70,23 @@ def _load_l2c(filename: Path | str) -> xr.Dataset:
     data_Rrs = select_prisma_columns(data, key="Rrs")
 
     # Add mask based on original data
-    mask = NDWI_threshold(data)
+    mask = mask_water(data)
     data_Rrs["water"] = mask
+
+    return data_Rrs
+
+
+def _load_acolite(filename: Path | str) -> xr.Dataset:
+    """
+    Load ACOLITE-processed data and convert rho_w to R_rs.
+    """
+    data = _load_general(filename)
+
+    # Convert rho_w to R_rs
+    data_Rrs = select_prisma_columns(data, key="rhos_l2c")
+    data_Rrs = data_Rrs / np.pi
+    renamer = {rhos: f"Rrs_{rhos[9:]}" for rhos in data_Rrs.keys()}
+    data_Rrs = data_Rrs.rename(renamer)
 
     return data_Rrs
 
@@ -178,7 +186,7 @@ def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446",
     fig, ax = _create_map_figure(1, 1, figsize=(14, 6))
 
     # Plot data
-    data[col].plot.pcolormesh(ax=ax, transform=projection, x="lon", y="lat", vmin=0, vmax=0.10, cmap=batlow)
+    data[col].plot.pcolormesh(ax=ax, transform=projection, x="lon", y="lat", vmin=0, vmax=0.04, cmap=batlow)
 
     # Plot parameters
     ax.set_title(title)
@@ -282,11 +290,6 @@ l2_file = os.path.join(l2_dir, l2_prod)
 l2w_file = os.path.join(l2w_dir, l2w_prod)
 ds = xr.open_dataset(l2_file)
 l2w_ds = xr.open_dataset(l2w_file)
-
-# water mask and masked array
-water_mask = (l2w_ds.l2_flags == 0) | (l2w_ds.l2_flags == 8)
-masked_aph = np.ma.masked_array(ds['aph_443'].values, mask=~water_mask)
-masked_aph_std = np.ma.masked_array(ds['aph_443_std_pct'].values, mask=~water_mask)
 
 # percentiles for both variables
 p2_aph, p98_aph = np.percentile(masked_aph.compressed(), (2, 98))
