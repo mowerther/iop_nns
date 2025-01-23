@@ -15,6 +15,17 @@ from .pnn_base import BasePNN
 from .. import constants as c
 
 
+### HELPER FUNCTIONS
+def _clean_up_folder_name(folder: Path | str) -> Path:
+    """
+    Remove a ".keras" suffix, which the other models require in their filenames.
+    """
+    folder = Path(folder)
+    if folder.suffix == ".keras":
+        folder = folder.with_suffix("")
+    return folder
+
+
 ### SINGLE NN
 class _SimpleNN(BasePNN):
     ### CONFIGURATION
@@ -87,12 +98,8 @@ class Ensemble(BasePNN):
         """
         Save the separate NNs in one folder (created if necessary).
         """
-        # Clean up filename
-        folder = Path(folder)
-        if folder.suffix == ".keras":
-            folder = folder.with_suffix("")
-
         # Create folder
+        folder = _clean_up_folder_name(folder)
         folder.mkdir(parents=True, exist_ok=True)
 
         # Save individual models
@@ -106,10 +113,12 @@ class Ensemble(BasePNN):
         """
         Load the separate NNs from file, then combine them into an ensemble.
         """
-        folder = Path(folder)
+        folder = _clean_up_folder_name(folder)
         filenames = folder.glob("*.keras")
 
         models = [_SimpleNN.load(fn) for fn in filenames]
+        assert len(models) >= 1, f"Could not find any models in folder `{folder}`"
+
         return cls(models)
 
 
