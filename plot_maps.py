@@ -34,7 +34,7 @@ for filename in filenames:
     pnn.maps.plot_Rrs(scene, title=filename.stem)
 
     # Convert Rrs to list of spectra
-    spectra, map_shape = pnn.maps.map_to_spectra(scene)
+    spectra, *_ = pnn.maps.map_to_spectra(scene)
 
     # Rescale Rrs to the same scale the models were trained on
     prisma_scenarios = pnn.data.read_prisma_data()

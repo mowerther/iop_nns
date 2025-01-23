@@ -38,9 +38,9 @@ def NDWI(data: xr.Dataset) -> xr.DataArray:
     return (green - nir) / (green + nir)
 
 
-def NDWI_threshold(data: xr.Dataset, *, threshold: float=0.) -> xr.DataArray:
+def mask_water(data: xr.Dataset, *, threshold: float=0.) -> xr.DataArray:
     """
-    Calculate NDWI and check if it is above a threshold (above -> water).
+    Calculate NDWI and check if it is above a threshold (above -> water) to generate a mask that is True for water pixels and False for land pixels.
     """
     ndwi = NDWI(data)
     ndwi_over_threshold = (ndwi >= threshold)
@@ -66,21 +66,6 @@ def select_prisma_columns(data: xr.Dataset, key: str="Rrs") -> xr.Dataset:
     return data
 
 
-def _load_acolite(filename: Path | str) -> xr.Dataset:
-    """
-    Load ACOLITE-processed data and convert rho_w to R_rs.
-    """
-    data = _load_general(filename)
-
-    # Convert rho_w to R_rs
-    data_Rrs = select_prisma_columns(data, key="rhos_l2c")
-    data_Rrs = data_Rrs / np.pi
-    renamer = {rhos: f"Rrs_{rhos[9:]}" for rhos in data_Rrs.keys()}
-    data_Rrs = data_Rrs.rename(renamer)
-
-    return data_Rrs
-
-
 def _load_l2c(filename: Path | str) -> xr.Dataset:
     """
     Load L2C processed data.
@@ -91,7 +76,28 @@ def _load_l2c(filename: Path | str) -> xr.Dataset:
     data_Rrs = select_prisma_columns(data, key="Rrs")
 
     # Add mask based on original data
-    mask = NDWI_threshold(data)
+    mask = mask_water(data)
+    data_Rrs["water"] = mask
+
+    return data_Rrs
+
+
+def _load_acolite(filename: Path | str) -> xr.Dataset:
+    """
+    Load ACOLITE-processed data and convert rho_w to R_rs.
+    """
+    data = _load_general(filename)
+
+    # Convert rho_w to R_rs
+    renamer = {rhos: f"Rrs_{rhos[9:]}" for rhos in data.keys()}
+    data_Rrs = data.rename(renamer)
+    data_Rrs = data_Rrs / np.pi
+
+    # Add mask
+    mask = mask_water(data_Rrs)
+
+    # Filter Rrs
+    data_Rrs = select_prisma_columns(data_Rrs, key="Rrs")
     data_Rrs["water"] = mask
 
     return data_Rrs
@@ -108,36 +114,62 @@ def load_prisma_map(filename: Path | str, acolite=False) -> xr.Dataset:
 
 
 ### MAPS <-> SPECTRA
-def map_to_spectra(data: xr.Dataset) -> np.ndarray:
+def map_to_spectra(data: xr.Dataset, mask_land=True) -> tuple[np.ndarray, tuple[int]]:
     """
     Extract the spectrum from each pixel in an (x, y)-shaped image into an (x * y)-length array of spectra.
     Note that this loses information on variable names, coordinates, etc, so take care to keep this around elsewhere.
+    If `mask_land`, remove rows that were masked in the data.
     """
-    data_as_numpy = data.to_array().values
+    # Simple case: convert to map and get shape
+    data_Rrs = select_prisma_columns(data)
+    data_as_numpy = data_Rrs.to_array().values
     map_shape = data_as_numpy.shape
     data_as_numpy = data_as_numpy.reshape((map_shape[0], -1))
     data_as_numpy = data_as_numpy.T
+
+    # Apply mask if desired
+    if mask_land:
+        mask_as_numpy = data["water"].values.ravel()
+        data_as_numpy = data_as_numpy[mask_as_numpy]
+
     return data_as_numpy, map_shape
 
 
-def _list_to_dataset_shape(data_list: np.ndarray, reference_scene: xr.Dataset) -> np.ndarray:
+def _list_to_dataset_shape(data_list: np.ndarray, reference_scene: xr.Dataset, *, mask_land=True) -> np.ndarray:
     """
     Convert a list into a map corresponding to the dimensions of a given xarray Dataset.
     The first dimension of data_list is converted into 2D spatial dimensions.
     The list is first transposed so that other variables become indices in the result.
+    If `mask_land`, apply the mask from `reference_scene` to the data.
     """
+    n_variables = data_list.shape[1]
     new_shape = tuple(reference_scene.sizes.values())
-    data_as_map = data_list.T.reshape(-1, *new_shape)
+
+    # Masked case: create an empty array simulating the original scene, then fill up the relevant pixels only
+    if mask_land:
+        # Setup
+        full_length = np.prod(new_shape)
+        data_list_full = np.tile(np.nan, (full_length, n_variables))
+        mask_as_numpy = reference_scene["water"].values.ravel()
+
+        # Assign values corresponding to mask
+        data_list_full[mask_as_numpy] = data_list
+        data_list = data_list_full
+
+    # Reshape the data
+    data_as_map = data_list.T.reshape(n_variables, *new_shape)
+
     return data_as_map
 
 
-def spectra_to_map(data: np.ndarray, map_shape: tuple[int] | xr.Dataset) -> np.ndarray | xr.Dataset:
+def spectra_to_map(data: np.ndarray, map_shape: tuple[int] | xr.Dataset, *, mask_land=True) -> np.ndarray | xr.Dataset:
     """
     Reshape a list of spectra back into a pre-defined map shape.
     If `map_shape` is an xarray Dataset, copy its georeferencing etc.
+    If `mask_land`, apply the mask from `map_shape` to the data.
     """
     if isinstance(map_shape, xr.Dataset):
-        data_as_map = _list_to_dataset_shape(data, map_shape)
+        data_as_map = _list_to_dataset_shape(data, map_shape, mask_land=mask_land)
         data_as_dict = {var: (map_shape.dims, arr) for var, arr in zip(map_shape.variables, data_as_map)}
         new_scene = xr.Dataset(data_as_dict, coords=map_shape.coords)
         data_as_map = new_scene
@@ -149,13 +181,14 @@ def spectra_to_map(data: np.ndarray, map_shape: tuple[int] | xr.Dataset) -> np.n
 
 
 def create_iop_map(iop_mean: np.ndarray, iop_variance: np.ndarray, reference_scene: xr.Dataset, *,
-                   iop_labels: Optional[Iterable[c.Parameter]]=c.iops) -> xr.Dataset:
+                   iop_labels: Optional[Iterable[c.Parameter]]=c.iops, mask_land=True) -> xr.Dataset:
     """
     Convert IOP estimates (mean and variance -> uncertainty) into an xarray Dataset like a provided scene.
+    If `mask_land`, assume the means/variances only apply to masked pixels in the reference scene.
     """
     # Reshape to 2D
-    iop_mean = _list_to_dataset_shape(iop_mean, reference_scene)
-    iop_variance = _list_to_dataset_shape(iop_variance, reference_scene)
+    iop_mean = _list_to_dataset_shape(iop_mean, reference_scene, mask_land=mask_land)
+    iop_variance = _list_to_dataset_shape(iop_variance, reference_scene, mask_land=mask_land)
 
     # Calculate uncertainty
     iop_std = np.sqrt(iop_variance)
@@ -183,16 +216,21 @@ def save_iop_map(data: xr.Dataset, saveto: Path | str, **kwargs) -> None:
 ### PLOTTING
 _create_map_figure = partial(plt.subplots, subplot_kw={"projection": projection})
 
-def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446",
+def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446", mask_land=True,
              title: Optional[str]=None, **kwargs) -> None:
     """
     Plot Rrs (default: 446 nm) for the given dataset.
+    Mask land if desired.
     """
     # Create figure
     fig, ax = _create_map_figure(1, 1, figsize=(14, 6))
 
-    # Plot data
-    data[col].plot.pcolormesh(ax=ax, transform=projection, x="lon", y="lat", vmin=0, vmax=0.10, cmap=batlow)
+    # Plot
+    if mask_land:
+        data_to_plot = data.where(data["water"])[col]
+    else:
+        data_to_plot = data[col]
+    data_to_plot.plot.pcolormesh(ax=ax, transform=projection, x="lon", y="lat", vmin=0, vmax=0.04, cmap=batlow)
 
     # Plot parameters
     ax.set_title(title)
@@ -259,3 +297,64 @@ def plot_IOP_all(data: xr.Dataset, *,
 
     plt.show()
     plt.close()
+
+"""
+import h5py
+
+l1_path = os.path.join(r"C:\SwitchDrive\Papers\iop_ml\prisma_imagery",
+                       r"PRS_L1_STD_OFFL_20220309101419_20220309101424_0001.he5")
+l2_dir = r"C:\SwitchDrive\Papers\iop_ml\prisma_imagery\prisma_map_outputs"
+l2_prod = "PRISMA_2022_03_09_10_14_19_L2W-bnn_dc-prisma_gen_l2_iops.nc"
+l2w_dir = r"C:\SwitchDrive\Papers\iop_ml\prisma_imagery"
+l2w_prod = "PRISMA_2022_03_09_10_14_19_L2W.nc"
+output_dir = r"C:\github_repos\eawag\PRISMA"
+
+# hdf5 for the L1 product
+with h5py.File(l1_path, 'r') as f:
+    vnir_cube = f['/HDFEOS/SWATHS/PRS_L1_HCO/Data Fields/VNIR_Cube'][:]
+
+    # some RGB bands, can also pick other bands
+    red = vnir_cube[:, 32, :]    # Band 33
+    green = vnir_cube[:, 45, :]  # Band 46
+    blue = vnir_cube[:, 61, :]   # Band 62
+
+    # create normalize RGB composite
+    rgb = np.dstack((red, green, blue))
+
+    def normalize_band(band):
+        p2, p98 = np.percentile(band, (2, 98))
+        return np.clip((band - p2) / (p98 - p2), 0, 1)
+
+    rgb_normalized = np.dstack([normalize_band(rgb[:,:,i]) for i in range(3)])
+    rgb_normalized = np.rot90(rgb_normalized, k=-1)
+
+# percentiles for both variables
+p2_aph, p98_aph = np.percentile(masked_aph.compressed(), (2, 98))
+p2_std, p98_std = np.percentile(masked_aph_std.compressed(), (2, 98))
+
+# plot
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
+
+viridis = plt.cm.magma
+cividis = plt.cm.cividis
+viridis.set_bad('none')
+cividis.set_bad('none')
+
+# left subplot - aph443
+ax1.imshow(rgb_normalized)
+im1 = ax1.imshow(masked_aph, vmin=p2_aph, vmax=p98_aph, cmap=viridis, alpha=0.8)
+cbar1 = plt.colorbar(im1, ax=ax1, format='%.3f', label=r'a$_{ph}(443)$ [m$^{-1}$]', extend='both')
+ticks1 = np.linspace(p2_aph, p98_aph, 6)
+cbar1.set_ticks(ticks1)
+ax1.set_title(r'PRISMA L2 a$_{ph}(443)$')
+ax1.axis('off')
+
+# right subplot - aph443 std percentage
+ax2.imshow(rgb_normalized)
+im2 = ax2.imshow(masked_aph_std, vmin=p2_std, vmax=p98_std, cmap=cividis, alpha=0.8)
+cbar2 = plt.colorbar(im2, ax=ax2, format='%.1f', label=r'a$_{ph}(443)$ std [%]', extend='both')
+ticks2 = np.linspace(p2_std, p98_std, 6)
+cbar2.set_ticks(ticks2)
+ax2.set_title(r'PRISMA L2 a$_{ph}(443)$ unc.')
+ax2.axis('off')
+"""
