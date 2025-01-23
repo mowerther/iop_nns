@@ -76,9 +76,10 @@ def _load_l2c(filename: Path | str) -> xr.Dataset:
     return data_Rrs
 
 
-def _load_acolite(filename: Path | str) -> xr.Dataset:
+def _load_acolite(filename: Path | str, *, mask_from_l2c=True) -> xr.Dataset:
     """
     Load ACOLITE-processed data and convert rho_w to R_rs.
+    If `mask_from_l2c`, load the corresponding L2C file to obtain its water mask.
     """
     data = _load_general(filename)
 
@@ -87,6 +88,13 @@ def _load_acolite(filename: Path | str) -> xr.Dataset:
     data_Rrs = data_Rrs / np.pi
     renamer = {rhos: f"Rrs_{rhos[9:]}" for rhos in data_Rrs.keys()}
     data_Rrs = data_Rrs.rename(renamer)
+
+    # Load mask if desired
+    if mask_from_l2c:
+        filename = Path(filename)
+        filename_l2c = filename.with_stem(filename.stem.replace("_converted_L2C", "_L2W"))
+        data_l2c = _load_l2c(filename_l2c)
+        data_Rrs["water"] = data_l2c["water"]
 
     return data_Rrs
 
@@ -287,7 +295,6 @@ def plot_IOP_all(data: xr.Dataset, *,
     plt.close()
 
 """
-import os
 import h5py
 
 l1_path = os.path.join(r"C:\SwitchDrive\Papers\iop_ml\prisma_imagery",
@@ -316,12 +323,6 @@ with h5py.File(l1_path, 'r') as f:
 
     rgb_normalized = np.dstack([normalize_band(rgb[:,:,i]) for i in range(3)])
     rgb_normalized = np.rot90(rgb_normalized, k=-1)
-
-# load L2 product - L2W or so
-l2_file = os.path.join(l2_dir, l2_prod)
-l2w_file = os.path.join(l2w_dir, l2w_prod)
-ds = xr.open_dataset(l2_file)
-l2w_ds = xr.open_dataset(l2w_file)
 
 # percentiles for both variables
 p2_aph, p98_aph = np.percentile(masked_aph.compressed(), (2, 98))
