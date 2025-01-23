@@ -38,7 +38,7 @@ def NDWI(data: xr.Dataset) -> xr.DataArray:
     return (green - nir) / (green + nir)
 
 
-def NDWI_threshold(data: xr.Dataset, *, threshold: float=0.3) -> xr.DataArray:
+def NDWI_threshold(data: xr.Dataset, *, threshold: float=0.) -> xr.DataArray:
     """
     Calculate NDWI and check if it is above a threshold (above -> water).
     """
