@@ -5,6 +5,7 @@ from functools import partial
 from pathlib import Path
 from typing import Iterable, Optional
 
+import h5py
 import numpy as np
 import xarray as xr
 
@@ -298,47 +299,51 @@ def plot_IOP_all(data: xr.Dataset, *,
     plt.show()
     plt.close()
 
+
+def get_h5_filename(filename_nc: Path | str) -> Path:
+    """
+    For a level-2 .nc file, get the corresponding level-1 .h5 filename.
+    Note that this depends entirely on the specific file structure for this project; it does not generalise.
+    """
+    # Set up prefix
+    filename_nc = Path(filename_nc)
+    date = filename_nc.stem.split("_")[1:7]  # Standard format is PRISMA_yyyy_mm_dd_hh_mm_ss_...nc
+    prefix = "PRS_L1_STD_OFFL_"
+    date_prefix = "".join([prefix, *date])
+
+    # Look for matching files
+    matching_filenames = filename_nc.parent.glob(f"{date_prefix}*")
+    matching_filenames = list(matching_filenames)
+    assert len(matching_filenames) == 1, f"Did not find exactly 1 match; instead found {len(matching_filenames)}:\n{matching_filenames}"
+    filename_h5 = matching_filenames[0]
+
+    return filename_h5
+
 """
-import h5py
-
-l1_path = os.path.join(r"C:\SwitchDrive\Papers\iop_ml\prisma_imagery",
-                       r"PRS_L1_STD_OFFL_20220309101419_20220309101424_0001.he5")
-l2_dir = r"C:\SwitchDrive\Papers\iop_ml\prisma_imagery\prisma_map_outputs"
-l2_prod = "PRISMA_2022_03_09_10_14_19_L2W-bnn_dc-prisma_gen_l2_iops.nc"
-l2w_dir = r"C:\SwitchDrive\Papers\iop_ml\prisma_imagery"
-l2w_prod = "PRISMA_2022_03_09_10_14_19_L2W.nc"
-output_dir = r"C:\github_repos\eawag\PRISMA"
-
-# hdf5 for the L1 product
-with h5py.File(l1_path, 'r') as f:
-    vnir_cube = f['/HDFEOS/SWATHS/PRS_L1_HCO/Data Fields/VNIR_Cube'][:]
-
-    # some RGB bands, can also pick other bands
-    red = vnir_cube[:, 32, :]    # Band 33
-    green = vnir_cube[:, 45, :]  # Band 46
-    blue = vnir_cube[:, 61, :]   # Band 62
-
-    # create normalize RGB composite
-    rgb = np.dstack((red, green, blue))
-
     def normalize_band(band):
         p2, p98 = np.percentile(band, (2, 98))
         return np.clip((band - p2) / (p98 - p2), 0, 1)
+"""
 
+def load_h5_as_rgb(filename: Path | str, *,
+                   vnir_cube_address: str="/HDFEOS/SWATHS/PRS_L1_HCO/Data Fields/VNIR_Cube",
+                   bands: Iterable[int]=(32, 45, 61)) -> np.ndarray:
+    """
+    Load a PRISMA HDF5 file from the given filename and extract the desired bands for an RGB image.
+    """
+    # Extract relevant bands from HDF5 file
+    with h5py.File(filename, "r") as f:
+        vnir_cube = f.get(vnir_cube_address)
+        rgb_cube = vnir_cube[:, bands]  # [x, c, y]
+
+    # Reorder to RGB cube
+    rgb_cube = np.swapaxes(rgb_cube, 1, 0)  # [c, x, y]
+    rgb_cube = np.rot90(rgb_cube, k=-1, axes=(1, 2))  # Rotate image counter-clockwise to match level 2
+
+    return rgb_cube
+
+"""
     rgb_normalized = np.dstack([normalize_band(rgb[:,:,i]) for i in range(3)])
-    rgb_normalized = np.rot90(rgb_normalized, k=-1)
-
-# percentiles for both variables
-p2_aph, p98_aph = np.percentile(masked_aph.compressed(), (2, 98))
-p2_std, p98_std = np.percentile(masked_aph_std.compressed(), (2, 98))
-
-# plot
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
-
-viridis = plt.cm.magma
-cividis = plt.cm.cividis
-viridis.set_bad('none')
-cividis.set_bad('none')
 
 # left subplot - aph443
 ax1.imshow(rgb_normalized)
