@@ -102,36 +102,62 @@ def load_prisma_map(filename: Path | str, acolite=False) -> xr.Dataset:
 
 
 ### MAPS <-> SPECTRA
-def map_to_spectra(data: xr.Dataset) -> np.ndarray:
+def map_to_spectra(data: xr.Dataset, mask_land=True) -> tuple[np.ndarray, tuple[int]]:
     """
     Extract the spectrum from each pixel in an (x, y)-shaped image into an (x * y)-length array of spectra.
     Note that this loses information on variable names, coordinates, etc, so take care to keep this around elsewhere.
+    If `mask_land`, remove rows that were masked in the data.
     """
-    data_as_numpy = data.to_array().values
+    # Simple case: convert to map and get shape
+    data_Rrs = select_prisma_columns(data)
+    data_as_numpy = data_Rrs.to_array().values
     map_shape = data_as_numpy.shape
     data_as_numpy = data_as_numpy.reshape((map_shape[0], -1))
     data_as_numpy = data_as_numpy.T
+
+    # Apply mask if desired
+    if mask_land:
+        mask_as_numpy = data["water"].values.ravel()
+        data_as_numpy = data_as_numpy[mask_as_numpy]
+
     return data_as_numpy, map_shape
 
 
-def _list_to_dataset_shape(data_list: np.ndarray, reference_scene: xr.Dataset) -> np.ndarray:
+def _list_to_dataset_shape(data_list: np.ndarray, reference_scene: xr.Dataset, *, mask_land=True) -> np.ndarray:
     """
     Convert a list into a map corresponding to the dimensions of a given xarray Dataset.
     The first dimension of data_list is converted into 2D spatial dimensions.
     The list is first transposed so that other variables become indices in the result.
+    If `mask_land`, apply the mask from `reference_scene` to the data.
     """
+    n_variables = data_list.shape[1]
     new_shape = tuple(reference_scene.sizes.values())
-    data_as_map = data_list.T.reshape(-1, *new_shape)
+
+    # Masked case: create an empty array simulating the original scene, then fill up the relevant pixels only
+    if mask_land:
+        # Setup
+        full_length = np.prod(new_shape)
+        data_list_full = np.tile(np.nan, (full_length, n_variables))
+        mask_as_numpy = reference_scene["water"].values.ravel()
+
+        # Assign values corresponding to mask
+        data_list_full[mask_as_numpy] = data_list
+        data_list = data_list_full
+
+    # Reshape the data
+    data_as_map = data_list.T.reshape(n_variables, *new_shape)
+
     return data_as_map
 
 
-def spectra_to_map(data: np.ndarray, map_shape: tuple[int] | xr.Dataset) -> np.ndarray | xr.Dataset:
+def spectra_to_map(data: np.ndarray, map_shape: tuple[int] | xr.Dataset, *, mask_land=True) -> np.ndarray | xr.Dataset:
     """
     Reshape a list of spectra back into a pre-defined map shape.
     If `map_shape` is an xarray Dataset, copy its georeferencing etc.
+    If `mask_land`, apply the mask from `map_shape` to the data.
     """
     if isinstance(map_shape, xr.Dataset):
-        data_as_map = _list_to_dataset_shape(data, map_shape)
+        data_as_map = _list_to_dataset_shape(data, map_shape, mask_land=mask_land)
         data_as_dict = {var: (map_shape.dims, arr) for var, arr in zip(map_shape.variables, data_as_map)}
         new_scene = xr.Dataset(data_as_dict, coords=map_shape.coords)
         data_as_map = new_scene
@@ -143,13 +169,14 @@ def spectra_to_map(data: np.ndarray, map_shape: tuple[int] | xr.Dataset) -> np.n
 
 
 def create_iop_map(iop_mean: np.ndarray, iop_variance: np.ndarray, reference_scene: xr.Dataset, *,
-                   iop_labels: Optional[Iterable[c.Parameter]]=c.iops) -> xr.Dataset:
+                   iop_labels: Optional[Iterable[c.Parameter]]=c.iops, mask_land=True) -> xr.Dataset:
     """
     Convert IOP estimates (mean and variance -> uncertainty) into an xarray Dataset like a provided scene.
+    If `mask_land`, assume the means/variances only apply to masked pixels in the reference scene.
     """
     # Reshape to 2D
-    iop_mean = _list_to_dataset_shape(iop_mean, reference_scene)
-    iop_variance = _list_to_dataset_shape(iop_variance, reference_scene)
+    iop_mean = _list_to_dataset_shape(iop_mean, reference_scene, mask_land=mask_land)
+    iop_variance = _list_to_dataset_shape(iop_variance, reference_scene, mask_land=mask_land)
 
     # Calculate uncertainty
     iop_std = np.sqrt(iop_variance)
