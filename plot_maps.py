@@ -37,7 +37,6 @@ for filename in filenames:
 
     # Plot Rrs for reference
     pnn.maps.plot_Rrs(scene, title=filename.stem, background=scene_rgb)
-    continue
 
     # Convert Rrs to list of spectra
     spectra, *_ = pnn.maps.map_to_spectra(scene)

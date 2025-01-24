@@ -1,5 +1,6 @@
 """
 Functions for reading and processing spatial (map) data.
+Currently contains plotting functions which would ideally be moved to pnn.output.
 """
 from functools import partial
 from pathlib import Path
@@ -11,7 +12,10 @@ import xarray as xr
 
 from matplotlib import pyplot as plt
 from matplotlib.colors import LogNorm, Normalize
+from matplotlib.image import AxesImage
 from cartopy.crs import PlateCarree
+from cartopy.mpl.geoaxes import GeoAxes
+from cartopy.mpl.geocollection import GeoQuadMesh
 from cmcrameri.cm import batlow
 
 from . import constants as c
@@ -20,7 +24,10 @@ from . import constants as c
 ### CONSTANTS
 pattern_prisma_acolite = "PRISMA_*_converted_L2C.nc"
 pattern_prisma_l2 = "PRISMA_*_L2W.nc"
+
 projection = PlateCarree()
+kw_projection = {"transform": projection, "x": "lon", "y": "lat"}
+kw_xy = {"add_labels": False, "yincrease": False}
 
 
 ### DATA LOADING
@@ -215,7 +222,18 @@ def save_iop_map(data: xr.Dataset, saveto: Path | str, **kwargs) -> None:
 
 
 ### PLOTTING
-_create_map_figure = partial(plt.subplots, subplot_kw={"projection": projection})
+def _create_map_figure(*args, projected=True, **kwargs) -> tuple[plt.Figure, Iterable[GeoAxes | plt.Axes]]:
+    """
+    Generate a Figure and Axes, with or without projection setup.
+    """
+    # Set up subplot kwargs
+    subplot_kw = {"projection": projection} if projected else {}
+    try:  # Allow the user to pass additional subplot kwargs
+        subplot_kw = subplot_kw | kwargs.pop("subplot_kw")
+    except KeyError:
+        pass
+
+    return plt.subplots(*args, subplot_kw=subplot_kw, **kwargs)
 
 
 def _plot_land_RGB(data: xr.Dataset, ax: plt.Axes, **kwargs) -> None:
@@ -224,13 +242,13 @@ def _plot_land_RGB(data: xr.Dataset, ax: plt.Axes, **kwargs) -> None:
     NOT compatible with projections.
     """
     # Combine into RGB cube
-    data_rgb = xr.concat([data[c] for c in "rgb"], dim="c")
+    data_rgb = xr.concat([data[c] for c in "rgb"], dim="c")  # data[*"rgb"] or similar does not work
 
     # Plot
-    data_rgb.plot.imshow(ax=ax, **kwargs) # robust=True,
+    data_rgb.plot.imshow(ax=ax, **kwargs)
 
 
-def _plot_land_brightness(data: xr.Dataset, ax: plt.Axes, *, rasterized=True, **kwargs) -> None:
+def _plot_land_brightness(data: xr.Dataset, ax: plt.Axes, **kwargs) -> None:
     """
     Plot a brightness layer in greyscale.
     Compatible with projections.
@@ -243,97 +261,89 @@ def _plot_land_brightness(data: xr.Dataset, ax: plt.Axes, *, rasterized=True, **
         brightness = 0.3 * data["r"] + 0.6 * data["g"] + 0.1 * data["b"]
 
     # Plot
-    brightness.plot.pcolormesh(ax=ax, cmap="gray", robust=True, add_colorbar=False, rasterized=rasterized, **kwargs)
+    brightness.plot.pcolormesh(ax=ax, cmap="gray", add_colorbar=False, **kwargs)
 
 
-def _plot_land(data: xr.Dataset, ax: plt.Axes, *, use_rgb=True, mask_water=True, **kwargs) -> None:
+def _plot_with_background(data: xr.Dataset, col: str, ax: GeoAxes | plt.Axes, *,
+                          projected=True,
+                          mask_land=True, background: Optional[xr.Dataset]=None, background_rgb=False,
+                          rasterized=True, **kwargs) -> GeoQuadMesh | AxesImage:
     """
-    Plot a background image contained in `data`.
-    If `use_rgb`, use _plot_land_RGB to plot an un-projected RGB image.
-    Else, use _plot_land_brightness to plot a projected greyscale image.
-    If `mask_water`, only show RGB where `water` is False.
+    Plot a variable `col` in the dataset `data` spatially, with masking and a greyscale/RGB background.
+    Returns the image of the variable, so it can be re-used (e.g. for colour bars).
     """
-    # Optional: mask
-    if mask_water:
-        data = data.where(~data["water"])
+    # Set up axes-related kwargs
+    kw_ax = kw_projection if projected else kw_xy
+    kw_ax = kw_ax | {"ax": ax, "rasterized": rasterized}
 
-    # Plot into ax
-    if use_rgb:
-        _plot_land_RGB(data, ax, **kwargs)
-    else:
-        _plot_land_brightness(data, ax, transform=projection, x="lon", y="lat", **kwargs)
+    # Plot background (note - unmasked, behind main image)
+    if background is not None:
+        plot_func = _plot_land_brightness if projected else _plot_land_RGB
+        plot_func(background, **kw_ax)
+
+    # Set up mask, plot function according to kwargs
+    variable = data.where(data["water"])[col] if mask_land else data[col]
+    plot_func = variable.plot.pcolormesh if projected else variable.plot.imshow  # xr.DataArray.plot... does not work
+
+    # Plot data
+    kwargs = kw_ax | kwargs
+    im = plot_func(**kwargs)
+
+    return im
 
 
-def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446",
-             projected=True, mask_land=True,
-             background: Optional[xr.Dataset]=None, background_rgb=True,
+def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
+             ax: Optional[plt.Axes]=None, projected=True,
+             mask_land=True, background: Optional[xr.Dataset]=None, background_rgb=False,
              title: Optional[str]=None, **kwargs) -> None:
     """
     Plot Rrs (default: 446 nm) for the given dataset.
-    Mask land if desired.
-    If `projected`, project to PlateCarree; else, just plot in data coordinates.
+    Masking, projection are handled by _plot_with_background.
     """
-    # Create figure
-    if projected:
-        fig, ax = _create_map_figure(1, 1, figsize=(14, 6))
-    else:
-        fig, ax = plt.subplots(1, 1, figsize=(14, 6))
+    # Select data
+    col = f"Rrs_{wavelength}"
 
-    # Mask
-    if mask_land:
-        data_to_plot = data.where(data["water"])[col]
-    else:
-        data_to_plot = data[col]
+    # Create new figure if no ax was given
+    newfig = (ax is None)
+    if newfig:
+        fig, ax = _create_map_figure(1, 1, projected=projected, figsize=(8, 6))
+    # Get `projected` from ax type?
 
     # Plot
-    kw = {"vmin": 0, "vmax": 0.04, "cmap": batlow} | kwargs
-    if projected:
-        data_to_plot.plot.pcolormesh(ax=ax, transform=projection, x="lon", y="lat", **kw)
-    else:
-        data_to_plot.plot.imshow(ax=ax, add_labels=False, yincrease=False, **kw)
-
-    # Plot land if desired
-    if background is not None:
-        # Check for setting compatibility
-        if projected and background_rgb:
-            print("Cannot plot a projected RGB background; changing to projected brightness background instead.")
-            background_rgb = False
-        _plot_land(background, ax, mask_water=mask_land, use_rgb=background_rgb, add_labels=False, yincrease=projected)
+    kwargs = {"vmin": 0, "vmax": 0.04, "cmap": batlow} | kwargs
+    im = _plot_with_background(data, col, ax=ax, projected=projected, mask_land=mask_land, background=background, background_rgb=background_rgb, **kwargs)
 
     # Plot parameters
     ax.set_title(title)
     ax.grid(False)
 
-    plt.show()
-    plt.close()
+    if newfig:
+        plt.show()
+        plt.close()
 
 
 def plot_IOP_single(data: xr.Dataset, iop=c.aph_443, *,
-                    background: Optional[xr.Dataset]=None, background_rgb=True,
-                    axs: Optional[Iterable[plt.Axes]]=None,
+                    axs: Optional[Iterable[plt.Axes]]=None, projected=True,
+                    background: Optional[xr.Dataset]=None, background_rgb=False,
                     title: Optional[str]=None,
                     saveto: Optional[Path | str]=None, **kwargs) -> None:
     """
     For one IOP (default: aph at 443 nm), plot the mean prediction and % uncertainty.
+    Masking, projection are handled by _plot_with_background.
     """
     # Create new figure if no axs are given
     newfig = (axs is None)
     if newfig:
-        fig, axs = _create_map_figure(ncols=2, figsize=(14, 6), layout="constrained")
+        fig, axs = _create_map_figure(ncols=2, projected=projected, figsize=(14, 6))
 
     # Setup
     norm_mean = LogNorm(vmin=1e-5, vmax=1e1)
     norm_std_pct = Normalize(vmin=c.total_unc_pct.vmin, vmax=c.total_unc_pct.vmax)
 
     # Plot data
-    map_kwargs = {"transform": projection, "x": "lon", "y": "lat", "cmap": "cividis", "robust": True, "rasterized": True}
-    data[iop].plot.pcolormesh(ax=axs[0], norm=norm_mean, **map_kwargs)
-    data[f"{iop}_std_pct"].plot.pcolormesh(ax=axs[1], norm=norm_std_pct, **map_kwargs)
-
-    # Plot land if desired
-    if background is not None:
-        for ax in axs:
-            _plot_land(background, ax, mask_water=True, use_rgb=background_rgb)
+    kw_shared = {"cmap": "cividis", "mask_land": False, "background": background, "background_rgb": background_rgb}
+    _plot_with_background(data, iop, ax=axs[0], norm=norm_mean, **kw_shared)
+    _plot_with_background(data, f"{iop}_std_pct", ax=axs[1], norm=norm_std_pct, **kw_shared)
 
     # Plot parameters
     axs[0].set_title(f"{iop.label}: mean")
@@ -349,8 +359,9 @@ def plot_IOP_single(data: xr.Dataset, iop=c.aph_443, *,
         plt.close()
 
 
-def plot_IOP_all(data: xr.Dataset, *,
-                 iops=c.iops,
+def plot_IOP_all(data: xr.Dataset, *, iops=c.iops,
+                 projected=True,
+                 background: Optional[xr.Dataset]=None, background_rgb=False,
                  title: Optional[str]=None,
                  saveto: Optional[Path | str]=None, **kwargs) -> None:
     """
@@ -358,11 +369,11 @@ def plot_IOP_all(data: xr.Dataset, *,
     """
     # Create figure
     nrows = len(iops)
-    fig, axs = _create_map_figure(ncols=2, nrows=nrows, figsize=(14, 6*nrows), layout="constrained")
+    fig, axs = _create_map_figure(ncols=2, nrows=nrows, projected=projected, figsize=(14, 6*nrows))
 
     # Plot individual rows
     for ax_row, iop in zip(axs, iops):
-        plot_IOP_single(data, iop=iop, axs=ax_row, **kwargs)
+        plot_IOP_single(data, iop=iop, axs=ax_row, projected=projected, background=background, background_rgb=background_rgb, **kwargs)
 
     # Plot parameters
     fig.suptitle(title)
@@ -393,11 +404,6 @@ def get_h5_filename(filename_nc: Path | str) -> Path:
 
     return filename_h5
 
-"""
-    def normalize_band(band):
-        p2, p98 = np.percentile(band, (2, 98))
-        return np.clip((band - p2) / (p98 - p2), 0, 1)
-"""
 
 def load_h5_as_rgb(filename: Path | str, *,
                    vnir_cube_address: str="/HDFEOS/SWATHS/PRS_L1_HCO/Data Fields/VNIR_Cube",
@@ -430,12 +436,21 @@ def load_h5_as_rgb(filename: Path | str, *,
     return rgb_cube
 
 
+def _rgb_to_luminance(rgb: Iterable[float]) -> Iterable[float]:
+    """
+    Convert an RGB array [c, x, ...] to a luminance array [x, ...].
+    Note that this is functionality also appears in pnn.output.common; it is repeated here to allow independent development.
+    """
+    r, g, b = rgb
+    return 0.3*r + 0.6*g + 0.1*b
+
+
 def rgb_to_xarray(scene: xr.Dataset, rgb_cube: np.ndarray) -> xr.Dataset:
     """
     Convert a numpy-format RGB cube to an xarray Dataset with variables "r", "g", "b", "brightness", and matching coordinates.
     """
     rgb_dict = {c: (scene.dims, arr) for c, arr in zip("rgb", rgb_cube)}
-    brightness = 0.3 * rgb_cube[0] + 0.6 * rgb_cube[1] + 0.1 * rgb_cube[2]
+    brightness = _rgb_to_luminance(rgb_cube)
     brightness = {"brightness": (scene.dims, brightness)}
 
     scene_rgb = rgb_dict | brightness
