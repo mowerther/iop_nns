@@ -217,7 +217,29 @@ def save_iop_map(data: xr.Dataset, saveto: Path | str, **kwargs) -> None:
 ### PLOTTING
 _create_map_figure = partial(plt.subplots, subplot_kw={"projection": projection})
 
+
+def _plot_land(data: xr.Dataset, ax: plt.Axes, mask_water=True) -> None:
+    """
+    Plot rgb data contained in `data` as an RGB image.
+    If `mask_water`, only show RGB where `water` is False.
+    """
+    # Optional: mask
+    if mask_water:
+        data = data.where(~data["water"])
+
+    # Plot into ax
+    brightness = 0.3 * data["r"] + 0.6 * data["g"] + 0.1 * data["b"]
+    kw = {"ax": ax, "transform": projection, "x": "lon", "y": "lat", "add_colorbar": False, "rasterized": True}
+    brightness.plot.pcolormesh(**kw, cmap="gray")
+
+    # kw = {"ax": ax, "transform": projection, "x": "lon", "y": "lat", "add_colorbar": False, "alpha": 0.3}
+    # data["r"].plot.pcolormesh(**kw, cmap="Reds")
+    # data["g"].plot.pcolormesh(**kw, cmap="Greens")
+    # data["b"].plot.pcolormesh(**kw, cmap="Blues")
+
+
 def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446", mask_land=True,
+             background: Optional[xr.Dataset]=None,
              title: Optional[str]=None, **kwargs) -> None:
     """
     Plot Rrs (default: 446 nm) for the given dataset.
@@ -233,6 +255,10 @@ def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446", mask_land=True,
         data_to_plot = data[col]
     data_to_plot.plot.pcolormesh(ax=ax, transform=projection, x="lon", y="lat", vmin=0, vmax=0.04, cmap=batlow)
 
+    # Plot land if desired
+    if background is not None:
+        _plot_land(background, ax, mask_water=mask_land)
+
     # Plot parameters
     ax.set_title(title)
 
@@ -241,6 +267,7 @@ def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446", mask_land=True,
 
 
 def plot_IOP_single(data: xr.Dataset, iop=c.aph_443, *,
+                    background: Optional[xr.Dataset]=None,
                     axs: Optional[Iterable[plt.Axes]]=None,
                     title: Optional[str]=None,
                     saveto: Optional[Path | str]=None, **kwargs) -> None:
@@ -260,6 +287,11 @@ def plot_IOP_single(data: xr.Dataset, iop=c.aph_443, *,
     map_kwargs = {"transform": projection, "x": "lon", "y": "lat", "cmap": "cividis", "robust": True, "rasterized": True}
     data[iop].plot.pcolormesh(ax=axs[0], norm=norm_mean, **map_kwargs)
     data[f"{iop}_std_pct"].plot.pcolormesh(ax=axs[1], norm=norm_std_pct, **map_kwargs)
+
+    # Plot land if desired
+    if background is not None:
+        for ax in axs:
+            _plot_land(background, ax, mask_water=True)
 
     # Plot parameters
     axs[0].set_title(f"{iop.label}: mean")
@@ -288,7 +320,7 @@ def plot_IOP_all(data: xr.Dataset, *,
 
     # Plot individual rows
     for ax_row, iop in zip(axs, iops):
-        plot_IOP_single(data, iop=iop, axs=ax_row)
+        plot_IOP_single(data, iop=iop, axs=ax_row, **kwargs)
 
     # Plot parameters
     fig.suptitle(title)
@@ -312,7 +344,7 @@ def get_h5_filename(filename_nc: Path | str) -> Path:
     date_prefix = "".join([prefix, *date])
 
     # Look for matching files
-    matching_filenames = filename_nc.parent.glob(f"{date_prefix}*")
+    matching_filenames = filename_nc.parent.glob(f"{date_prefix}*.he5")
     matching_filenames = list(matching_filenames)
     assert len(matching_filenames) == 1, f"Did not find exactly 1 match; instead found {len(matching_filenames)}:\n{matching_filenames}"
     filename_h5 = matching_filenames[0]
@@ -340,26 +372,26 @@ def load_h5_as_rgb(filename: Path | str, *,
     rgb_cube = np.swapaxes(rgb_cube, 1, 0)  # [c, x, y]
     rgb_cube = np.rot90(rgb_cube, k=-1, axes=(1, 2))  # Rotate image counter-clockwise to match level 2
 
+    # Normalise to [0..1] range
+    rgb_max = rgb_cube.max(axis=(1, 2))  # [c]
+    rgb_cube = rgb_cube / rgb_max[:, np.newaxis, np.newaxis]
+
     return rgb_cube
 
-"""
-    rgb_normalized = np.dstack([normalize_band(rgb[:,:,i]) for i in range(3)])
 
-# left subplot - aph443
-ax1.imshow(rgb_normalized)
-im1 = ax1.imshow(masked_aph, vmin=p2_aph, vmax=p98_aph, cmap=viridis, alpha=0.8)
-cbar1 = plt.colorbar(im1, ax=ax1, format='%.3f', label=r'a$_{ph}(443)$ [m$^{-1}$]', extend='both')
-ticks1 = np.linspace(p2_aph, p98_aph, 6)
-cbar1.set_ticks(ticks1)
-ax1.set_title(r'PRISMA L2 a$_{ph}(443)$')
-ax1.axis('off')
+def rgb_to_xarray(scene: xr.Dataset, rgb_cube: np.ndarray) -> xr.Dataset:
+    """
+    Convert a numpy-format RGB cube to an xarray Dataset with variables "r", "g", "b", "brightness", and matching coordinates.
+    """
+    rgb_dict = {c: (scene.dims, arr) for c, arr in zip("rgb", rgb_cube)}
+    brightness = 0.3 * rgb_cube[0] + 0.6 * rgb_cube[1] + 0.1 * rgb_cube[2]
+    brightness = {"brightness": (scene.dims, brightness)}
 
-# right subplot - aph443 std percentage
-ax2.imshow(rgb_normalized)
-im2 = ax2.imshow(masked_aph_std, vmin=p2_std, vmax=p98_std, cmap=cividis, alpha=0.8)
-cbar2 = plt.colorbar(im2, ax=ax2, format='%.1f', label=r'a$_{ph}(443)$ std [%]', extend='both')
-ticks2 = np.linspace(p2_std, p98_std, 6)
-cbar2.set_ticks(ticks2)
-ax2.set_title(r'PRISMA L2 a$_{ph}(443)$ unc.')
-ax2.axis('off')
-"""
+    scene_rgb = rgb_dict | brightness
+    scene_rgb = xr.Dataset(scene_rgb, coords=scene.coords)
+
+    # Add mask if available
+    if "water" in scene.keys():
+        scene_rgb = scene_rgb.assign({"water": scene["water"]})
+
+    return scene_rgb
