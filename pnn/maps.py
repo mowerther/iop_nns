@@ -218,9 +218,39 @@ def save_iop_map(data: xr.Dataset, saveto: Path | str, **kwargs) -> None:
 _create_map_figure = partial(plt.subplots, subplot_kw={"projection": projection})
 
 
-def _plot_land(data: xr.Dataset, ax: plt.Axes, mask_water=True) -> None:
+def _plot_land_RGB(data: xr.Dataset, ax: plt.Axes, **kwargs) -> None:
     """
-    Plot rgb data contained in `data` as an RGB image.
+    Plot RGB layers as a colour image.
+    NOT compatible with projections.
+    """
+    # Combine into RGB cube
+    data_rgb = xr.concat([data[c] for c in "rgb"], dim="c")
+
+    # Plot
+    data_rgb.plot.imshow(ax=ax, **kwargs) # robust=True,
+
+
+def _plot_land_brightness(data: xr.Dataset, ax: plt.Axes, *, rasterized=True, **kwargs) -> None:
+    """
+    Plot a brightness layer in greyscale.
+    Compatible with projections.
+    If no brightness layer exists, try to create it from RGB layers.
+    """
+    # Find or create brightness layer
+    try:
+        brightness = data["brightness"]
+    except KeyError:
+        brightness = 0.3 * data["r"] + 0.6 * data["g"] + 0.1 * data["b"]
+
+    # Plot
+    brightness.plot.pcolormesh(ax=ax, cmap="gray", robust=True, add_colorbar=False, rasterized=rasterized, **kwargs)
+
+
+def _plot_land(data: xr.Dataset, ax: plt.Axes, *, use_rgb=True, mask_water=True, **kwargs) -> None:
+    """
+    Plot a background image contained in `data`.
+    If `use_rgb`, use _plot_land_RGB to plot an un-projected RGB image.
+    Else, use _plot_land_brightness to plot a projected greyscale image.
     If `mask_water`, only show RGB where `water` is False.
     """
     # Optional: mask
@@ -228,46 +258,58 @@ def _plot_land(data: xr.Dataset, ax: plt.Axes, mask_water=True) -> None:
         data = data.where(~data["water"])
 
     # Plot into ax
-    brightness = 0.3 * data["r"] + 0.6 * data["g"] + 0.1 * data["b"]
-    kw = {"ax": ax, "transform": projection, "x": "lon", "y": "lat", "add_colorbar": False, "rasterized": True}
-    brightness.plot.pcolormesh(**kw, cmap="gray")
-
-    # kw = {"ax": ax, "transform": projection, "x": "lon", "y": "lat", "add_colorbar": False, "alpha": 0.3}
-    # data["r"].plot.pcolormesh(**kw, cmap="Reds")
-    # data["g"].plot.pcolormesh(**kw, cmap="Greens")
-    # data["b"].plot.pcolormesh(**kw, cmap="Blues")
+    if use_rgb:
+        _plot_land_RGB(data, ax, **kwargs)
+    else:
+        _plot_land_brightness(data, ax, transform=projection, x="lon", y="lat", **kwargs)
 
 
-def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446", mask_land=True,
-             background: Optional[xr.Dataset]=None,
+def plot_Rrs(data: xr.Dataset, *, col: str="Rrs_446",
+             projected=True, mask_land=True,
+             background: Optional[xr.Dataset]=None, background_rgb=True,
              title: Optional[str]=None, **kwargs) -> None:
     """
     Plot Rrs (default: 446 nm) for the given dataset.
     Mask land if desired.
+    If `projected`, project to PlateCarree; else, just plot in data coordinates.
     """
     # Create figure
-    fig, ax = _create_map_figure(1, 1, figsize=(14, 6))
+    if projected:
+        fig, ax = _create_map_figure(1, 1, figsize=(14, 6))
+    else:
+        fig, ax = plt.subplots(1, 1, figsize=(14, 6))
 
-    # Plot
+    # Mask
     if mask_land:
         data_to_plot = data.where(data["water"])[col]
     else:
         data_to_plot = data[col]
-    data_to_plot.plot.pcolormesh(ax=ax, transform=projection, x="lon", y="lat", vmin=0, vmax=0.04, cmap=batlow)
+
+    # Plot
+    kw = {"vmin": 0, "vmax": 0.04, "cmap": batlow} | kwargs
+    if projected:
+        data_to_plot.plot.pcolormesh(ax=ax, transform=projection, x="lon", y="lat", **kw)
+    else:
+        data_to_plot.plot.imshow(ax=ax, add_labels=False, yincrease=False, **kw)
 
     # Plot land if desired
     if background is not None:
-        _plot_land(background, ax, mask_water=mask_land)
+        # Check for setting compatibility
+        if projected and background_rgb:
+            print("Cannot plot a projected RGB background; changing to projected brightness background instead.")
+            background_rgb = False
+        _plot_land(background, ax, mask_water=mask_land, use_rgb=background_rgb, add_labels=False, yincrease=projected)
 
     # Plot parameters
     ax.set_title(title)
+    ax.grid(False)
 
     plt.show()
     plt.close()
 
 
 def plot_IOP_single(data: xr.Dataset, iop=c.aph_443, *,
-                    background: Optional[xr.Dataset]=None,
+                    background: Optional[xr.Dataset]=None, background_rgb=True,
                     axs: Optional[Iterable[plt.Axes]]=None,
                     title: Optional[str]=None,
                     saveto: Optional[Path | str]=None, **kwargs) -> None:
@@ -291,7 +333,7 @@ def plot_IOP_single(data: xr.Dataset, iop=c.aph_443, *,
     # Plot land if desired
     if background is not None:
         for ax in axs:
-            _plot_land(background, ax, mask_water=True)
+            _plot_land(background, ax, mask_water=True, use_rgb=background_rgb)
 
     # Plot parameters
     axs[0].set_title(f"{iop.label}: mean")
@@ -359,7 +401,8 @@ def get_h5_filename(filename_nc: Path | str) -> Path:
 
 def load_h5_as_rgb(filename: Path | str, *,
                    vnir_cube_address: str="/HDFEOS/SWATHS/PRS_L1_HCO/Data Fields/VNIR_Cube",
-                   bands: Iterable[int]=(32, 45, 61)) -> np.ndarray:
+                   bands: Iterable[int]=(32, 45, 61),
+                   normalise: str="pct") -> np.ndarray:
     """
     Load a PRISMA HDF5 file from the given filename and extract the desired bands for an RGB image.
     """
@@ -372,9 +415,17 @@ def load_h5_as_rgb(filename: Path | str, *,
     rgb_cube = np.swapaxes(rgb_cube, 1, 0)  # [c, x, y]
     rgb_cube = np.rot90(rgb_cube, k=-1, axes=(1, 2))  # Rotate image counter-clockwise to match level 2
 
-    # Normalise to [0..1] range
-    rgb_max = rgb_cube.max(axis=(1, 2))  # [c]
-    rgb_cube = rgb_cube / rgb_max[:, np.newaxis, np.newaxis]
+    # Normalisation
+    if normalise == "max":
+        # Normalise to [0..1] range
+        rgb_max = rgb_cube.max(axis=(1, 2))  # [c]
+        rgb_cube = rgb_cube / rgb_max[:, np.newaxis, np.newaxis]
+
+    elif normalise == "pct":
+        # Normalise to [2..98] percentile range
+        lower, upper = np.percentile(rgb_cube, (2, 98), axis=(1, 2))
+        lower, upper = lower[:, np.newaxis, np.newaxis], upper[:, np.newaxis, np.newaxis]
+        rgb_cube = np.clip((rgb_cube - lower) / (upper - lower), 0, 1)
 
     return rgb_cube
 
