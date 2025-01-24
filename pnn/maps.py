@@ -16,7 +16,7 @@ from matplotlib.image import AxesImage
 from cartopy.crs import PlateCarree
 from cartopy.mpl.geoaxes import GeoAxes
 from cartopy.mpl.geocollection import GeoQuadMesh
-from cmcrameri.cm import batlow
+from cmcrameri import cm as cmc
 
 from . import constants as c
 from . import output as o
@@ -234,7 +234,7 @@ def _create_map_figure(*args, projected=True, **kwargs) -> tuple[plt.Figure, Ite
     except KeyError:
         pass
 
-    return plt.subplots(*args, subplot_kw=subplot_kw, **kwargs)
+    return plt.subplots(*args, subplot_kw=subplot_kw, layout="constrained", **kwargs)
 
 
 def _plot_land_RGB(data: xr.Dataset, ax: plt.Axes, **kwargs) -> None:
@@ -262,7 +262,7 @@ def _plot_land_brightness(data: xr.Dataset, ax: plt.Axes, **kwargs) -> None:
         brightness = 0.3 * data["r"] + 0.6 * data["g"] + 0.1 * data["b"]
 
     # Plot
-    brightness.plot.pcolormesh(ax=ax, cmap="gray", add_colorbar=False, **kwargs)
+    brightness.plot.pcolormesh(ax=ax, cmap=cmc.grayC, add_colorbar=False, **kwargs)
 
 
 def _plot_with_background(data: xr.Dataset, col: str, ax: GeoAxes | plt.Axes, *,
@@ -311,12 +311,13 @@ def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
     # Get `projected` from ax type?
 
     # Plot
-    kwargs = {"vmin": 0, "vmax": 0.04, "cmap": batlow} | kwargs
-    im = _plot_with_background(data, col, ax=ax, projected=projected, mask_land=mask_land, background=background, background_rgb=background_rgb, cbar_kwargs=kw_cbar, **kwargs)
+    kwargs = {"vmin": 0, "vmax": 0.04, "cmap": cmc.devon.resampled(8)} | kwargs
+    cbar_kwargs = {"label": r"$R_{rs}$" + f"({wavelength}) " + r"[sr$^{-1}$]"} | kw_cbar
+    im = _plot_with_background(data, col, ax=ax, projected=projected, mask_land=mask_land, background=background, background_rgb=background_rgb, cbar_kwargs=cbar_kwargs, **kwargs)
 
     # Plot parameters
-    ax.set_title(title)
-    ax.grid(False)
+    if newfig:
+        fig.suptitle(title)
 
     if newfig:
         plt.show()
@@ -338,18 +339,18 @@ def plot_IOP_single(data: xr.Dataset, iop: c.Parameter=c.aph_443, *,
         fig, axs = _create_map_figure(ncols=2, projected=projected, figsize=(14, 6))
 
     # Setup
-    norm_mean = LogNorm(vmin=1e-5, vmax=1e1)
-    norm_std_pct = Normalize(vmin=c.total_unc_pct.vmin, vmax=c.total_unc_pct.vmax)
+    norm_mean = LogNorm()
 
     # Plot data
-    kw_shared = {"cmap": plt.cm.cividis, "mask_land": False, "background": background, "background_rgb": background_rgb,
-                 "cbar_kwargs": kw_cbar}
-    _plot_with_background(data, iop, ax=axs[0], norm=norm_mean, **kw_shared)
-    _plot_with_background(data, f"{iop}_std_pct", ax=axs[1], norm=norm_std_pct, **kw_shared)
+    kw_shared = {"cmap": cmc.navia.resampled(8), "mask_land": False, "background": background, "background_rgb": background_rgb}
+
+    cbar_kwargs = {"label": f"Mean {iop.label} [{iop.unit}]"} | kw_cbar
+    _plot_with_background(data, iop, ax=axs[0], norm=norm_mean, robust=True, cbar_kwargs=cbar_kwargs, **kw_shared)
+
+    cbar_kwargs = {"label": f"Uncertainty in {iop.label} [%]"} | kw_cbar
+    _plot_with_background(data, f"{iop}_std_pct", ax=axs[1], robust=True, cbar_kwargs=cbar_kwargs, **kw_shared)
 
     # Plot parameters
-    axs[0].set_title(f"{iop.label}: mean")
-    axs[1].set_title(f"{iop.label}: uncertainty [%]")
     if newfig:
         fig.suptitle(title)
 
@@ -407,7 +408,7 @@ def plot_Rrs_and_IOP(reflectance: xr.Dataset, iop_map: xr.Dataset, *, wavelength
     fig.suptitle(title)
 
     if saveto:
-        plt.savefig(saveto)
+        plt.savefig(saveto, dpi=600)
 
     plt.show()
     plt.close()

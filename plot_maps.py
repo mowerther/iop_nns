@@ -36,7 +36,7 @@ for filename in filenames:
     scene_rgb = pnn.maps.rgb_to_xarray(scene, rgb_cube)
 
     # Plot Rrs for reference
-    pnn.maps.plot_Rrs(scene, title=filename.stem, background=scene_rgb)
+    # pnn.maps.plot_Rrs(scene, title=filename.stem, background=scene_rgb)
 
     # Convert Rrs to list of spectra
     spectra, *_ = pnn.maps.map_to_spectra(scene)
@@ -76,5 +76,4 @@ for filename in filenames:
     pnn.maps.save_iop_map(iop_map, saveto=pnn.c.map_output_path/f"{label}_iops.nc")
 
     # Plot IOP maps - main output
-    pnn.maps.plot_IOP_single(iop_map, background=scene_rgb, title=filename.stem, saveto=pnn.c.map_output_path/f"{label}_aph443.pdf")
     pnn.maps.plot_Rrs_and_IOP(scene, iop_map, background=scene_rgb, title=filename.stem, saveto=pnn.c.map_output_path/f"{label}_Rrs_aph443.pdf")
