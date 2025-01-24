@@ -19,6 +19,7 @@ from cartopy.mpl.geocollection import GeoQuadMesh
 from cmcrameri.cm import batlow
 
 from . import constants as c
+from . import output as o
 
 
 ### CONSTANTS
@@ -341,7 +342,7 @@ def plot_IOP_single(data: xr.Dataset, iop=c.aph_443, *,
     norm_std_pct = Normalize(vmin=c.total_unc_pct.vmin, vmax=c.total_unc_pct.vmax)
 
     # Plot data
-    kw_shared = {"cmap": "cividis", "mask_land": False, "background": background, "background_rgb": background_rgb}
+    kw_shared = {"cmap": plt.cm.cividis, "mask_land": False, "background": background, "background_rgb": background_rgb}
     _plot_with_background(data, iop, ax=axs[0], norm=norm_mean, **kw_shared)
     _plot_with_background(data, f"{iop}_std_pct", ax=axs[1], norm=norm_std_pct, **kw_shared)
 
