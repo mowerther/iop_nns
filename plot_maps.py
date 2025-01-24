@@ -77,4 +77,4 @@ for filename in filenames:
 
     # Plot IOP maps - main output
     pnn.maps.plot_IOP_single(iop_map, background=scene_rgb, title=filename.stem, saveto=pnn.c.map_output_path/f"{label}_aph443.pdf")
-    pnn.maps.plot_IOP_all(iop_map, background=scene_rgb, title=filename.stem, saveto=pnn.c.map_output_path/f"{label}_iops.pdf")
+    pnn.maps.plot_Rrs_and_IOP(scene, iop_map, background=scene_rgb, title=filename.stem, saveto=pnn.c.map_output_path/f"{label}_Rrs_aph443.pdf")

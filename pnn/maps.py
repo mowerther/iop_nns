@@ -29,7 +29,7 @@ pattern_prisma_l2 = "PRISMA_*_L2W.nc"
 projection = PlateCarree()
 kw_projection = {"transform": projection, "x": "lon", "y": "lat"}
 kw_xy = {"add_labels": False, "yincrease": False}
-
+kw_cbar = {"location": "bottom", "fraction": 0.1, "pad": 0.05}
 
 ### DATA LOADING
 def _load_general(filename: Path | str) -> xr.Dataset:
@@ -312,7 +312,7 @@ def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
 
     # Plot
     kwargs = {"vmin": 0, "vmax": 0.04, "cmap": batlow} | kwargs
-    im = _plot_with_background(data, col, ax=ax, projected=projected, mask_land=mask_land, background=background, background_rgb=background_rgb, **kwargs)
+    im = _plot_with_background(data, col, ax=ax, projected=projected, mask_land=mask_land, background=background, background_rgb=background_rgb, cbar_kwargs=kw_cbar, **kwargs)
 
     # Plot parameters
     ax.set_title(title)
@@ -323,7 +323,7 @@ def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
         plt.close()
 
 
-def plot_IOP_single(data: xr.Dataset, iop=c.aph_443, *,
+def plot_IOP_single(data: xr.Dataset, iop: c.Parameter=c.aph_443, *,
                     axs: Optional[Iterable[plt.Axes]]=None, projected=True,
                     background: Optional[xr.Dataset]=None, background_rgb=False,
                     title: Optional[str]=None,
@@ -342,7 +342,8 @@ def plot_IOP_single(data: xr.Dataset, iop=c.aph_443, *,
     norm_std_pct = Normalize(vmin=c.total_unc_pct.vmin, vmax=c.total_unc_pct.vmax)
 
     # Plot data
-    kw_shared = {"cmap": plt.cm.cividis, "mask_land": False, "background": background, "background_rgb": background_rgb}
+    kw_shared = {"cmap": plt.cm.cividis, "mask_land": False, "background": background, "background_rgb": background_rgb,
+                 "cbar_kwargs": kw_cbar}
     _plot_with_background(data, iop, ax=axs[0], norm=norm_mean, **kw_shared)
     _plot_with_background(data, f"{iop}_std_pct", ax=axs[1], norm=norm_std_pct, **kw_shared)
 
@@ -375,6 +376,32 @@ def plot_IOP_all(data: xr.Dataset, *, iops=c.iops,
     # Plot individual rows
     for ax_row, iop in zip(axs, iops):
         plot_IOP_single(data, iop=iop, axs=ax_row, projected=projected, background=background, background_rgb=background_rgb, **kwargs)
+
+    # Plot parameters
+    fig.suptitle(title)
+
+    if saveto:
+        plt.savefig(saveto)
+
+    plt.show()
+    plt.close()
+
+
+def plot_Rrs_and_IOP(reflectance: xr.Dataset, iop_map: xr.Dataset, *, wavelength: int=446, iop: c.Parameter=c.aph_443,
+                     projected=True,
+                     background: Optional[xr.Dataset]=None, background_rgb=False,
+                     title: Optional[str]=None,
+                     saveto: Optional[Path | str]=None) -> None:
+    """
+    Plot Rrs and one IOP (mean/uncertainty) next to each other.
+    """
+    # Create figure
+    fig, axs = _create_map_figure(ncols=3, nrows=1, projected=projected, figsize=(15, 5))
+
+    # Plot data
+    kw_shared = {"projected": projected, "background": background, "background_rgb": background_rgb}
+    plot_Rrs(reflectance, wavelength, ax=axs[0], **kw_shared)
+    plot_IOP_single(iop_map, iop, axs=axs[1:], **kw_shared)
 
     # Plot parameters
     fig.suptitle(title)
