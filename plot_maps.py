@@ -22,6 +22,28 @@ parser.add_argument("-a", "--acolite", help="use acolite data (if False: use L2C
 args = parser.parse_args()
 
 
+### Set up rescaling
+prisma_scenarios = pnn.data.read_prisma_data()
+model_scenario = prisma_scenarios[0]
+print(f"Model training scenario: {model_scenario.train_scenario}")
+
+
+### Load average-performing PNN
+# Setup
+scenario_for_average = pnn.c.prisma_gen_ACOLITE if args.acolite else pnn.c.prisma_gen_L2
+PNN = pnn.nn.select_nn(args.pnn_type)
+
+# Load metrics
+metrics = pnn.modeloutput.read_all_model_metrics(pnn.c.model_estimates_path, scenarios=[scenario_for_average])
+median_indices, *_ = pnn.modeloutput.select_median_metrics(metrics)
+median_index = median_indices.loc[scenario_for_average, args.pnn_type]
+print(f"Model number {median_index} is the average-performing {args.pnn_type} in the '{scenario_for_average}' scenario")
+
+# Load model
+model = pnn.nn.load_model_iteration(PNN, median_index, model_scenario.train_scenario)
+print(f"Loaded model: {model}")
+
+
 ### Load data
 filenames = args.folder.glob(pnn.maps.pattern_prisma_acolite if args.acolite else pnn.maps.pattern_prisma_l2)
 
@@ -42,10 +64,6 @@ for filename in filenames:
     spectra, *_ = pnn.maps.map_to_spectra(scene)
 
     # Rescale Rrs to the same scale the models were trained on
-    prisma_scenarios = pnn.data.read_prisma_data()
-    model_scenario = prisma_scenarios[0]
-    print(f"Model training scenario: {model_scenario.train_scenario}")
-
     X_scaler = model_scenario.X_scaler
     spectra_trans = X_scaler.transform(spectra)
 
@@ -53,18 +71,7 @@ for filename in filenames:
     scaler_y, *_ = pnn.data.scale_y(y_train)
 
     # Set up output label
-    PNN = pnn.nn.select_nn(args.pnn_type)
-    scenario_for_average = pnn.c.prisma_gen_ACOLITE if args.acolite else pnn.c.prisma_gen_L2
     label = f"{filename.stem}-{PNN.name}-{scenario_for_average}"
-
-    # Load average-performing PNN
-    metrics = pnn.modeloutput.read_all_model_metrics(pnn.c.model_estimates_path, scenarios=[scenario_for_average])
-    median_indices, *_ = pnn.modeloutput.select_median_metrics(metrics)
-    median_index = median_indices.loc[scenario_for_average, args.pnn_type]
-    print(f"Model number {median_index} is the average-performing {args.pnn_type} in the '{scenario_for_average}' scenario")
-
-    model = pnn.nn.load_model_iteration(PNN, median_index, model_scenario.train_scenario)
-    print(f"Loaded model: {model}")
 
     # Apply PNN
     iop_mean, iop_variance, *_ = model.predict_with_uncertainty(spectra_trans, scaler_y)
