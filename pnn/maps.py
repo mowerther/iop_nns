@@ -342,13 +342,13 @@ def plot_IOP_single(data: xr.Dataset, iop: c.Parameter=c.aph_443, *,
     norm_mean = LogNorm()
 
     # Plot data
-    kw_shared = {"cmap": cmc.navia.resampled(8), "mask_land": False, "background": background, "background_rgb": background_rgb}
+    kw_shared = {"mask_land": False, "background": background, "background_rgb": background_rgb}
 
     cbar_kwargs = {"label": f"Mean {iop.label} [{iop.unit}]"} | kw_cbar
-    _plot_with_background(data, iop, ax=axs[0], norm=norm_mean, robust=True, cbar_kwargs=cbar_kwargs, **kw_shared)
+    _plot_with_background(data, iop, ax=axs[0], norm=norm_mean, robust=True, cmap=cmc.navia.resampled(8), cbar_kwargs=cbar_kwargs, **kw_shared)
 
     cbar_kwargs = {"label": f"Uncertainty in {iop.label} [%]"} | kw_cbar
-    _plot_with_background(data, f"{iop}_std_pct", ax=axs[1], robust=True, cbar_kwargs=cbar_kwargs, **kw_shared)
+    _plot_with_background(data, f"{iop}_std_pct", ax=axs[1], robust=True, cmap=cmc.turku.resampled(8), cbar_kwargs=cbar_kwargs, **kw_shared)
 
     # Plot parameters
     if newfig:
