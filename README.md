@@ -68,8 +68,20 @@ _Folders, file types, structure._
 ## Reproducing the paper
 This section will explain step-by-step how the paper can be reproduced.
 
+Run [plot_calibration_example.py](plot_calibration_example.py) as follows:
+_To do._
+
 Run [dataset_split.py](dataset_split.py) as follows:
 _To do._
 
+Run [plot_data.py](plot_data.py) as follows:
+_To do._
+
 Run [train_nn.py](train_nn.py) as follows (with/without flags):
+_To do._
+
+Run [analyze_estimates.py](analyze_estimates.py) as follows (with/without flags):
+_To do._
+
+Run [apply_to_prisma.py](apply_to_prisma.py) as follows (with/without flags):
 _To do._
