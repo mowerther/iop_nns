@@ -11,7 +11,7 @@ import numpy as np
 import xarray as xr
 
 from matplotlib import pyplot as plt
-from matplotlib.colors import LogNorm, Normalize
+from matplotlib.colors import LinearSegmentedColormap, LogNorm, Normalize
 from matplotlib.image import AxesImage
 from cartopy.crs import PlateCarree
 from cartopy.mpl.geoaxes import GeoAxes
@@ -293,6 +293,9 @@ def _plot_with_background(data: xr.Dataset, col: str, ax: GeoAxes | plt.Axes, *,
     return im
 
 
+# Devon without white
+devon8 = LinearSegmentedColormap.from_list("devon8", cmc.devon.colors[:-20]).resampled(8)
+
 def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
              ax: Optional[plt.Axes]=None, projected=True,
              mask_land=True, background: Optional[xr.Dataset]=None, background_rgb=False,
@@ -311,7 +314,7 @@ def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
     # Get `projected` from ax type?
 
     # Plot
-    kwargs = {"vmin": 0, "vmax": 0.04, "cmap": cmc.devon.resampled(8)} | kwargs
+    kwargs = {"robust": True, "cmap": devon8} | kwargs
     cbar_kwargs = {"label": r"$R_{rs}$" + f"({wavelength}) " + r"[sr$^{-1}$]"} | kw_cbar
     im = _plot_with_background(data, col, ax=ax, projected=projected, mask_land=mask_land, background=background, background_rgb=background_rgb, cbar_kwargs=cbar_kwargs, **kwargs)
 
