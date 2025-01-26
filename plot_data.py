@@ -1,5 +1,9 @@
 """
 Script for loading and plotting the input data.
+Data are assumed to be in default locations.
+
+Example:
+    python plot_data.py
 """
 import pandas as pd
 import pnn

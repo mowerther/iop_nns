@@ -40,9 +40,7 @@ train_data, test_data = pnn.read_scenario123_data()
 Explain data format in Python.
 
 ### Plotting data
-[plot_data.py](plot_data.py) - Generate figures showing the training and test set IOP distributions.
-
-_(Figures 1, 2)_
+[plot_data.py](plot_data.py) - Generates figures showing the IOP distributions in the input data and train/test sets in each split scenario.
 
 ## PRISMA data
 
@@ -74,8 +72,10 @@ _To do._
 Run [dataset_split.py](dataset_split.py) as follows:
 _To do._
 
-Run [plot_data.py](plot_data.py) as follows:
-_To do._
+To recreate Figures 1 and 2, run [plot_data.py](plot_data.py) as follows, which will save the resulting figures to [manuscript_figures/full_dataset.pdf](manuscript_figures) and [manuscript_figures/scenarios.pdf](manuscript_figures).
+```
+python plot_data.py
+```
 
 Run [train_nn.py](train_nn.py) as follows (with/without flags):
 _To do._
