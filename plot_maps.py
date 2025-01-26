@@ -83,4 +83,5 @@ for filename in filenames:
     pnn.maps.save_iop_map(iop_map, saveto=pnn.c.map_output_path/f"{label}_iops.nc")
 
     # Plot IOP maps - main output
-    pnn.maps.plot_Rrs_and_IOP(scene, iop_map, background=scene_rgb, title=filename.stem, saveto=pnn.c.map_output_path/f"{label}_Rrs_aph443.pdf")
+    for iop in [pnn.c.aph_443, pnn.c.aph_675, pnn.c.aCDOM_443]:
+        pnn.maps.plot_Rrs_and_IOP(scene, iop_map, iop=iop, background=scene_rgb, title=filename.stem, saveto=pnn.c.map_output_path/f"{label}_Rrs_{iop}.png")
