@@ -63,6 +63,8 @@ _Folders, file types, structure._
 ## Analysis
 [analyze_estimates.py](analyze_estimates.py) - Analyze PNN model outputs to generate figures and statistics.
 
+[apply_to_prisma.py](apply_to_prisma.py) - Apply PNNs to PRISMA scenes, plot the results.
+
 ## Reproducing the paper
 This section will explain step-by-step how the paper can be reproduced.
 

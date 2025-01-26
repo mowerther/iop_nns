@@ -1,15 +1,15 @@
 """
-Script for loading map data and applying PNN estimation pixel-wise.
+Script for loading PRISMA scenes and applying PNN estimation pixel-wise.
 First loads and plots (atmospherically corrected) reflectance data.
 Next finds and applies the average-performing model (by median MdSA) for each network-scenario combination.
 
-Data are loaded from pnn.c.map_data_path by default, but a custom folder can be supplied using the -f flag (e.g. `python plot_maps.py -f /path/to/my/folder`).
+Data are loaded from pnn.c.map_data_path by default, but a custom folder can be supplied using the -f flag (e.g. `python apply_to_prisma.py -f /path/to/my/folder`).
 Please note that figures will still be saved to the same location.
 
 Recalibrated models are not currently supported.
 
 Example:
-    python plot_maps.py bnn_mcd
+    python apply_to_prisma.py bnn_mcd
 """
 import pnn
 
