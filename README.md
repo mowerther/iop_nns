@@ -2,10 +2,10 @@
 
 This repository contains the Python code that was used in our paper, submitted to *Remote Sensing of Environment*.
 The following sections describe the repository and codebase in detail.
-Text _written in italics_ is work-in-progress.
+Text *written in italics* is work-in-progress.
 The [last section](#reproducing-the-paper) provides a summary containing just the information necessary to reproduce the paper.
 
-**Abstract**    
+**Abstract**
 Machine learning models have steadily improved in estimating inherent optical properties (IOPs) from remote sensing observations. Yet, their generalization ability when applied to new water bodies, beyond those they were trained on, is not well understood. We present a novel approach for assessing model generalization across various scenarios, including interpolation within *in situ* observation datasets, extrapolation beyond the training scope, and application to hyperspectral observations from the PRecursore IperSpettrale della Missione Applicativa (PRISMA) satellite involving atmospheric correction. We evaluate five probabilistic neural networks (PNNs), including novel architectures like recurrent neural networks, for their ability to estimate absorption at 443 and 675 nm.
 The median symmetric accuracy (MdSA) declines from ≥20% in interpolation scenarios to ≥50% in extrapolation scenarios, and ≥80% when applied to PRISMA satellite imagery. Including representative *in situ* observations in PRISMA applications improves accuracy by 10-15 percent points, highlighting the importance of regional knowledge. Uncertainty estimates exceed 40% across all scenarios, with models generally underconfident in their estimations. However, we observe better-calibrated uncertainties during extrapolation, indicating an inherent recognition of retrieval limitations. We introduce an uncertainty recalibration method using 10% of the dataset, which improves model reliability in 70% of PRISMA evaluations with minimal accuracy trade-offs. 
 The uncertainty is predominantly aleatoric (inherent to the observations). Therefore, increasing the number of measurements from the same distribution does not enhance model accuracy. Similarly, selecting a different neural network architecture, trained on the same data, is unlikely to significantly improve retrieval accuracy. Instead, we propose that advancement in IOP estimation through neural networks lies in integrating the physical principles of IOPs into model architectures, thereby creating physics-informed neural networks.
@@ -19,18 +19,24 @@ generating outputs for the paper.
 A more detailed overview is provided in the [relevant documentation](pnn/README.md).
 
 
-## _In situ_ data & data splitting
-### _In situ_ data
-The core _in situ_ datasets used in our study originate from [GLORIA](https://doi.org/10.1038/s41597-023-01973-y) and [SeaBASS](https://seabass.gsfc.nasa.gov/).
+## *In situ* data & data splitting
+### *In situ* data
+The core *in situ* datasets used in our study originate from [GLORIA](https://doi.org/10.1038/s41597-023-01973-y) and [SeaBASS](https://seabass.gsfc.nasa.gov/).
 These datasets are not currently hosted within this repository for licensing reasons; we aim to make them available so the study can be reproduced.
 
 ### Dataset splitting
-_Splitting: data format, data location, data handling._
+A data file in CSV format with headers can be split using the [dataset_split.py](dataset_split.py) script.
+This script does not require installation of the wider `pnn` module, but can be used by itself.
+Its requirements are Numpy, Pandas, Scipy, and Scikit-learn.
 
-[dataset_split.py](dataset_split.py) - Split an *in situ* dataset into training and test set (random split, within-distribution, and out-of-distribution).
+*The script is called as follows*:
+```
+python dataset_split.py path/to/data.csv
+```
 
-_Output: 6 CSV files._
+*This will save the corresponding split data files to your working directory as 6 new CSV files:*
 (`"random_df_train_org.csv"`, `"random_df_test_org.csv"`, `"wd_train_set_org.csv"`, `"wd_test_set_org.csv"`, `"ood_train_set_2.csv"`, `"ood_test_set_2.csv"`)
+
 
 ### Loading split datasets
 All other steps in the model training, estimation, and analysis only use the resulting split data files (random, within-distribution, out-of-distribution).
@@ -47,7 +53,9 @@ Explain data format in Python.
 ### Plotting data
 [plot_data.py](plot_data.py) - Generates figures showing the IOP distributions in the input data and train/test sets in each split scenario.
 
+
 ## PRISMA data
+
 
 ## Model training
 [train_nn.py](train_nn.py) - Train a PNN of choice (out of `bnn_dc`, `bnn_mcd`, `ens_nn`, `mdn`, `rnn`).
@@ -56,6 +64,7 @@ _`-p` flag for PRISMA._
 
 ### Output format
 _Folders, file types, structure._
+
 
 ## Model recalibration
 [train_nn.py](train_nn.py) - Train a PNN of choice (out of `bnn_dc`, `bnn_mcd`, `ens_nn`, `mdn`, `rnn`).
