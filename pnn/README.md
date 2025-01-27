@@ -28,6 +28,3 @@ Reading and pre-processing model outputs (IOP estimates).
 
 * `pnn.recalibration`: 
 Neural network recalibration; fitting and applying recalibration functions, calculating calibration curves.
-
-* `pnn.split`: 
-Splitting data.
