@@ -3,23 +3,13 @@ Generate a plot to explain calibration.
 Mostly based on example code from the uncertainty_toolbox project.
 """
 import numpy as np
-import matplotlib.pyplot as plt
 import uncertainty_toolbox as uct
-from scipy.stats import norm  # Add this import
-from typing import Union
-from typing import Tuple
-from typing import List
-from typing import Any
+from matplotlib import pyplot as plt
+from typing import Any, List, Tuple, Union
 
 from pnn import output_path
 
 Numeric = Union[int, float, np.ndarray]
-
-# uct.viz.set_style()
-# uct.viz.update_rc("text.usetex", False)  # Set to True for system latex
-# uct.viz.update_rc("font.size", 14)  # Set font size
-# uct.viz.update_rc("xtick.labelsize", 14)  # Set font size for xaxis tick labels
-# uct.viz.update_rc("ytick.labelsize", 14)  # Set font size for yaxis tick labels
 
 ### SETTINGS
 np.random.seed(1603)
