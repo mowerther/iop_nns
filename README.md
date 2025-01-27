@@ -78,7 +78,7 @@ This script uses the architectures [defined in the `pnn.nn`](pnn/README.md) subm
 `bnn_dc` (Bayesian Neural Network with DropConnect),
 `bnn_mcd` (Bayesian Neural Network with Monte Carlo Dropout),
 `ens_nn` (Ensemble Neural Network),
-`mdn` (Mixed-Density Network),
+`mdn` (Mixture Density Network),
 and
 `rnn` (Recurrent Neural Network).
 These architectures use the same backbone, namely the [`BasePNN` class](pnn/nn/pnn_base.py), ensuring consistency and making it very simple to add new architectures in the future.
