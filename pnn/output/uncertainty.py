@@ -18,63 +18,6 @@ from .common import IOP_SCALE, _dataframe_to_string, _heatmap, _plot_grouped_val
 from .common import dash, median_with_confidence_interval, print_metric_range
 
 
-### IOP VALUE VS. UNCERTAINTY (BINNED)
-## Individual panels
-def plot_log_binned_statistics_line(binned: pd.DataFrame, ax: plt.Axes, *,
-                                    uncertainties: Iterable[str]=c.relative_uncertainties, **kwargs) -> None:
-    """
-    Given a DataFrame containing log-binned statistics, plot the total/aleatoric/epistemic uncertainties for one variable.
-    Plots a line for the average uncertainty and a shaded area for typical deviations.
-    """
-    # Loop over uncertainty types and plot each
-    for unc in uncertainties:
-        df = binned.loc[unc]
-        color = unc.color
-
-        df.plot.line(ax=ax, y="median", color=color, label=unc.label, **kwargs)
-        ax.fill_between(df.index, df["median"] - df["mad"], df["median"] + df["mad"], color=color, alpha=0.1)
-
-    # Labels
-    ax.grid(True, ls="--")
-
-
-## Combined, for all combinations of network and scenario
-def plot_log_binned_statistics(binned: pd.DataFrame, *,
-                               scenarios: Iterable[c.Parameter]=c.scenarios_123,
-                               saveto: Path | str=c.supplementary_path/"uncertainty_line.pdf", tag: Optional[str]=None) -> None:
-    """
-    Plot log-binned statistics from a main DataFrame.
-    """
-    # Create figure
-    nrows = len(scenarios)*len(c.networks)
-    ncols = len(c.iops)
-    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, figsize=(2.5*ncols, 1.67*nrows), layout="constrained", squeeze=False)
-
-    # Plot lines
-    for ax_row, (network, scenario) in zip(axs, itertools.product(c.networks, scenarios)):
-        for ax, var in zip(ax_row, c.iops):
-            df = binned.loc[scenario, network][var]
-            plot_log_binned_statistics_line(df, ax=ax, legend=False)
-
-    # Settings
-    axs[0, 0].set_xscale(IOP_SCALE)
-    for ax in axs.ravel():
-        ax.set_ylim(ymin=0)
-    for ax, var in zip(axs[-1], c.iops):
-        ax.set_xlabel(var.label)
-    for ax, (network, scenario) in zip(axs[:, 0], itertools.product(c.networks, scenarios)):
-        ax.set_ylabel(f"{network.label}\n{scenario.label}")
-
-    # Labels
-    fig.supxlabel("In situ value")
-    fig.supylabel("Median uncertainty [%]")
-    fig.align_ylabels()
-
-    saveto = saveto_append_tag(saveto, tag)
-    plt.savefig(saveto)
-    plt.close()
-
-
 ### AVERAGE UNCERTAINTY HEATMAP
 _heatmap_uncertainties = [c.total_unc_pct, c.ale_frac]
 # Single

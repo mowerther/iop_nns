@@ -17,9 +17,6 @@ Provides the `Parameter` dataclass which ensures consistent nomenclature, units,
 * `pnn.data`: 
 Reading and pre-processing input data (original and split) as well as re-scaling of IOPs.
 
-* `pnn.logbins`:
-Calculating statistics as a function of IOP value, in log-scale bins.
-
 * `pnn.maps`:
 Applying neutral network modules to PRISMA scenes and plotting the results.
 
