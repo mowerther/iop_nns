@@ -54,6 +54,14 @@ train_data, test_data = pnn.read_scenario123_data()
 
 ### Plotting data
 [plot_data.py](plot_data.py) - Generates figures showing the IOP distributions in the input data and train/test sets in each split scenario.
+as follows,
+which will save the resulting figures to
+[manuscript_figures/full_dataset.pdf](manuscript_figures)
+and
+[manuscript_figures/scenarios.pdf](manuscript_figures).
+```
+python plot_data.py
+```
 
 
 ## PRISMA data
@@ -113,36 +121,27 @@ the [`Ensemble.save`](pnn/nn/ens.py#L97) and [`Ensemble.load`](pnn/nn/ens.py#L11
 Please note that saving recalibrated models is not yet fully implemented; the model will be saved and loaded as normal, but not its corresponding recalibration function.
 
 
-## Model recalibration
-[train_nn.py](train_nn.py) - Train a PNN of choice (out of `bnn_dc`, `bnn_mcd`, `ens_nn`, `mdn`, `rnn`).
-
-### Example plot
-[plot_calibration_example.py](plot_calibration_example.py) - Generate a figure explaining uncertainty calibration.
-
 ## Analysis
 [analyze_estimates.py](analyze_estimates.py) - Analyze PNN model outputs to generate figures and statistics.
 
 [apply_to_prisma.py](apply_to_prisma.py) - Apply PNNs to PRISMA scenes, plot the results.
 
+
 ## Reproducing the paper
-This section will explain step-by-step how the paper can be reproduced.
 
-Run [plot_calibration_example.py](plot_calibration_example.py) as follows:
-_To do._
+### Setup
+*Run [dataset_split.py](dataset_split.py) as follows:*
 
-Run [dataset_split.py](dataset_split.py) as follows:
-_To do._
+*Run [train_nn.py](train_nn.py) as follows (with/without flags):*
 
-To recreate Figures 1 and 2, run [plot_data.py](plot_data.py) as follows, which will save the resulting figures to [manuscript_figures/full_dataset.pdf](manuscript_figures) and [manuscript_figures/scenarios.pdf](manuscript_figures).
-```
-python plot_data.py
-```
 
-Run [train_nn.py](train_nn.py) as follows (with/without flags):
-_To do._
+### Figures
+Figures 1 and 2 were generated using [plot_data.py](plot_data.py), with no command-line arguments.
 
-Run [analyze_estimates.py](analyze_estimates.py) as follows (with/without flags):
-_To do._
+Figure 3 was made by hand.
 
-Run [apply_to_prisma.py](apply_to_prisma.py) as follows (with/without flags):
-_To do._
+Figure 4 was generated using [plot_calibration_example.py](plot_calibration_example.py), with no command-line arguments.
+
+*Run [analyze_estimates.py](analyze_estimates.py) as follows (with/without flags):*
+
+*Run [apply_to_prisma.py](apply_to_prisma.py) as follows (with/without flags):*
