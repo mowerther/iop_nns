@@ -65,12 +65,52 @@ train_data, test_data = pnn.read_scenario123_data()
 
 
 ## Model training
-[train_nn.py](train_nn.py) - Train a PNN of choice (out of `bnn_dc`, `bnn_mcd`, `ens_nn`, `mdn`, `rnn`).
+Neural network models are trained using the [train_nn.py](train_nn.py) script.
+This script uses the architectures [defined in the `pnn.nn`](pnn/README.md) submodule, currently
+`bnn_dc` (Bayesian Neural Network with DropConnect),
+`bnn_mcd` (Bayesian Neural Network with Monte Carlo Dropout),
+`ens_nn` (Ensemble Neural Network),
+`mdn` (Mixed-Density Network),
+and
+`rnn` (Recurrent Neural Network).
+These architectures use the same backbone, namely the [`BasePNN` class](pnn/nn/pnn_base.py), ensuring consistency and making it very simple to add new architectures in the future.
+The base class and its descendants are all implemented using TensorFlow/Keras.
 
-_`-p` flag for PRISMA._
+To train one of these architectures, call the `train_nn.py` script with the architecture abbreviation as a command-line argument, e.g. to train a BNN-DC:
+```
+python train_nn.py bnn_dc
+```
+
+By default, the script will [load the *in situ* data](#loading-split-datasets) and train/evaluate on its corresponding scenarios in sequence.
+To use the PRISMA data scenarios (general or local knowledge), use the `-p` flag, e.g.:
+```
+python train_nn.py bnn_dc -p
+```
+
+To train models with recalibration, simply add the `-c` flag, e.g.:
+```
+python train_nn.py bnn_dc -c
+```
+or
+```
+python train_nn.py bnn_dc -pc
+```
+
+Lastly, you can specify the number of models to train/evaluate for each scenario using the `-n` argument;
+the default value is 25.
+Say you want to train only 5 models, use:
+```
+python train_nn.py bnn_dc -n 5
+```
 
 ### Output format
-_Folders, file types, structure._
+Trained models are saved to the [`pnn.model_path`](pnn/constants.py#L19) constant;
+by default, this is the [pnn_tf_models folder](pnn_tf_models).
+Models are saved in TensorFlow/Keras (`.keras`) format using the default save function, which can be accessed using [`BasePNN.save`](pnn/nn/pnn_base.py#L91).
+A saved model can be loaded using the [`BasePNN.load`](pnn/nn/pnn_base.py#L96) function, or any of its equivalents, e.g. `BNN_DC.load`.
+The ENS-NN (ensemble neural network) is saved as a folder containing its constituent networks, but otherwise works the same;
+the [`Ensemble.save`](pnn/nn/ens.py#L97) and [`Ensemble.load`](pnn/nn/ens.py#L112) functions will automatically take care of any lingering `.keras` extensions in filenames.
+Please note that saving recalibrated models is not yet fully implemented; the model will be saved and loaded as normal, but not its corresponding recalibration function.
 
 
 ## Model recalibration
