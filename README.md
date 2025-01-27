@@ -20,6 +20,7 @@ A more detailed overview is provided in the [relevant documentation](pnn/README.
 
 
 ## *In situ* data & data splitting
+
 ### *In situ* data
 The core *in situ* datasets used in our study originate from [GLORIA](https://doi.org/10.1038/s41597-023-01973-y) and [SeaBASS](https://seabass.gsfc.nasa.gov/).
 These datasets are not currently hosted within this repository for licensing reasons; we aim to make them available so the study can be reproduced.
@@ -39,22 +40,28 @@ python dataset_split.py path/to/data.csv
 
 
 ### Loading split datasets
-All other steps in the model training, estimation, and analysis only use the resulting split data files (random, within-distribution, out-of-distribution).
-These files are read using the [`pnn.data.read_scenario123_data`](pnn/data.py#L59) function.
+All other steps in the model training, estimation, and analysis for the *in situ* scenarios use the resulting split data files (random, within-distribution, out-of-distribution).
+These files are read using the [`pnn.data.read_scenario123_data`](pnn/data.py#L61) function.
 This function can load files from any folder on your computer; it will try to load the aforementioned 6 CSV files from the given folder.
 By default, it uses the [datasets_train_test](datasets_train_test) folder within the repository folder; this setting can be changed at [`pnn.constants.data_path`](pnn/constants.py#L14).
 
-[Example](plot_data.py):
+Example:
 ```python
 train_data, test_data = pnn.read_scenario123_data()
 ```
-Explain data format in Python.
+
+*Explain data format in Python.*
 
 ### Plotting data
 [plot_data.py](plot_data.py) - Generates figures showing the IOP distributions in the input data and train/test sets in each split scenario.
 
 
 ## PRISMA data
+
+### Match-up data
+
+
+### Scenes
 
 
 ## Model training
