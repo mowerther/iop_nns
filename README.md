@@ -11,8 +11,13 @@ The median symmetric accuracy (MdSA) declines from ≥20% in interpolation scena
 The uncertainty is predominantly aleatoric (inherent to the observations). Therefore, increasing the number of measurements from the same distribution does not enhance model accuracy. Similarly, selecting a different neural network architecture, trained on the same data, is unlikely to significantly improve retrieval accuracy. Instead, we propose that advancement in IOP estimation through neural networks lies in integrating the physical principles of IOPs into model architectures, thereby creating physics-informed neural networks.
 
 ## `pnn` module
-Most of the functionalities used for data handling, model training, and analysis have been refactored into the [pnn](pnn) module.
-_Explain general setup._
+Most of the functionalities used for data handling, model training, and analysis have been refactored into the [`pnn`](pnn) module.
+This module handles all of the functionalities relating to 
+constructing, training, testing, recalibrating, and applying the neural network models; 
+analysing and visualising the model estimates; 
+generating outputs for the paper.
+A more detailed overview is provided in the [relevant documentation](pnn/README.md).
+
 
 ## _In situ_ data & data splitting
 ### _In situ_ data
