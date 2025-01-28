@@ -11,6 +11,9 @@ import numpy as np
 from scipy.optimize import dual_annealing
 from sklearn.model_selection import train_test_split
 
+# Set up constants
+summary_cols = ["aph_443", "aNAP_443", "aCDOM_443"]
+
 # 0. Load your dataset with splitting (herein referred to as summary variables/columns)
 # Parse command-line args
 import argparse
@@ -144,7 +147,6 @@ def system_data_split(data, train_ratio=0.5, seed=11, max_iterations=10):
 
     return train_set, test_set
 
-summary_cols = ['aph_443', 'aNAP_443', 'aCDOM_443']
 train_set_wd, test_set_wd = system_data_split(example_df, seed=43)
 
 print(len(train_set_wd))
@@ -245,7 +247,6 @@ def system_data_split_oos(data, train_ratio=0.5, seed=12, max_iterations=15):
 
     return train_set, test_set
 
-summary_cols = ['aph_443', 'aNAP_443', 'aCDOM_443']
 train_set_oos, test_set_oos = system_data_split_oos(example_df, seed=42)
 
 print(len(train_set_oos))
