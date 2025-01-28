@@ -90,6 +90,15 @@ def read_scenario123_data(folder: Path | str=c.data_path) -> tuple[DataScenario]
 ### READ PRISMA MATCH-UP DATA (INCLUDING GLORIA+)
 capitalise_iops = {"acdom_443": "aCDOM_443", "acdom_675": "aCDOM_675", "anap_443": "aNAP_443", "anap_675": "aNAP_675",}
 
+def _convert_excel_date(dates: pd.Series) -> pd.Series:
+    """
+    Convert Excel-format dates (e.g. 44351) to strings in PRISMA/CNR format (e.g. "04.06.2021").
+    """
+    datetimes = pd.to_datetime(dates.astype(float), unit="D", origin="1899-12-30")
+    strings = datetimes.dt.strftime("%d.%m.%Y")
+    return strings
+
+
 def read_prisma_insitu(filename: Path | str=c.prisma_path/"case_1_insitu_vs_insitu"/"prisma_insitu.csv", *,
                        filter_invalid_dates=False) -> pd.DataFrame:
     """
@@ -100,7 +109,8 @@ def read_prisma_insitu(filename: Path | str=c.prisma_path/"case_1_insitu_vs_insi
     data = data.rename(columns={f"{nm}_prisma_insitu": f"Rrs_{nm}" for nm in c.wavelengths_prisma})
     data = data.rename(columns=capitalise_iops)
     if filter_invalid_dates:
-        data = data[data["date"].str.contains(".", regex=False)]
+        to_filter = ~data["date"].str.contains(".", regex=False)
+        data.loc[to_filter, "date"] = _convert_excel_date(data.loc[to_filter, "date"])
 
     return data
 
