@@ -5,12 +5,13 @@ The following sections describe the repository and codebase in detail.
 Text *written in italics* is work-in-progress.
 The [last section](#reproducing-the-paper) provides a summary containing just the information necessary to reproduce the paper.
 
-**Abstract**
+**Abstract**    
 Machine learning models have steadily improved in estimating inherent optical properties (IOPs) from remote sensing observations. Yet, their generalization ability when applied to new water bodies, beyond those they were trained on, is not well understood. We present a novel approach for assessing model generalization across various scenarios, including interpolation within *in situ* observation datasets, extrapolation beyond the training scope, and application to hyperspectral observations from the PRecursore IperSpettrale della Missione Applicativa (PRISMA) satellite involving atmospheric correction. We evaluate five probabilistic neural networks (PNNs), including novel architectures like recurrent neural networks, for their ability to estimate absorption at 443 and 675 nm.
 The median symmetric accuracy (MdSA) declines from ≥20% in interpolation scenarios to ≥50% in extrapolation scenarios, and ≥80% when applied to PRISMA satellite imagery. Including representative *in situ* observations in PRISMA applications improves accuracy by 10-15 percent points, highlighting the importance of regional knowledge. Uncertainty estimates exceed 40% across all scenarios, with models generally underconfident in their estimations. However, we observe better-calibrated uncertainties during extrapolation, indicating an inherent recognition of retrieval limitations. We introduce an uncertainty recalibration method using 10% of the dataset, which improves model reliability in 70% of PRISMA evaluations with minimal accuracy trade-offs. 
 The uncertainty is predominantly aleatoric (inherent to the observations). Therefore, increasing the number of measurements from the same distribution does not enhance model accuracy. Similarly, selecting a different neural network architecture, trained on the same data, is unlikely to significantly improve retrieval accuracy. Instead, we propose that advancement in IOP estimation through neural networks lies in integrating the physical principles of IOPs into model architectures, thereby creating physics-informed neural networks.
 
-## `pnn` module
+## Overview
+### `pnn` module
 Most of the functionalities used for data handling, model training, and analysis have been refactored into the [`pnn`](pnn) module.
 This module handles all of the functionalities relating to 
 constructing, training, testing, recalibrating, and applying the neural network models; 
@@ -18,6 +19,27 @@ analysing and visualising the model estimates;
 generating outputs for the paper.
 A more detailed overview is provided in the [relevant documentation](pnn/README.md).
 
+### Scripts
+The code used to (re)produce the results in the paper is organised into multiple scripts within the top-level folder
+Detailed descriptions of the various scripts are provided in the following sections.
+All scripts use argparse, meaning you can obtain instructions on their usage using the help flag `-h`, e.g.:
+```console
+python train_nn.py -h
+```
+will return:
+```console
+usage: Script for loading data and training a neural network. [-h] [-p] [-c] [-n N_MODELS] pnn_type
+
+positional arguments:
+  pnn_type              PNN architecture to use
+
+options:
+  -h, --help            show this help message and exit
+  -p, --prisma          use PRISMA data
+  -c, --recalibrate     apply recalibration
+  -n N_MODELS, --n_models N_MODELS
+                        number of models to train per scenario (default: 25)
+```
 
 ## *In situ* data & data splitting
 
@@ -31,7 +53,7 @@ This script does not require installation of the wider `pnn` module, but can be 
 Its requirements are Numpy, Pandas, Scipy, and Scikit-learn.
 
 *The script is called as follows*:
-```
+```console
 python dataset_split.py path/to/data.csv
 ```
 
@@ -59,7 +81,7 @@ which will save the resulting figures to
 [manuscript_figures/full_dataset.pdf](manuscript_figures)
 and
 [manuscript_figures/scenarios.pdf](manuscript_figures).
-```
+```console
 python plot_data.py
 ```
 
@@ -85,29 +107,29 @@ These architectures use the same backbone, namely the [`BasePNN` class](pnn/nn/p
 The base class and its descendants are all implemented using TensorFlow/Keras.
 
 To train one of these architectures, call the `train_nn.py` script with the architecture abbreviation as a command-line argument, e.g. to train a BNN-DC:
-```
+```console
 python train_nn.py bnn_dc
 ```
 
 By default, the script will [load the *in situ* data](#loading-split-datasets) and train/evaluate on its corresponding scenarios in sequence.
 To use the PRISMA data scenarios (general or local knowledge), use the `-p` flag, e.g.:
-```
+```console
 python train_nn.py bnn_dc -p
 ```
 
 To train models with recalibration, simply add the `-c` flag, e.g.:
-```
+```console
 python train_nn.py bnn_dc -c
 ```
 or
-```
+```console
 python train_nn.py bnn_dc -pc
 ```
 
 Lastly, you can specify the number of models to train/evaluate for each scenario using the `-n` argument;
 the default value is 25.
 Say you want to train only 5 models, use:
-```
+```console
 python train_nn.py bnn_dc -n 5
 ```
 
