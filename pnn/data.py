@@ -55,7 +55,7 @@ class DataScenario:
         return iter([self.train_scenario, self.train_data, self.test_scenarios_and_data])
 
 
-### INPUT / OUTPUT
+### READ GLORIA+ DATA
 rename_org = {"org_aph_443": "aph_443", "org_anap_443": "aNAP_443", "org_acdom_443": "aCDOM_443",
               "org_aph_675": "aph_675", "org_anap_675": "aNAP_675", "org_acdom_675": "aCDOM_675",}
 def read_scenario123_data(folder: Path | str=c.data_path) -> tuple[DataScenario]:
@@ -87,7 +87,24 @@ def read_scenario123_data(folder: Path | str=c.data_path) -> tuple[DataScenario]
     return random, wd, ood
 
 
+### READ PRISMA MATCH-UP DATA (INCLUDING GLORIA+)
 capitalise_iops = {"acdom_443": "aCDOM_443", "acdom_675": "aCDOM_675", "anap_443": "aNAP_443", "anap_675": "aNAP_675",}
+
+def read_prisma_insitu(filename: Path | str=c.prisma_path/"case_1_insitu_vs_insitu"/"prisma_insitu.csv", *,
+                       filter_invalid_dates=False) -> pd.DataFrame:
+    """
+    Read the PRISMA in situ match-up data.
+    If `filter_invalid_dates`, filter out invalid time stamps.
+    """
+    data = pd.read_csv(filename)
+    data = data.rename(columns={f"{nm}_prisma_insitu": f"Rrs_{nm}" for nm in c.wavelengths_prisma})
+    data = data.rename(columns=capitalise_iops)
+    if filter_invalid_dates:
+        data = data[data["date"].str.contains(".", regex=False)]
+
+    return data
+
+
 def read_prisma_data(folder: Path | str=c.prisma_path) -> tuple[DataScenario]:
     """
     Read the PRISMA subscenario 1--3 data from a given folder into a number of DataFrames.
@@ -104,7 +121,7 @@ def read_prisma_data(folder: Path | str=c.prisma_path) -> tuple[DataScenario]:
     combined_insitu = pd.read_csv(folder/"case_3_local_insitu_vs_aco"/"combined_local_train_df.csv").rename(columns={f"{nm}_prisma_local": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns={"cdom_443": "aCDOM_443", "cdom_675": "aCDOM_675", "nap_443": "aNAP_443", "nap_675": "aNAP_675", "ph_443": "aph_443", "ph_675": "aph_675",})
 
     # test_X, test_y for in situ vs in situ
-    prisma_insitu = pd.read_csv(folder/"case_1_insitu_vs_insitu"/"prisma_insitu.csv").rename(columns={f"{nm}_prisma_insitu": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
+    prisma_insitu = read_prisma_insitu(folder/"case_1_insitu_vs_insitu"/"prisma_insitu.csv")
 
     # test_X, test_y for ACOLITE scenarios
     prisma_acolite = pd.read_csv(folder/"case_2_insitu_vs_aco"/"prisma_aco.csv").rename(columns={f"aco_{nm}": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)

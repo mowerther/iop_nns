@@ -22,10 +22,14 @@ parser.add_argument("-a", "--acolite", help="use acolite data (if False: use L2C
 args = parser.parse_args()
 
 
-### Set up rescaling
+### Set up rescaling and match-ups
+# Rescaling
 prisma_scenarios = pnn.data.read_prisma_data()
 model_scenario = prisma_scenarios[0]
 print(f"Model training scenario: {model_scenario.train_scenario}")
+
+# Match-ups
+matchups = pnn.data.read_prisma_insitu(filter_invalid_dates=True)
 
 
 ### Load average-performing PNN
@@ -48,6 +52,10 @@ print(f"Loaded model: {model}")
 filenames = args.folder.glob(pnn.maps.pattern_prisma_acolite if args.acolite else pnn.maps.pattern_prisma_l2)
 
 for filename in filenames:
+    # Find match-ups
+    _, date = pnn.maps.filename_to_date(filename)
+    matchups_here = pnn.maps.find_matchups_on_date(matchups, date)
+
     # Load reflectance
     scene = pnn.maps.load_prisma_map(filename, acolite=args.acolite)
     print(f"Read data from `{filename.absolute()}`")
@@ -84,4 +92,4 @@ for filename in filenames:
 
     # Plot IOP maps - main output
     for iop in [pnn.c.aph_443, pnn.c.aph_675, pnn.c.aCDOM_443]:
-        pnn.maps.plot_Rrs_and_IOP(scene, iop_map, iop=iop, background=scene_rgb, title=filename.stem, saveto=pnn.c.map_output_path/f"{label}_Rrs_{iop}.png")
+        pnn.maps.plot_Rrs_and_IOP(scene, iop_map, iop=iop, background=scene_rgb, matchups=matchups_here, title=filename.stem, saveto=pnn.c.map_output_path/f"{label}_Rrs_{iop}.png")

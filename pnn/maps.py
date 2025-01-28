@@ -2,12 +2,14 @@
 Functions for reading and processing spatial (map) data.
 Currently contains plotting functions which would ideally be moved to pnn.output.
 """
+import datetime as dt
 from functools import partial
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Hashable, Iterable, Optional
 
 import h5py
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from matplotlib import pyplot as plt
@@ -57,7 +59,7 @@ def mask_water(data: xr.Dataset, *, threshold: float=0.) -> xr.DataArray:
     return ndwi_over_threshold
 
 
-def select_prisma_columns(data: xr.Dataset, key: str="Rrs") -> xr.Dataset:
+def select_prisma_columns(data: xr.Dataset, key: Hashable="Rrs") -> xr.Dataset:
     # Select columns PNNs were trained on
     # Note that there are rounding differences between the data and pnn.constants -- we simply select on the min and max
     lmin, lmax = c.wavelengths_prisma[0], c.wavelengths_prisma[-1]
@@ -191,7 +193,7 @@ def spectra_to_map(data: np.ndarray, map_shape: tuple[int] | xr.Dataset, *, mask
 
 
 def create_iop_map(iop_mean: np.ndarray, iop_variance: np.ndarray, reference_scene: xr.Dataset, *,
-                   iop_labels: Optional[Iterable[c.Parameter]]=c.iops, mask_land=True) -> xr.Dataset:
+                   iop_labels: Optional[Iterable[Hashable]]=c.iops, mask_land=True) -> xr.Dataset:
     """
     Convert IOP estimates (mean and variance -> uncertainty) into an xarray Dataset like a provided scene.
     If `mask_land`, assume the means/variances only apply to masked pixels in the reference scene.
@@ -266,7 +268,7 @@ def _plot_land_brightness(data: xr.Dataset, ax: plt.Axes, **kwargs) -> None:
     brightness.plot.pcolormesh(ax=ax, cmap=cmc.grayC, add_colorbar=False, **kwargs)
 
 
-def _plot_with_background(data: xr.Dataset, col: str, ax: GeoAxes | plt.Axes, *,
+def _plot_with_background(data: xr.Dataset, col: Hashable, ax: GeoAxes | plt.Axes, *,
                           projected=True,
                           mask_land=True, background: Optional[xr.Dataset]=None, background_rgb=False,
                           rasterized=True, **kwargs) -> GeoQuadMesh | AxesImage:
@@ -294,12 +296,29 @@ def _plot_with_background(data: xr.Dataset, col: str, ax: GeoAxes | plt.Axes, *,
     return im
 
 
+def _plot_matchups(matchups: pd.DataFrame, ax: GeoAxes,
+                   **kwargs) -> None:
+    """
+    Plot match-ups as scatter points on top of a GeoAxes.
+    Only works on projected maps.
+    color, cmap, and norm are handled through **kwargs so they can stay optional.
+    """
+    # Checks
+    assert isinstance(ax, GeoAxes), f"Axes object `{ax}` is not a projected GeoAxes, cannot plot match-ups."
+
+    # Determine colours
+    ax.scatter(matchups["lon"], matchups["lat"], transform=projection,
+               s=50, edgecolor="black", marker="D",
+               **kwargs)
+
+
 # Devon without white
 devon_discrete = LinearSegmentedColormap.from_list("devon_discrete", cmc.devon.colors[:-20]).resampled(N_colours)
 
 def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
              ax: Optional[plt.Axes]=None, projected=True,
              mask_land=True, background: Optional[xr.Dataset]=None, background_rgb=False,
+             matchups: Optional[pd.DataFrame]=None,
              title: Optional[str]=None, **kwargs) -> None:
     """
     Plot Rrs (default: 446 nm) for the given dataset.
@@ -314,10 +333,20 @@ def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
         fig, ax = _create_map_figure(1, 1, projected=projected, figsize=(8, 6))
     # Get `projected` from ax type?
 
+    # Set up colours
+    cmap = devon_discrete
+    norm = Normalize(0, 0.02)
+
     # Plot
-    kwargs = {"vmin": 0, "vmax": 0.02, "cmap": devon_discrete} | kwargs
     cbar_kwargs = {"label": r"$R_{rs}$" + f"({wavelength}) " + r"[sr$^{-1}$]", "ticks": np.linspace(0, 0.02, N_colours//3+1)} | kw_cbar
-    im = _plot_with_background(data, col, ax=ax, projected=projected, mask_land=mask_land, background=background, background_rgb=background_rgb, cbar_kwargs=cbar_kwargs, **kwargs)
+    im = _plot_with_background(data, col,
+                               ax=ax, projected=projected,
+                               mask_land=mask_land, background=background, background_rgb=background_rgb,
+                               cmap=cmap, norm=norm, cbar_kwargs=cbar_kwargs, **kwargs)
+
+    # Plot match-ups
+    if projected and matchups is not None:
+        _plot_matchups(matchups, ax=ax, c=matchups[col], cmap=cmap, norm=norm)
 
     # Plot parameters
     if newfig:
@@ -331,6 +360,7 @@ def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
 def plot_IOP_single(data: xr.Dataset, iop: c.Parameter=c.aph_443, *,
                     axs: Optional[Iterable[plt.Axes]]=None, projected=True,
                     background: Optional[xr.Dataset]=None, background_rgb=False,
+                    matchups: Optional[pd.DataFrame]=None,
                     title: Optional[str]=None,
                     saveto: Optional[Path | str]=None, **kwargs) -> None:
     """
@@ -342,18 +372,30 @@ def plot_IOP_single(data: xr.Dataset, iop: c.Parameter=c.aph_443, *,
     if newfig:
         fig, axs = _create_map_figure(ncols=2, projected=projected, figsize=(14, 6))
 
-    # Setup
+    # Setup cmaps and norms
+    unc = f"{iop}_std_pct"
+    cmap_iop = cmc.navia.resampled(N_colours)
+    cmap_unc = cmc.turku.resampled(N_colours)
+
     f = 10**(2/4)  # ticks beyond 1e-2  /  ticks between 1e-2 and 1e-1
     norm_mean = LogNorm(vmin=1e-2/f, vmax=1e0*f)
+    norm_unc = Normalize()
 
     # Plot data
-    kw_shared = {"mask_land": False, "background": background, "background_rgb": background_rgb}
+    kw_shared = {"mask_land": False, "background": background, "background_rgb": background_rgb, "robust": True}
 
     cbar_kwargs = {"label": f"Mean {iop.label} [{iop.unit}]"} | kw_cbar
-    _plot_with_background(data, iop, ax=axs[0], norm=norm_mean, robust=True, cmap=cmc.navia.resampled(N_colours), cbar_kwargs=cbar_kwargs, **kw_shared)
+    _plot_with_background(data, iop, ax=axs[0],
+                          norm=norm_mean, cmap=cmap_iop, cbar_kwargs=cbar_kwargs,
+                          **kw_shared)
 
     cbar_kwargs = {"label": f"Uncertainty in {iop.label} [%]"} | kw_cbar
-    _plot_with_background(data, f"{iop}_std_pct", ax=axs[1], robust=True, cmap=cmc.turku.resampled(N_colours), cbar_kwargs=cbar_kwargs, **kw_shared)
+    _plot_with_background(data, unc, ax=axs[1],
+                          norm=norm_unc, cmap=cmap_unc, cbar_kwargs=cbar_kwargs, **kw_shared)
+
+    # Plot match-ups
+    if projected and matchups is not None:
+        _plot_matchups(matchups, ax=axs[0], c=matchups[iop], cmap=cmap_iop, norm=norm_mean)
 
     # Plot parameters
     if newfig:
@@ -397,15 +439,16 @@ def plot_Rrs_and_IOP(reflectance: xr.Dataset, iop_map: xr.Dataset, *, wavelength
                      projected=True,
                      background: Optional[xr.Dataset]=None, background_rgb=False,
                      title: Optional[str]=None,
-                     saveto: Optional[Path | str]=None) -> None:
+                     saveto: Optional[Path | str]=None, **kwargs) -> None:
     """
     Plot Rrs and one IOP (mean/uncertainty) next to each other.
+    kwargs are passed to both plot_Rrs and plot_IOP_single.
     """
     # Create figure
     fig, axs = _create_map_figure(ncols=3, nrows=1, projected=projected, figsize=(15, 5))
 
     # Plot data
-    kw_shared = {"projected": projected, "background": background, "background_rgb": background_rgb}
+    kw_shared = {"projected": projected, "background": background, "background_rgb": background_rgb} | kwargs
     plot_Rrs(reflectance, wavelength, ax=axs[0], **kw_shared)
     plot_IOP_single(iop_map, iop, axs=axs[1:], **kw_shared)
 
@@ -419,16 +462,29 @@ def plot_Rrs_and_IOP(reflectance: xr.Dataset, iop_map: xr.Dataset, *, wavelength
     plt.close()
 
 
-def get_h5_filename(filename_nc: Path | str) -> Path:
+def filename_to_date(filename: Path | str) -> tuple[str, dt.datetime]:
+    """
+    Take a PRISMA NetCDF filename and extract its date.
+    Returns both the string format and a datetime object.
+    """
+    filename = Path(filename)
+    date = filename.stem.split("_")[1:7]  # Standard format is PRISMA_yyyy_mm_dd_hh_mm_ss_...nc
+
+    date_str = "".join(date)
+    date_dt = dt.datetime.fromisoformat(date_str[:8])  # Date only for now
+
+    return date_str, date_dt
+
+
+def get_h5_filename(filename_nc: Path | str, *, prefix: str="PRS_L1_STD_OFFL_") -> Path:
     """
     For a level-2 .nc file, get the corresponding level-1 .h5 filename.
     Note that this depends entirely on the specific file structure for this project; it does not generalise.
     """
     # Set up prefix
     filename_nc = Path(filename_nc)
-    date = filename_nc.stem.split("_")[1:7]  # Standard format is PRISMA_yyyy_mm_dd_hh_mm_ss_...nc
-    prefix = "PRS_L1_STD_OFFL_"
-    date_prefix = "".join([prefix, *date])
+    date, _ = filename_to_date(filename_nc)
+    date_prefix = f"{prefix}{date}"
 
     # Look for matching files
     matching_filenames = filename_nc.parent.glob(f"{date_prefix}*.he5")
@@ -495,3 +551,14 @@ def rgb_to_xarray(scene: xr.Dataset, rgb_cube: np.ndarray) -> xr.Dataset:
         scene_rgb = scene_rgb.assign({"water": scene["water"]})
 
     return scene_rgb
+
+
+def find_matchups_on_date(matchups: pd.DataFrame, date: dt.datetime, *, col: Hashable="date") -> pd.DataFrame:
+    """
+    Find rows within `matchups` (column `col`) that are on the same day as `date`.
+    First converts `matchups[col]` to Pandas datetimes.
+    Currently assumes everything is a day, no hours etc.
+    """
+    matchups_dt = pd.to_datetime(matchups[col], dayfirst=True)
+    matching = matchups[matchups_dt == date]
+    return matching
