@@ -22,14 +22,31 @@ parser.add_argument("filename", help="File with data to split", type=Path)
 args = parser.parse_args()
 
 # Load file
-example_df = pd.read_csv(args.filename)
+my_data = pd.read_csv(args.filename)
 
 ################################
 # 1. Random split
 ################################
+def random_split(data: pd.DataFrame, *, test_size: float=0.5, seed: int=1) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Splits the dataset into train and test sets, completely at random.
 
-randomized_df = example_df.sample(frac=1).reset_index(drop=True)
-df1, df2 = train_test_split(randomized_df, test_size=0.5)
+    Parameters:
+    data (pd.DataFrame): Input dataset to be split.
+    test_size (float): Fraction of data to be assigned to the test set.
+    seed (int): Random seed for reproducibility.
+
+    Returns:
+    train_set (pd.DataFrame): Train set.
+    test_set (pd.DataFrame): Test set.
+    """
+    np.random.seed(seed)
+    randomized_df = data.sample(frac=1).reset_index(drop=True)
+    train_set, test_set = train_test_split(randomized_df, test_size=test_size)
+
+    return train_set, test_set
+
+train_set_random, test_set_random = random_split(my_data)
 
 ################################
 # 2. Dataset split algorithm - within-distribution
@@ -147,7 +164,7 @@ def system_data_split(data, train_ratio=0.5, seed=11, max_iterations=10):
 
     return train_set, test_set
 
-train_set_wd, test_set_wd = system_data_split(example_df, seed=43)
+train_set_wd, test_set_wd = system_data_split(my_data, seed=43)
 
 print(len(train_set_wd))
 print(len(test_set_wd))
@@ -247,7 +264,7 @@ def system_data_split_oos(data, train_ratio=0.5, seed=12, max_iterations=15):
 
     return train_set, test_set
 
-train_set_oos, test_set_oos = system_data_split_oos(example_df, seed=42)
+train_set_oos, test_set_oos = system_data_split_oos(my_data, seed=42)
 
 print(len(train_set_oos))
 print(len(test_set_oos))
