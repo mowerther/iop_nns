@@ -29,7 +29,8 @@ pattern_prisma_l2 = "PRISMA_*_L2W.nc"
 projection = PlateCarree()
 kw_projection = {"transform": projection, "x": "lon", "y": "lat"}
 kw_xy = {"add_labels": False, "yincrease": False}
-kw_cbar = {"location": "bottom", "fraction": 0.1, "pad": 0.05}
+kw_cbar = {"location": "bottom", "fraction": 0.1, "pad": 0.05, "extend": "both"}
+N_colours = 12
 
 ### DATA LOADING
 def _load_general(filename: Path | str) -> xr.Dataset:
@@ -294,7 +295,7 @@ def _plot_with_background(data: xr.Dataset, col: str, ax: GeoAxes | plt.Axes, *,
 
 
 # Devon without white
-devon8 = LinearSegmentedColormap.from_list("devon8", cmc.devon.colors[:-20]).resampled(8)
+devon_discrete = LinearSegmentedColormap.from_list("devon_discrete", cmc.devon.colors[:-20]).resampled(N_colours)
 
 def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
              ax: Optional[plt.Axes]=None, projected=True,
@@ -314,8 +315,8 @@ def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
     # Get `projected` from ax type?
 
     # Plot
-    kwargs = {"robust": True, "cmap": devon8} | kwargs
-    cbar_kwargs = {"label": r"$R_{rs}$" + f"({wavelength}) " + r"[sr$^{-1}$]"} | kw_cbar
+    kwargs = {"vmin": 0, "vmax": 0.02, "cmap": devon_discrete} | kwargs
+    cbar_kwargs = {"label": r"$R_{rs}$" + f"({wavelength}) " + r"[sr$^{-1}$]", "ticks": np.linspace(0, 0.02, N_colours//3+1)} | kw_cbar
     im = _plot_with_background(data, col, ax=ax, projected=projected, mask_land=mask_land, background=background, background_rgb=background_rgb, cbar_kwargs=cbar_kwargs, **kwargs)
 
     # Plot parameters
@@ -342,16 +343,17 @@ def plot_IOP_single(data: xr.Dataset, iop: c.Parameter=c.aph_443, *,
         fig, axs = _create_map_figure(ncols=2, projected=projected, figsize=(14, 6))
 
     # Setup
-    norm_mean = LogNorm()
+    f = 10**(2/4)  # ticks beyond 1e-2  /  ticks between 1e-2 and 1e-1
+    norm_mean = LogNorm(vmin=1e-2/f, vmax=1e0*f)
 
     # Plot data
     kw_shared = {"mask_land": False, "background": background, "background_rgb": background_rgb}
 
     cbar_kwargs = {"label": f"Mean {iop.label} [{iop.unit}]"} | kw_cbar
-    _plot_with_background(data, iop, ax=axs[0], norm=norm_mean, robust=True, cmap=cmc.navia.resampled(8), cbar_kwargs=cbar_kwargs, **kw_shared)
+    _plot_with_background(data, iop, ax=axs[0], norm=norm_mean, robust=True, cmap=cmc.navia.resampled(N_colours), cbar_kwargs=cbar_kwargs, **kw_shared)
 
     cbar_kwargs = {"label": f"Uncertainty in {iop.label} [%]"} | kw_cbar
-    _plot_with_background(data, f"{iop}_std_pct", ax=axs[1], robust=True, cmap=cmc.turku.resampled(8), cbar_kwargs=cbar_kwargs, **kw_shared)
+    _plot_with_background(data, f"{iop}_std_pct", ax=axs[1], robust=True, cmap=cmc.turku.resampled(N_colours), cbar_kwargs=cbar_kwargs, **kw_shared)
 
     # Plot parameters
     if newfig:
