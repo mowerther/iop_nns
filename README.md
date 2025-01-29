@@ -28,6 +28,7 @@ These datasets are not currently hosted within this repository for licensing rea
 ### Dataset splitting
 A data file in CSV format with headers can be split using the [dataset_split.py](dataset_split.py) script.
 This script does not require installation of the wider `pnn` module, but can be used by itself.
+[dataset_split.py](dataset_split.py) can also be safely imported if you want to re-use its functionality elsewhere.
 Its requirements are Numpy, Pandas, Scipy, and Scikit-learn.
 
 *The script is called as follows*:
