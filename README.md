@@ -1,6 +1,6 @@
 # On the generalization of probabilistic neural networks for hyperspectral remote sensing of absorption properties in optically complex waters
 
-This repository contains the Python code that was used in our paper, submitted to *Remote Sensing of Environment*.
+This repository contains the Python code used in our paper, submitted to *Remote Sensing of Environment*.
 The following sections describe the repository and codebase in detail.
 Text *written in italics* is work-in-progress.
 The [last section](#reproducing-the-paper) provides a summary containing just the information necessary to reproduce the paper.
@@ -11,18 +11,19 @@ The median symmetric accuracy (MdSA) declines from ≥20% in interpolation scena
 The uncertainty is predominantly aleatoric (inherent to the observations). Therefore, increasing the number of measurements from the same distribution does not enhance model accuracy. Similarly, selecting a different neural network architecture, trained on the same data, is unlikely to significantly improve retrieval accuracy. Instead, we propose that advancement in IOP estimation through neural networks lies in integrating the physical principles of IOPs into model architectures, thereby creating physics-informed neural networks.
 
 ## Overview
+
 ### `pnn` module
-Most of the functionalities used for data handling, model training, and analysis have been refactored into the [`pnn`](pnn) module.
-This module handles all of the functionalities relating to 
+Most of the functionalities related to data handling, model training, and analysis have been refactored into the [`pnn`](pnn) module.
+This module handles
 constructing, training, testing, recalibrating, and applying the neural network models; 
 analysing and visualising the model estimates; 
 generating outputs for the paper.
-A more detailed overview is provided in the [relevant documentation](pnn/README.md).
+A more detailed overview is provided in [its documentation](pnn/README.md).
 
 ### Scripts
-The code used to (re)produce the results in the paper is organised into multiple scripts within the top-level folder
+The code used to (re-)produce the results in the paper is organised into multiple scripts within the top-level folder.
 Detailed descriptions of the various scripts are provided in the following sections.
-All scripts use argparse, meaning you can obtain instructions on their usage using the help flag `-h`, e.g.:
+All scripts use `argparse`, meaning the help flag `-h` is available, e.g.:
 ```console
 python train_nn.py -h
 ```
@@ -48,7 +49,7 @@ The core *in situ* datasets used in our study originate from [GLORIA](https://do
 These datasets are not currently hosted within this repository for licensing reasons; we aim to make them available so the study can be reproduced.
 
 ### Dataset splitting
-A data file in CSV format with headers can be split using the [dataset_split.py](dataset_split.py) script.
+A data file in CSV format with column headers can be split using the [dataset_split.py](dataset_split.py) script.
 This script does not require installation of the wider `pnn` module, but can be used by itself.
 Its requirements are Numpy, Pandas, Scipy, and Scikit-learn.
 
@@ -137,16 +138,16 @@ python train_nn.py bnn_dc -n 5
 Trained models are saved to the [`pnn.model_path`](pnn/constants.py#L19) constant;
 by default, this is the [pnn_tf_models folder](pnn_tf_models).
 Models are saved in TensorFlow/Keras (`.keras`) format using the default save function, which can be accessed using [`BasePNN.save`](pnn/nn/pnn_base.py#L91).
-A saved model can be loaded using the [`BasePNN.load`](pnn/nn/pnn_base.py#L96) function, or any of its equivalents, e.g. `BNN_DC.load`.
+A saved model can be loaded using the [`.load`](pnn/nn/pnn_base.py#L96) function of the relevant class, e.g. `BNN_DC.load` or `RNN.load`.
 The ENS-NN (ensemble neural network) is saved as a folder containing its constituent networks, but otherwise works the same;
 the [`Ensemble.save`](pnn/nn/ens.py#L97) and [`Ensemble.load`](pnn/nn/ens.py#L112) functions will automatically take care of any lingering `.keras` extensions in filenames.
 Please note that saving recalibrated models is not yet fully implemented; the model will be saved and loaded as normal, but not its corresponding recalibration function.
 
 
 ## Analysis
-[analyze_estimates.py](analyze_estimates.py) - Analyze PNN model outputs to generate figures and statistics.
+*[analyze_estimates.py](analyze_estimates.py) - Analyze PNN model outputs to generate figures and statistics.*
 
-[apply_to_prisma.py](apply_to_prisma.py) - Apply PNNs to PRISMA scenes, plot the results.
+*[apply_to_prisma.py](apply_to_prisma.py) - Apply PNNs to PRISMA scenes, plot the results.*
 
 
 ## Reproducing the paper

@@ -1,1 +1,1 @@
-This folder contains outputs (primarily figures) generated with several scripts.
+This folder is the destination for outputs (primarily figures) generated with several scripts.
