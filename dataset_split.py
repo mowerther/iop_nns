@@ -6,23 +6,13 @@ Example:
 """
 from pathlib import Path
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from scipy.optimize import dual_annealing
 from sklearn.model_selection import train_test_split
 
 # Set up constants
-summary_cols = ["aph_443", "aNAP_443", "aCDOM_443"]
-
-# 0. Load your dataset with splitting (herein referred to as summary variables/columns)
-# Parse command-line args
-import argparse
-parser = argparse.ArgumentParser(__doc__)
-parser.add_argument("filename", help="File with data to split", type=Path)
-args = parser.parse_args()
-
-# Load file
-my_data = pd.read_csv(args.filename)
+summary_cols = ["aph_443", "aNAP_443", "aCDOM_443"]  # Variables used in (dis)similarity scores
 
 ################################
 # 1. Random split
@@ -301,6 +291,16 @@ def check_system_name_uniqueness(train_set, test_set, system_name_col='system_na
 # Run script - this code is not executed if the script is imported
 ################################
 if __name__ == "__main__":
+    # Parse command-line args
+    import argparse
+    parser = argparse.ArgumentParser(__doc__)
+    parser.add_argument("filename", help="File with data to split", type=Path)
+    parser.add_argument("-s", "--system_column", help="Column with system names, on which to split the data", default="system_name")
+    args = parser.parse_args()
+
+    # Load file
+    my_data = pd.read_csv(args.filename)
+
     # Random split
     train_set_random, test_set_random = random_split(my_data)
     print_set_length("random", train_set_random, test_set_random)
