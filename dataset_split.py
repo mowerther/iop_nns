@@ -260,6 +260,16 @@ def system_data_split_oos(data, train_ratio=0.5, seed=12, max_iterations=15):
 ################################
 # 4. Inspect datasets, check uniqueness of system names
 ################################
+def print_set_length(name: str, train_set: pd.DataFrame, test_set: pd.DataFrame) -> None:
+    """
+    Print the lengths of the train and test sets with formatting.
+
+    Parameters:
+    name (str): Name of the split type
+    train_set (pd.DataFrame): Training dataset
+    test_set (pd.DataFrame): Test dataset
+    """
+    print(f"{name.capitalize()} split: {len(train_set)} in train set; {len(test_set)} in test set.")
 
 def check_system_name_uniqueness(train_set, test_set, system_name_col='system_name'):
     """
@@ -293,20 +303,15 @@ def check_system_name_uniqueness(train_set, test_set, system_name_col='system_na
 if __name__ == "__main__":
     # Random split
     train_set_random, test_set_random = random_split(my_data)
-    print(len(train_set_random))
-    print(len(test_set_random))
+    print_set_length("random", train_set_random, test_set_random)
 
     # Within-distribution split
     train_set_wd, test_set_wd = system_data_split(my_data, seed=43)
-
-    print(len(train_set_wd))
-    print(len(test_set_wd))
+    print_set_length("within-distribution", train_set_wd, test_set_wd)
 
     # Out-of-distribution split
     train_set_oos, test_set_oos = system_data_split_oos(my_data, seed=42)
-
-    print(len(train_set_oos))
-    print(len(test_set_oos))
+    print_set_length("out-of-distribution", train_set_oos, test_set_oos)
 
     # Inspection
     train_system_names = train_set_wd["system_name"].unique()
