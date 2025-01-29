@@ -46,8 +46,6 @@ def random_split(data: pd.DataFrame, *, test_size: float=0.5, seed: int=1) -> tu
 
     return train_set, test_set
 
-train_set_random, test_set_random = random_split(my_data)
-
 ################################
 # 2. Dataset split algorithm - within-distribution
 ################################
@@ -164,11 +162,6 @@ def system_data_split(data, train_ratio=0.5, seed=11, max_iterations=10):
 
     return train_set, test_set
 
-train_set_wd, test_set_wd = system_data_split(my_data, seed=43)
-
-print(len(train_set_wd))
-print(len(test_set_wd))
-
 ##############################
 # 3. Out-of-distribution split
 ##############################
@@ -264,11 +257,6 @@ def system_data_split_oos(data, train_ratio=0.5, seed=12, max_iterations=15):
 
     return train_set, test_set
 
-train_set_oos, test_set_oos = system_data_split_oos(my_data, seed=42)
-
-print(len(train_set_oos))
-print(len(test_set_oos))
-
 ################################
 # 4. Inspect datasets, check uniqueness of system names
 ################################
@@ -299,13 +287,35 @@ def check_system_name_uniqueness(train_set, test_set, system_name_col='system_na
             print(f"Common system names in train and test sets: {train_test_intersection}")
         return False
 
-train_system_names = train_set_wd["system_name"].unique()
-test_system_names = test_set_wd["system_name"].unique()
+################################
+# Run script - this code is not executed if the script is imported
+################################
+if __name__ == "__main__":
+    # Random split
+    train_set_random, test_set_random = random_split(my_data)
+    print(len(train_set_random))
+    print(len(test_set_random))
 
-common_system_names = np.intersect1d(train_system_names, test_system_names)
+    # Within-distribution split
+    train_set_wd, test_set_wd = system_data_split(my_data, seed=43)
 
-print(f"Number of unique system names in train set: {len(train_system_names)}")
-print(f"Number of unique system names in test set: {len(test_system_names)}")
-print(f"Number of common system names: {len(common_system_names)}")
+    print(len(train_set_wd))
+    print(len(test_set_wd))
 
-unique_system_names = check_system_name_uniqueness(train_set_wd,test_set_wd)
+    # Out-of-distribution split
+    train_set_oos, test_set_oos = system_data_split_oos(my_data, seed=42)
+
+    print(len(train_set_oos))
+    print(len(test_set_oos))
+
+    # Inspection
+    train_system_names = train_set_wd["system_name"].unique()
+    test_system_names = test_set_wd["system_name"].unique()
+
+    common_system_names = np.intersect1d(train_system_names, test_system_names)
+
+    print(f"Number of unique system names in train set: {len(train_system_names)}")
+    print(f"Number of unique system names in test set: {len(test_system_names)}")
+    print(f"Number of common system names: {len(common_system_names)}")
+
+    unique_system_names = check_system_name_uniqueness(train_set_wd,test_set_wd)
