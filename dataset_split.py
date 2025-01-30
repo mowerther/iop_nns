@@ -287,31 +287,34 @@ def print_set_length(name: str, train_set: pd.DataFrame, test_set: pd.DataFrame)
     print(f"{name.capitalize()} split: {len(train_set)} in train set; {len(test_set)} in test set.")
 
 
-def check_system_name_uniqueness(train_set, test_set, system_name_col='system_name'):
+def check_system_name_uniqueness(train_set: pd.DataFrame, test_set: pd.DataFrame, system_column: str="system_name") -> bool:
     """
     Check if system names are unique between train and test sets.
 
     Parameters:
     train_set (pd.DataFrame): Training dataset
     test_set (pd.DataFrame): Test dataset
-    system_name_col (str): Name of the column containing system names
+    system_column (str): Name of the column containing system names
 
     Returns:
     bool: True if system names are unique, False otherwise
     """
-    train_system_names = set(train_set[system_name_col])
-    test_system_names = set(test_set[system_name_col])
+    # Find common elements
+    train_system_names = train_set[system_column].unique()
+    test_system_names = test_set[system_column].unique()
 
-    train_test_intersection = train_system_names.intersection(test_system_names)
+    common_system_names = np.intersect1d(train_system_names, test_system_names)
+    any_in_common = (len(common_system_names) > 0)
 
-    if not train_test_intersection:
-        print("System names are unique in each dataset.")
-        return True
-    else:
-        print("System names are not unique in each dataset.")
-        if train_test_intersection:
-            print(f"Common system names in train and test sets: {train_test_intersection}")
-        return False
+    # User feedback
+    print(f"Number of unique system names in train set: {len(train_system_names)}")
+    print(f"Number of unique system names in test set: {len(test_system_names)}")
+    print(f"Number of common system names: {len(common_system_names)}")
+
+    if any_in_common:
+        print(f"Common system names in train and test sets: {common_system_names}")
+
+    return any_in_common
 
 
 ################################
@@ -330,27 +333,18 @@ if __name__ == "__main__":
 
     # Random split
     print("Now applying random split:")
-    train_set_random, test_set_random = random_split(my_data)
+    train_set_random, test_set_random = random_split(my_data, seed=41)
     print_set_length("random", train_set_random, test_set_random)
+    check_system_name_uniqueness(train_set_random, test_set_random, args.system_column)
 
     # Within-distribution split
     print("Now applying within-distribution split:")
     train_set_wd, test_set_wd = system_data_split(my_data, args.system_column, seed=43)
     print_set_length("within-distribution", train_set_wd, test_set_wd)
+    check_system_name_uniqueness(train_set_wd, test_set_wd, args.system_column)
 
     # Out-of-distribution split
     print("Now applying out-of-distribution split:")
     train_set_ood, test_set_ood = system_data_split_ood(my_data, args.system_column, seed=42)
     print_set_length("out-of-distribution", train_set_ood, test_set_ood)
-
-    # Inspection
-    train_system_names = train_set_wd[args.system_column].unique()
-    test_system_names = test_set_wd[args.system_column].unique()
-
-    common_system_names = np.intersect1d(train_system_names, test_system_names)
-
-    print(f"Number of unique system names in train set: {len(train_system_names)}")
-    print(f"Number of unique system names in test set: {len(test_system_names)}")
-    print(f"Number of common system names: {len(common_system_names)}")
-
-    unique_system_names = check_system_name_uniqueness(train_set_wd,test_set_wd)
+    check_system_name_uniqueness(train_set_ood, test_set_ood, args.system_column)
