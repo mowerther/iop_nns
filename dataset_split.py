@@ -7,7 +7,9 @@ Example:
     python dataset_split.py datasets_train_test/filtered_df_2319.csv
     python dataset_split.py datasets_train_test/filtered_df_2319.csv -s site_name
 """
+from functools import partial
 from pathlib import Path
+from typing import Callable
 
 import numpy as np
 import pandas as pd
@@ -42,22 +44,8 @@ def random_split(data: pd.DataFrame, *, test_size: float=0.5, seed: int=1) -> tu
 
 
 ################################
-# 2. Dataset split algorithm - within-distribution
+# Dataset split algorithm - common functionality
 ################################
-def similarity_score(D1, D2):
-    """
-    Calculate the similarity score between two datasets.
-
-    Parameters:
-    D1 (pd.DataFrame): First dataset
-    D2 (pd.DataFrame): Second dataset
-
-    Returns:
-    float: Similarity score based on the mean difference of summary columns
-    """
-    return np.abs(D1[summary_cols].mean() - D2[summary_cols].mean()).sum()
-
-
 def progress_callback(xk, fk, *args):
     """
     Callback function to print progress during optimization.
@@ -87,21 +75,29 @@ iteration = 0
 best_obj_val = float("inf")
 
 
-def similarity_objective(x: np.ndarray, system_column: str, unique_system_names: np.ndarray, train_size: int, data: pd.DataFrame) -> float:
+def objective(x: np.ndarray,
+              system_column: str, unique_system_names: np.ndarray, train_size: int, data: pd.DataFrame,
+              scoring_func: Callable) -> float:
     """
     Objective function for the optimization problem to maximize similarity.
-    All arguments after the first are fixed parameters needed to completely specify the objective function.
+
+    `x` is what the dual_annealing algorithm modifies.
+    All arguments after `x` are fixed parameters needed to completely specify the objective function.
+    For convenience, create partial functions for corresponding `scoring_func`s, e.g. similarity_score, dissimilarity_score.
 
     Parameters:
     x (np.array): Array of indices for system names
+
     system_column (str): Name of the column to split on (e.g. lake_name).
     unique_system_names (np.array): Array of unique system names
     train_size (int): Size of the training set
     data (pd.DataFrame): Input dataset
+    scoring_func (Callable): Function that determines the score
 
     Returns:
     float: Objective function value (similarity score + balance penalty)
     """
+    # Convert system names into data indices
     x_unique = np.unique(x.astype(int))
     train_systems = unique_system_names[x_unique]
     test_systems = np.setdiff1d(unique_system_names, train_systems)
@@ -109,9 +105,28 @@ def similarity_objective(x: np.ndarray, system_column: str, unique_system_names:
     D_train = data[data[system_column].isin(train_systems)]
     D_test = data[data[system_column].isin(test_systems)]
 
+    # Calculate and return score
     balance_penalty = np.abs(len(D_train) - len(D_test))
-    return similarity_score(D_train, D_test) + balance_penalty
+    return scoring_func(D_train, D_test) + balance_penalty
 
+
+################################
+# 2. Dataset split algorithm - within-distribution
+################################
+def similarity_score(D1, D2):
+    """
+    Calculate the similarity score between two datasets.
+
+    Parameters:
+    D1 (pd.DataFrame): First dataset
+    D2 (pd.DataFrame): Second dataset
+
+    Returns:
+    float: Similarity score based on the mean difference of summary columns
+    """
+    return np.abs(D1[summary_cols].mean() - D2[summary_cols].mean()).sum()
+
+similarity_objective = partial(objective, scoring_func=similarity_score)
 
 def system_data_split(data: pd.DataFrame, system_column: str, *,
                       train_ratio: float=0.5, seed: int=11, max_iterations: int=10) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -192,31 +207,7 @@ def dissimilarity_score(D1, D2):
             score += np.abs(d1_percentile - d2_percentile)
     return -score
 
-
-def dissimilarity_objective(x: np.ndarray, system_column: str, unique_system_names: np.ndarray, train_size: int, data: pd.DataFrame):
-    """
-    Objective function for the optimization problem to maximize dissimilarity.
-    All arguments after the first are fixed parameters needed to completely specify the objective function.
-
-    Parameters:
-    x (np.array): Array of indices for system names
-    unique_system_names (np.array): Array of unique system names
-    train_size (int): Size of the training set
-    data (pd.DataFrame): Input dataset
-
-    Returns:
-    float: Objective function value (dissimilarity score + balance penalty)
-    """
-    x_unique = np.unique(x.astype(int))
-    train_systems = unique_system_names[x_unique]
-    test_systems = np.setdiff1d(unique_system_names, train_systems)
-
-    D_train = data[data[system_column].isin(train_systems)]
-    D_test = data[data[system_column].isin(test_systems)]
-
-    balance_penalty = np.abs(len(D_train) - len(D_test))
-    return dissimilarity_score(D_train, D_test) + balance_penalty
-
+dissimilarity_objective = partial(objective, scoring_func=dissimilarity_score)
 
 def system_data_split_ood(data: pd.DataFrame, system_column: str, *,
                           train_ratio: float=0.5, seed: int=12, max_iterations: int=15) -> tuple[pd.DataFrame, pd.DataFrame]:
