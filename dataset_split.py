@@ -86,7 +86,8 @@ def progress_callback(xk, fk, *args):
 iteration = 0
 best_obj_val = float("inf")
 
-def similarity_objective(x: np.ndarray, system_column: str, unique_system_names: np.ndarray, train_size: int, data: pd.DataFrame):
+
+def similarity_objective(x: np.ndarray, system_column: str, unique_system_names: np.ndarray, train_size: int, data: pd.DataFrame) -> float:
     """
     Objective function for the optimization problem to maximize similarity.
     All arguments after the first are fixed parameters needed to completely specify the objective function.
@@ -113,7 +114,7 @@ def similarity_objective(x: np.ndarray, system_column: str, unique_system_names:
 
 
 def system_data_split(data: pd.DataFrame, system_column: str, *,
-                      train_ratio: float=0.5, seed: int=11, max_iterations: int=10):
+                      train_ratio: float=0.5, seed: int=11, max_iterations: int=10) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Splits the dataset into train and test sets, ensuring that each set has unique system names.
 
@@ -157,6 +158,7 @@ def system_data_split(data: pd.DataFrame, system_column: str, *,
             best_obj_val = res.fun
         x0 = best_res.x.astype(int)
 
+    # Apply final result
     x_unique = np.unique(x0)
     optimal_train_systems = unique_system_names[x_unique]
     optimal_test_systems = np.setdiff1d(unique_system_names, optimal_train_systems)
@@ -191,7 +193,7 @@ def dissimilarity_score(D1, D2):
     return -score
 
 
-def dissimilarity_objective(x, unique_system_names, train_size, data):
+def dissimilarity_objective(x: np.ndarray, system_column: str, unique_system_names: np.ndarray, train_size: int, data: pd.DataFrame):
     """
     Objective function for the optimization problem to maximize dissimilarity.
     All arguments after the first are fixed parameters needed to completely specify the objective function.
@@ -209,14 +211,15 @@ def dissimilarity_objective(x, unique_system_names, train_size, data):
     train_systems = unique_system_names[x_unique]
     test_systems = np.setdiff1d(unique_system_names, train_systems)
 
-    D_train = data[data['system_name'].isin(train_systems)]
-    D_test = data[data['system_name'].isin(test_systems)]
+    D_train = data[data[system_column].isin(train_systems)]
+    D_test = data[data[system_column].isin(test_systems)]
 
     balance_penalty = np.abs(len(D_train) - len(D_test))
     return dissimilarity_score(D_train, D_test) + balance_penalty
 
 
-def system_data_split_oos(data, train_ratio=0.5, seed=12, max_iterations=15):
+def system_data_split_ood(data: pd.DataFrame, system_column: str, *,
+                          train_ratio: float=0.5, seed: int=12, max_iterations: int=15) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Splits the dataset into train and test sets for out-of-distribution (OOD) scenario.
 
@@ -237,32 +240,37 @@ def system_data_split_oos(data, train_ratio=0.5, seed=12, max_iterations=15):
     test_set (pd.DataFrame): Test set with unique system names.
     """
     np.random.seed(seed)
-    unique_system_names = data['system_name'].unique()
-    n_systems = len(unique_system_names)
 
+    # Find unique systems and determine train/test set size
+    unique_system_names = data[system_column].unique()
+    n_systems = len(unique_system_names)
     train_size = int(train_ratio * n_systems)
 
+    # Set up variables for dual_annealing function
     x0 = np.random.permutation(n_systems)[:train_size]
     bounds = [(0, n_systems - 1)] * train_size
 
+    # Apply dual_annealing `max_iterations`, using the previous best estimate as the new starting condition
     best_res = None
     best_obj_val = float("inf")
 
     for i in range(max_iterations):
-        res = dual_annealing(dissimilarity_objective, bounds, x0=x0, args=(unique_system_names, train_size, data), seed=seed, callback=progress_callback)
+        res = dual_annealing(dissimilarity_objective, bounds, x0=x0, args=(system_column, unique_system_names, train_size, data), seed=seed, callback=progress_callback)
         if res.fun < best_obj_val:
             best_res = res
             best_obj_val = res.fun
         x0 = best_res.x.astype(int)
 
+    # Apply final result
     x_unique = np.unique(x0)
     optimal_train_systems = unique_system_names[x_unique]
     optimal_test_systems = np.setdiff1d(unique_system_names, optimal_train_systems)
 
-    train_set = data[data['system_name'].isin(optimal_train_systems)]
-    test_set = data[data['system_name'].isin(optimal_test_systems)]
+    train_set = data[data[system_column].isin(optimal_train_systems)]
+    test_set = data[data[system_column].isin(optimal_test_systems)]
 
     return train_set, test_set
+
 
 ################################
 # 4. Inspect datasets, check uniqueness of system names
@@ -332,8 +340,8 @@ if __name__ == "__main__":
 
     # Out-of-distribution split
     print("Now applying out-of-distribution split:")
-    train_set_oos, test_set_oos = system_data_split_oos(my_data, seed=42)
-    print_set_length("out-of-distribution", train_set_oos, test_set_oos)
+    train_set_ood, test_set_ood = system_data_split_ood(my_data, args.system_column, seed=42)
+    print_set_length("out-of-distribution", train_set_ood, test_set_ood)
 
     # Inspection
     train_system_names = train_set_wd[args.system_column].unique()
