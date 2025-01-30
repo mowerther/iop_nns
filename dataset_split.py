@@ -46,33 +46,37 @@ def random_split(data: pd.DataFrame, *, test_size: float=0.5, seed: int=1) -> tu
 ################################
 # Dataset split algorithm - common functionality
 ################################
-def progress_callback(xk, fk, *args):
+class CallbackProgressor:
     """
     Callback function to print progress during optimization.
-
-    Parameters:
-    xk: Current parameter vector
-    fk: Current objective function value
-    *args: Additional arguments (max_iterations)
-
-    Returns:
-    bool: True if maximum iterations reached, False otherwise
+    Implemented as a class so it can keep track of iteration count etc.
     """
-    global iteration
-    global best_obj_val
-    max_iterations = args[0]
+    def __init__(self, max_iterations: int):
+        self.max_iterations = max_iterations
+        self.current_iteration = 0
+        self.best_objective_value = float("inf")
 
-    iteration += 1
+    def __call__(self, xk, fk, *args) -> bool | None:
+        """
+        Parameters:
+        xk: Current parameter vector
+        fk: Current objective function value
+        *args: Additional arguments (unused)
 
-    if fk < best_obj_val:
-        best_obj_val = fk
-        print(f"Objective function value at iteration {iteration}: {fk}")
+        Returns:
+        bool: True if maximum iterations reached, False otherwise
+        """
+        # Count up
+        self.current_iteration += 1
 
-    if iteration >= max_iterations:
-        return True
+        # Compare to previous best
+        if fk < self.best_objective_value:
+            self.best_objective_value = fk
+            print(f"Objective function value at iteration {self.current_iteration}: {fk}")
 
-iteration = 0
-best_obj_val = float("inf")
+        if self.current_iteration >= self.max_iterations:
+            print("hello")
+            return True
 
 
 def objective(x: np.ndarray,
@@ -149,6 +153,7 @@ def system_data_split(data: pd.DataFrame, system_column: str, objective_func: Ca
     # Apply dual_annealing `max_iterations`, using the previous best estimate as the new starting condition
     best_res = None
     best_obj_val = float("inf")
+    progress_callback = CallbackProgressor(max_iterations=max_iterations)
 
     for i in range(max_iterations):
         res = dual_annealing(objective_func, bounds, x0=x0, args=(system_column, unique_system_names, train_size, data), seed=seed, callback=progress_callback)
@@ -157,6 +162,7 @@ def system_data_split(data: pd.DataFrame, system_column: str, objective_func: Ca
             best_res = res
             best_obj_val = res.fun
         x0 = best_res.x.astype(int)
+        print("Main loop iteration", i)
 
     # Apply final result
     x_unique = np.unique(x0)
