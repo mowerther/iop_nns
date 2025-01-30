@@ -80,6 +80,9 @@ def objective(x: np.ndarray,
               scoring_func: Callable) -> float:
     """
     Objective function for the optimization problem to maximize similarity.
+    Measures the similarity between train and test sets based on the splitting
+    (summary) columns and adds a penalty term for imbalance in the number of
+    observations between the sets.
 
     `x` is what the dual_annealing algorithm modifies.
     All arguments after `x` are fixed parameters needed to completely specify the objective function.
@@ -110,38 +113,20 @@ def objective(x: np.ndarray,
     return scoring_func(D_train, D_test) + balance_penalty
 
 
-################################
-# 2. Dataset split algorithm - within-distribution
-################################
-def similarity_score(D1, D2):
-    """
-    Calculate the similarity score between two datasets.
-
-    Parameters:
-    D1 (pd.DataFrame): First dataset
-    D2 (pd.DataFrame): Second dataset
-
-    Returns:
-    float: Similarity score based on the mean difference of summary columns
-    """
-    return np.abs(D1[summary_cols].mean() - D2[summary_cols].mean()).sum()
-
-similarity_objective = partial(objective, scoring_func=similarity_score)
-
-def system_data_split(data: pd.DataFrame, system_column: str, *,
+def system_data_split(data: pd.DataFrame, system_column: str, objective_func: Callable, *,
                       train_ratio: float=0.5, seed: int=11, max_iterations: int=10) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Splits the dataset into train and test sets, ensuring that each set has unique system names.
 
     The function uses dual_annealing optimization to find the best split of system names between
-    train and test sets. The objective function measures the similarity between train and test
-    sets based on the splitting (summary) columns and adds a penalty term for imbalance in the number of
-    observations between the sets. The dual_annealing algorithm is run for a specified number
-    of iterations to find the split that minimizes the objective function value.
+    train and test sets. An objective function (e.g. similarity, dissimilarity) must be specified.
+    The dual_annealing algorithm is run for a specified number of iterations to find the split that minimizes the objective function value.
 
     Parameters:
     data (pd.DataFrame): Input dataset to be split.
     system_column (str): Name of the column to split on (e.g. lake_name).
+    objective_func (Callable): Objective function.
+
     train_ratio (float): Ratio of unique system names to be assigned to the train set.
     seed (int): Random seed for reproducibility.
     max_iterations (int): Maximum number of iterations for the optimization algorithm.
@@ -166,7 +151,7 @@ def system_data_split(data: pd.DataFrame, system_column: str, *,
     best_obj_val = float("inf")
 
     for i in range(max_iterations):
-        res = dual_annealing(similarity_objective, bounds, x0=x0, args=(system_column, unique_system_names, train_size, data), seed=seed, callback=progress_callback)
+        res = dual_annealing(objective_func, bounds, x0=x0, args=(system_column, unique_system_names, train_size, data), seed=seed, callback=progress_callback)
         # Note that the `seed` kwarg is being deprecated and should be replaced with `rng`
         if res.fun < best_obj_val:
             best_res = res
@@ -184,8 +169,27 @@ def system_data_split(data: pd.DataFrame, system_column: str, *,
     return train_set, test_set
 
 
+################################
+# 2. Dataset split algorithm - Within-distribution
+################################
+def similarity_score(D1, D2):
+    """
+    Calculate the similarity score between two datasets.
+
+    Parameters:
+    D1 (pd.DataFrame): First dataset
+    D2 (pd.DataFrame): Second dataset
+
+    Returns:
+    float: Similarity score based on the mean difference of summary columns
+    """
+    return np.abs(D1[summary_cols].mean() - D2[summary_cols].mean()).sum()
+
+similarity_objective = partial(objective, scoring_func=similarity_score)
+system_wd_split = partial(system_data_split, objective_func=similarity_objective, max_iterations=10)
+
 ##############################
-# 3. Out-of-distribution split
+# 3. Dataset split algorithm - Out-of-distribution
 ##############################
 def dissimilarity_score(D1, D2):
     """
@@ -208,59 +212,7 @@ def dissimilarity_score(D1, D2):
     return -score
 
 dissimilarity_objective = partial(objective, scoring_func=dissimilarity_score)
-
-def system_data_split_ood(data: pd.DataFrame, system_column: str, *,
-                          train_ratio: float=0.5, seed: int=12, max_iterations: int=15) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Splits the dataset into train and test sets for out-of-distribution (OOD) scenario.
-
-    The function uses dual_annealing optimization to find the best split of system names between
-    train and test sets. The objective function measures the dissimilarity between train and test
-    sets based on the splitting (summary) columns and adds a penalty term for imbalance in the number of
-    observations between the sets. The dual_annealing algorithm is run for a specified number
-    of iterations to find the split that maximizes the dissimilarity.
-
-    Parameters:
-    data (pd.DataFrame): Input dataset to be split.
-    train_ratio (float): Ratio of unique system names to be assigned to the train set.
-    seed (int): Random seed for reproducibility.
-    max_iterations (int): Maximum number of iterations for the optimization algorithm.
-
-    Returns:
-    train_set (pd.DataFrame): Train set with unique system names.
-    test_set (pd.DataFrame): Test set with unique system names.
-    """
-    np.random.seed(seed)
-
-    # Find unique systems and determine train/test set size
-    unique_system_names = data[system_column].unique()
-    n_systems = len(unique_system_names)
-    train_size = int(train_ratio * n_systems)
-
-    # Set up variables for dual_annealing function
-    x0 = np.random.permutation(n_systems)[:train_size]
-    bounds = [(0, n_systems - 1)] * train_size
-
-    # Apply dual_annealing `max_iterations`, using the previous best estimate as the new starting condition
-    best_res = None
-    best_obj_val = float("inf")
-
-    for i in range(max_iterations):
-        res = dual_annealing(dissimilarity_objective, bounds, x0=x0, args=(system_column, unique_system_names, train_size, data), seed=seed, callback=progress_callback)
-        if res.fun < best_obj_val:
-            best_res = res
-            best_obj_val = res.fun
-        x0 = best_res.x.astype(int)
-
-    # Apply final result
-    x_unique = np.unique(x0)
-    optimal_train_systems = unique_system_names[x_unique]
-    optimal_test_systems = np.setdiff1d(unique_system_names, optimal_train_systems)
-
-    train_set = data[data[system_column].isin(optimal_train_systems)]
-    test_set = data[data[system_column].isin(optimal_test_systems)]
-
-    return train_set, test_set
+system_ood_split = partial(system_data_split, objective_func=dissimilarity_objective, max_iterations=15)
 
 
 ################################
@@ -330,12 +282,12 @@ if __name__ == "__main__":
 
     # Within-distribution split
     print("Now applying within-distribution split:")
-    train_set_wd, test_set_wd = system_data_split(my_data, args.system_column, seed=43)
+    train_set_wd, test_set_wd = system_wd_split(my_data, args.system_column, seed=43)
     print_set_length("within-distribution", train_set_wd, test_set_wd)
     check_system_name_uniqueness(train_set_wd, test_set_wd, args.system_column)
 
     # Out-of-distribution split
     print("Now applying out-of-distribution split:")
-    train_set_ood, test_set_ood = system_data_split_ood(my_data, args.system_column, seed=42)
+    train_set_ood, test_set_ood = system_ood_split(my_data, args.system_column, seed=42)
     print_set_length("out-of-distribution", train_set_ood, test_set_ood)
     check_system_name_uniqueness(train_set_ood, test_set_ood, args.system_column)
