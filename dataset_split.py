@@ -1,8 +1,11 @@
 """
 Script for splitting a dataset using random, within-distribution, and out-of-distribution splits.
+Data are split on one system column, provided with the `-s` flag (default: "lake_name").
+(Dis)similarity scores are evaluated on multiple `summary_cols`, specified at the start of the script.
 
 Example:
     python dataset_split.py datasets_train_test/filtered_df_2319.csv
+    python dataset_split.py datasets_train_test/filtered_df_2319.csv -s site_name
 """
 from pathlib import Path
 
@@ -13,6 +16,7 @@ from sklearn.model_selection import train_test_split
 
 # Set up constants
 summary_cols = ["aph_443", "aNAP_443", "aCDOM_443"]  # Variables used in (dis)similarity scores
+
 
 ################################
 # 1. Random split
@@ -36,10 +40,10 @@ def random_split(data: pd.DataFrame, *, test_size: float=0.5, seed: int=1) -> tu
 
     return train_set, test_set
 
+
 ################################
 # 2. Dataset split algorithm - within-distribution
 ################################
-
 def similarity_score(D1, D2):
     """
     Calculate the similarity score between two datasets.
@@ -52,6 +56,7 @@ def similarity_score(D1, D2):
     float: Similarity score based on the mean difference of summary columns
     """
     return np.abs(D1[summary_cols].mean() - D2[summary_cols].mean()).sum()
+
 
 def progress_callback(xk, fk, *args):
     """
@@ -81,12 +86,14 @@ def progress_callback(xk, fk, *args):
 iteration = 0
 best_obj_val = float("inf")
 
-def objective(x, unique_system_names, train_size, data):
+def similarity_objective(x: np.ndarray, system_column: str, unique_system_names: np.ndarray, train_size: int, data: pd.DataFrame):
     """
-    Objective function for the optimization problem.
+    Objective function for the optimization problem to maximize similarity.
+    All arguments after the first are fixed parameters needed to completely specify the objective function.
 
     Parameters:
     x (np.array): Array of indices for system names
+    system_column (str): Name of the column to split on (e.g. lake_name).
     unique_system_names (np.array): Array of unique system names
     train_size (int): Size of the training set
     data (pd.DataFrame): Input dataset
@@ -98,13 +105,15 @@ def objective(x, unique_system_names, train_size, data):
     train_systems = unique_system_names[x_unique]
     test_systems = np.setdiff1d(unique_system_names, train_systems)
 
-    D_train = data[data['system_name'].isin(train_systems)]
-    D_test = data[data['system_name'].isin(test_systems)]
+    D_train = data[data[system_column].isin(train_systems)]
+    D_test = data[data[system_column].isin(test_systems)]
 
     balance_penalty = np.abs(len(D_train) - len(D_test))
     return similarity_score(D_train, D_test) + balance_penalty
 
-def system_data_split(data, train_ratio=0.5, seed=11, max_iterations=10):
+
+def system_data_split(data: pd.DataFrame, system_column: str, *,
+                      train_ratio: float=0.5, seed: int=11, max_iterations: int=10):
     """
     Splits the dataset into train and test sets, ensuring that each set has unique system names.
 
@@ -116,6 +125,7 @@ def system_data_split(data, train_ratio=0.5, seed=11, max_iterations=10):
 
     Parameters:
     data (pd.DataFrame): Input dataset to be split.
+    system_column (str): Name of the column to split on (e.g. lake_name).
     train_ratio (float): Ratio of unique system names to be assigned to the train set.
     seed (int): Random seed for reproducibility.
     max_iterations (int): Maximum number of iterations for the optimization algorithm.
@@ -125,19 +135,23 @@ def system_data_split(data, train_ratio=0.5, seed=11, max_iterations=10):
     test_set (pd.DataFrame): Test set with unique system names.
     """
     np.random.seed(seed)
-    unique_system_names = data['system_name'].unique()
-    n_systems = len(unique_system_names)
 
+    # Find unique systems and determine train/test set size
+    unique_system_names = data[system_column].unique()
+    n_systems = len(unique_system_names)
     train_size = int(train_ratio * n_systems)
 
+    # Set up variables for dual_annealing function
     x0 = np.random.permutation(n_systems)[:train_size]
     bounds = [(0, n_systems - 1)] * train_size
 
+    # Apply dual_annealing `max_iterations`, using the previous best estimate as the new starting condition
     best_res = None
     best_obj_val = float("inf")
 
     for i in range(max_iterations):
-        res = dual_annealing(objective, bounds, x0=x0, args=(unique_system_names, train_size, data), seed=seed, callback=progress_callback)
+        res = dual_annealing(similarity_objective, bounds, x0=x0, args=(system_column, unique_system_names, train_size, data), seed=seed, callback=progress_callback)
+        # Note that the `seed` kwarg is being deprecated and should be replaced with `rng`
         if res.fun < best_obj_val:
             best_res = res
             best_obj_val = res.fun
@@ -147,15 +161,15 @@ def system_data_split(data, train_ratio=0.5, seed=11, max_iterations=10):
     optimal_train_systems = unique_system_names[x_unique]
     optimal_test_systems = np.setdiff1d(unique_system_names, optimal_train_systems)
 
-    train_set = data[data['system_name'].isin(optimal_train_systems)]
-    test_set = data[data['system_name'].isin(optimal_test_systems)]
+    train_set = data[data[system_column].isin(optimal_train_systems)]
+    test_set = data[data[system_column].isin(optimal_test_systems)]
 
     return train_set, test_set
+
 
 ##############################
 # 3. Out-of-distribution split
 ##############################
-
 def dissimilarity_score(D1, D2):
     """
     Calculate the dissimilarity score between two datasets.
@@ -176,9 +190,11 @@ def dissimilarity_score(D1, D2):
             score += np.abs(d1_percentile - d2_percentile)
     return -score
 
+
 def dissimilarity_objective(x, unique_system_names, train_size, data):
     """
     Objective function for the optimization problem to maximize dissimilarity.
+    All arguments after the first are fixed parameters needed to completely specify the objective function.
 
     Parameters:
     x (np.array): Array of indices for system names
@@ -198,6 +214,7 @@ def dissimilarity_objective(x, unique_system_names, train_size, data):
 
     balance_penalty = np.abs(len(D_train) - len(D_test))
     return dissimilarity_score(D_train, D_test) + balance_penalty
+
 
 def system_data_split_oos(data, train_ratio=0.5, seed=12, max_iterations=15):
     """
@@ -261,6 +278,7 @@ def print_set_length(name: str, train_set: pd.DataFrame, test_set: pd.DataFrame)
     """
     print(f"{name.capitalize()} split: {len(train_set)} in train set; {len(test_set)} in test set.")
 
+
 def check_system_name_uniqueness(train_set, test_set, system_name_col='system_name'):
     """
     Check if system names are unique between train and test sets.
@@ -287,6 +305,7 @@ def check_system_name_uniqueness(train_set, test_set, system_name_col='system_na
             print(f"Common system names in train and test sets: {train_test_intersection}")
         return False
 
+
 ################################
 # Run script - this code is not executed if the script is imported
 ################################
@@ -295,27 +314,30 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("filename", help="File with data to split", type=Path)
-    parser.add_argument("-s", "--system_column", help="Column with system names, on which to split the data", default="system_name")
+    parser.add_argument("-s", "--system_column", help="Column with system names, on which to split the data", default="lake_name")
     args = parser.parse_args()
 
     # Load file
     my_data = pd.read_csv(args.filename)
 
     # Random split
+    print("Now applying random split:")
     train_set_random, test_set_random = random_split(my_data)
     print_set_length("random", train_set_random, test_set_random)
 
     # Within-distribution split
-    train_set_wd, test_set_wd = system_data_split(my_data, seed=43)
+    print("Now applying within-distribution split:")
+    train_set_wd, test_set_wd = system_data_split(my_data, args.system_column, seed=43)
     print_set_length("within-distribution", train_set_wd, test_set_wd)
 
     # Out-of-distribution split
+    print("Now applying out-of-distribution split:")
     train_set_oos, test_set_oos = system_data_split_oos(my_data, seed=42)
     print_set_length("out-of-distribution", train_set_oos, test_set_oos)
 
     # Inspection
-    train_system_names = train_set_wd["system_name"].unique()
-    test_system_names = test_set_wd["system_name"].unique()
+    train_system_names = train_set_wd[args.system_column].unique()
+    test_system_names = test_set_wd[args.system_column].unique()
 
     common_system_names = np.intersect1d(train_system_names, test_system_names)
 
