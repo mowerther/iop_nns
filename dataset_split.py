@@ -182,7 +182,7 @@ def system_data_split(data: pd.DataFrame, system_column: str, objective_func: Ca
 ################################
 # 2. Dataset split algorithm - Within-distribution
 ################################
-def similarity_score(D1, D2):
+def similarity_score(D1: pd.DataFrame, D2: pd.DataFrame) -> float:
     """
     Calculate the similarity score between two datasets.
 
@@ -201,7 +201,7 @@ system_wd_split = partial(system_data_split, objective_func=similarity_objective
 ##############################
 # 3. Dataset split algorithm - Out-of-distribution
 ##############################
-def dissimilarity_score(D1, D2):
+def dissimilarity_score(D1: pd.DataFrame, D2: pd.DataFrame) -> float:
     """
     Calculate the dissimilarity score between two datasets.
 
@@ -212,13 +212,15 @@ def dissimilarity_score(D1, D2):
     Returns:
     float: Dissimilarity score based on percentile differences of summary columns
     """
-    percentiles = [10, 20, 30, 40, 50, 60, 70, 80, 90]
-    score = 0
-    for col in summary_cols:
-        for percentile in percentiles:
-            d1_percentile = np.percentile(D1[col], percentile)
-            d2_percentile = np.percentile(D2[col], percentile)
-            score += np.abs(d1_percentile - d2_percentile)
+    # Find percentile values in either dataset
+    percentiles = np.arange(10, 91, 10)  # [10, 20, ..., 90]
+    quantiles = percentiles / 100
+    D1_quantiles, D2_quantiles = [df[summary_cols].quantile(quantiles) for df in (D1, D2)]
+
+    # Calculate total difference between percentiles
+    quantile_diff = (D1_quantiles - D2_quantiles).abs()
+    score = quantile_diff.sum().sum()
+
     return -score
 
 dissimilarity_objective = partial(objective, scoring_func=dissimilarity_score)
