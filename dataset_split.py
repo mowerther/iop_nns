@@ -25,7 +25,7 @@ summary_cols = ["aph_443", "aNAP_443", "aCDOM_443"]  # Variables used in (dis)si
 ################################
 # 1. Random split
 ################################
-def random_split(data: pd.DataFrame, *, test_size: float=0.5, seed: int=1) -> tuple[pd.DataFrame, pd.DataFrame]:
+def random_split(data: pd.DataFrame, *args, test_size: float=0.5, seed: int=1, **kwargs) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Splits the dataset into train and test sets, completely at random.
 
@@ -33,6 +33,7 @@ def random_split(data: pd.DataFrame, *, test_size: float=0.5, seed: int=1) -> tu
     data (pd.DataFrame): Input dataset to be split.
     test_size (float): Fraction of data to be assigned to the test set.
     seed (int): Random seed for reproducibility.
+    Additional *args/**kwargs are allowed for consistency with the other splits; they are not used.
 
     Returns:
     train_set (pd.DataFrame): Train set.
@@ -222,6 +223,13 @@ def dissimilarity_score(D1, D2):
 dissimilarity_objective = partial(objective, scoring_func=dissimilarity_score)
 system_ood_split = partial(system_data_split, objective_func=dissimilarity_objective)
 
+################################
+# Dataset split algorithm - combined
+################################
+splitters = {"random": {"full_name": "random", "func": random_split},
+             "wd": {"full_name": "within-distribution", "func": system_wd_split},
+             "ood": {"full_name": "out-of-distribution", "func": system_ood_split},
+            }
 
 ################################
 # 4. Inspect datasets, check uniqueness of system names
@@ -283,20 +291,19 @@ if __name__ == "__main__":
     # Load file
     my_data = pd.read_csv(args.filename)
 
-    # Random split
-    print("Now applying random split:")
-    train_set_random, test_set_random = random_split(my_data, seed=41)
-    print_set_length("random", train_set_random, test_set_random)
-    check_system_name_uniqueness(train_set_random, test_set_random, args.system_column)
+    # Apply splits
+    for label, splitter in splitters.items():
+        # Setup
+        name, func = splitter["full_name"], splitter["func"]
+        print("\n\n################################")
+        print(f"Now applying {name} split:")
 
-    # Within-distribution split
-    print("Now applying within-distribution split:")
-    train_set_wd, test_set_wd = system_wd_split(my_data, args.system_column, timeout=args.timeout, seed=43)
-    print_set_length("within-distribution", train_set_wd, test_set_wd)
-    check_system_name_uniqueness(train_set_wd, test_set_wd, args.system_column)
+        # Application
+        train_set, test_set = func(my_data, args.system_column, timeout=args.timeout, seed=42)
 
-    # Out-of-distribution split
-    print("Now applying out-of-distribution split:")
-    train_set_ood, test_set_ood = system_ood_split(my_data, args.system_column, timeout=args.timeout, seed=42)
-    print_set_length("out-of-distribution", train_set_ood, test_set_ood)
-    check_system_name_uniqueness(train_set_ood, test_set_ood, args.system_column)
+        # Feedback
+        print_set_length(name, train_set, test_set)
+        check_system_name_uniqueness(train_set, test_set, args.system_column)
+
+        # Save to file
+        print("################################")
