@@ -193,7 +193,7 @@ def similarity_score(D1: pd.DataFrame, D2: pd.DataFrame) -> float:
     Returns:
     float: Similarity score based on the mean difference of summary columns
     """
-    return np.abs(D1[summary_cols].mean() - D2[summary_cols].mean()).sum()
+    return (D1[summary_cols].mean() - D2[summary_cols].mean()).abs().sum()
 
 similarity_objective = partial(objective, scoring_func=similarity_score)
 system_wd_split = partial(system_data_split, objective_func=similarity_objective)
