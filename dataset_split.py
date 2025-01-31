@@ -2,11 +2,11 @@
 Script for splitting a dataset using random, within-distribution, and out-of-distribution splits.
 Data are split on one system column, provided with the `-s` flag (default: "lake_name").
 (Dis)similarity scores are evaluated on multiple `summary_cols`, specified at the start of the script.
-Please note that the script can slightly outrun its `timeout`; this is not a bug.
+Please note that the script can slightly run past its `timeout`; this is not a bug.
 
 Example:
     python dataset_split.py datasets_train_test/filtered_df_2319.csv
-    python dataset_split.py datasets_train_test/filtered_df_2319.csv -s site_name -t 10
+    python dataset_split.py datasets_train_test/filtered_df_2319.csv -s site_name -t 10 -r 42
 """
 from functools import partial
 from pathlib import Path
@@ -25,7 +25,8 @@ summary_cols = ["aph_443", "aNAP_443", "aCDOM_443"]  # Variables used in (dis)si
 ################################
 # 1. Random split
 ################################
-def random_split(data: pd.DataFrame, *args, test_size: float=0.5, seed: int=1, **kwargs) -> tuple[pd.DataFrame, pd.DataFrame]:
+def random_split(data: pd.DataFrame, *args,
+                 test_size: float=0.5, seed: int=1, **kwargs) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Splits the dataset into train and test sets, completely at random.
 
@@ -283,9 +284,10 @@ if __name__ == "__main__":
     # Parse command-line args
     import argparse
     parser = argparse.ArgumentParser(__doc__)
-    parser.add_argument("filename", help="File with data to split", type=Path)
-    parser.add_argument("-s", "--system_column", help="Column with system names, on which to split the data", default="lake_name")
-    parser.add_argument("-t", "--timeout", help="Maximum time [min] to spend on each split", type=float, default=10.)
+    parser.add_argument("filename", help="File with data to split.", type=Path)
+    parser.add_argument("-s", "--system_column", help="Column with system names, on which to split the data.", default="lake_name")
+    parser.add_argument("-t", "--timeout", help="Maximum time [min] to spend on each split.", type=float, default=10.)
+    parser.add_argument("-r", "--rng", help="Seed for random number generator (RNG).", type=int, default=42)
     args = parser.parse_args()
 
     # Load file
@@ -299,7 +301,7 @@ if __name__ == "__main__":
         print(f"Now applying {name} split:")
 
         # Application
-        train_set, test_set = func(my_data, args.system_column, timeout=args.timeout, seed=42)
+        train_set, test_set = func(my_data, args.system_column, timeout=args.timeout, seed=args.rng)
 
         # Feedback
         print_set_length(name, train_set, test_set)
