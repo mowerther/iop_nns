@@ -6,7 +6,7 @@ Please note that the script can slightly run past its `timeout`; this is not a b
 
 Example:
     python dataset_split.py datasets_train_test/filtered_df_2319.csv
-    python dataset_split.py datasets_train_test/filtered_df_2319.csv -s site_name -t 10 -r 42
+    python dataset_split.py datasets_train_test/filtered_df_2319.csv -o path/to/outputs/ -s site_name -t 10 -r 42
 """
 from functools import partial
 from pathlib import Path
@@ -285,6 +285,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("filename", help="File with data to split.", type=Path)
+    parser.add_argument("-o", "--output_folder", help="Folder to save files with splits to.", type=Path, default=".")
     parser.add_argument("-s", "--system_column", help="Column with system names, on which to split the data.", default="lake_name")
     parser.add_argument("-t", "--timeout", help="Maximum time [min] to spend on each split.", type=float, default=10.)
     parser.add_argument("-r", "--rng", help="Seed for random number generator (RNG).", type=int, default=42)
@@ -308,4 +309,7 @@ if __name__ == "__main__":
         check_system_name_uniqueness(train_set, test_set, args.system_column)
 
         # Save to file
+        train_set.to_csv(args.output_folder/f"{label}_train_set.csv")
+        test_set.to_csv(args.output_folder/f"{label}_test_set.csv")
+        print(f"Saved {name} split train and test sets to {args.output_folder.absolute()}")
         print("################################")
