@@ -49,33 +49,30 @@ def random_split(data: pd.DataFrame, *, test_size: float=0.5, seed: int=1) -> tu
 class CallbackProgressor:
     """
     Callback function to print progress during optimization.
-    Implemented as a class so it can keep track of iteration count etc.
+    Implemented as a class so it can keep track of the number of minimums, timeout, etc.
     """
     def __init__(self, max_iterations: int):
         self.max_iterations = max_iterations
-        self.current_iteration = 0
-        self.best_objective_value = float("inf")
+        self.current_minimum_number = 0
 
-    def __call__(self, xk, fk, *args) -> bool | None:
+    def __call__(self, xk: np.ndarray, fk: float, context: int) -> bool | None:
         """
         Parameters:
-        xk: Current parameter vector
-        fk: Current objective function value
-        *args: Additional arguments (unused)
+        xk (np.ndarray): Current parameter vector.
+        fk (float): Current objective function value.
+        context (int): Context provided by dual_annealing; 0, 1, or 2.
 
         Returns:
         bool: True if maximum iterations reached, False otherwise
         """
         # Count up
-        self.current_iteration += 1
+        self.current_minimum_number += 1
 
-        # Compare to previous best
-        if fk < self.best_objective_value:
-            self.best_objective_value = fk
-            print(f"Objective function value at iteration {self.current_iteration}: {fk}")
+        # User feedback
+        print(f"Minimum #{self.current_minimum_number:>3}. Objective function value: {fk: 8.4f}")
 
-        if self.current_iteration >= self.max_iterations:
-            print("hello")
+        if self.current_minimum_number >= self.max_iterations:
+            print("Returned True")
             return True
 
 
