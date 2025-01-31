@@ -2,13 +2,15 @@
 Script for splitting a dataset using random, within-distribution, and out-of-distribution splits.
 Data are split on one system column, provided with the `-s` flag (default: "lake_name").
 (Dis)similarity scores are evaluated on multiple `summary_cols`, specified at the start of the script.
+Please note that the script can slightly outrun its `timeout`; this is not a bug.
 
 Example:
     python dataset_split.py datasets_train_test/filtered_df_2319.csv
-    python dataset_split.py datasets_train_test/filtered_df_2319.csv -s site_name
+    python dataset_split.py datasets_train_test/filtered_df_2319.csv -s site_name -t 10
 """
 from functools import partial
 from pathlib import Path
+from time import time
 from typing import Callable
 
 import numpy as np
@@ -51,9 +53,19 @@ class CallbackProgressor:
     Callback function to print progress during optimization.
     Implemented as a class so it can keep track of the number of minimums, timeout, etc.
     """
-    def __init__(self, max_iterations: int):
-        self.max_iterations = max_iterations
+    def __init__(self, timeout: int):
         self.current_minimum_number = 0
+        self.timeout = timeout  # Minutes
+        self.starting_time = time()
+
+    def elapsed_time(self) -> tuple[int, int]:
+        """
+        Determine elapsed time in minutes and seconds.
+        """
+        elapsed_seconds = time() - self.starting_time
+        elapsed_minutes, spare_seconds = elapsed_seconds // 60, elapsed_seconds % 60
+        elapsed_minutes, spare_seconds = int(elapsed_minutes), int(spare_seconds)
+        return elapsed_minutes, spare_seconds
 
     def __call__(self, xk: np.ndarray, fk: float, context: int) -> bool | None:
         """
@@ -67,12 +79,13 @@ class CallbackProgressor:
         """
         # Count up
         self.current_minimum_number += 1
+        current_minutes, current_seconds = self.elapsed_time()
 
         # User feedback
-        print(f"Minimum #{self.current_minimum_number:>3}. Objective function value: {fk: 8.4f}")
+        print(f"{current_minutes:02d}:{current_seconds:02d} - Minimum #{self.current_minimum_number:>3}. Objective function value: {fk: 8.4f}")
 
-        if self.current_minimum_number >= self.max_iterations:
-            print("Returned True")
+        if current_minutes >= self.timeout:
+            print(f"Timed out after {current_minutes:d} minute(s).")
             return True
 
 
@@ -115,7 +128,7 @@ def objective(x: np.ndarray,
 
 
 def system_data_split(data: pd.DataFrame, system_column: str, objective_func: Callable, *,
-                      train_ratio: float=0.5, seed: int=11, max_iterations: int=10) -> tuple[pd.DataFrame, pd.DataFrame]:
+                      train_ratio: float=0.5, seed: int=11, timeout: float=10.) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Splits the dataset into train and test sets, ensuring that each set has unique system names.
 
@@ -130,7 +143,7 @@ def system_data_split(data: pd.DataFrame, system_column: str, objective_func: Ca
 
     train_ratio (float): Ratio of unique system names to be assigned to the train set.
     seed (int): Random seed for reproducibility.
-    max_iterations (int): Maximum number of iterations for the optimization algorithm.
+    timeout (float): Maximum time [min] to spend optimizing.
 
     Returns:
     train_set (pd.DataFrame): Train set with unique system names.
@@ -147,19 +160,11 @@ def system_data_split(data: pd.DataFrame, system_column: str, objective_func: Ca
     x0 = np.random.permutation(n_systems)[:train_size]
     bounds = [(0, n_systems - 1)] * train_size
 
-    # Apply dual_annealing `max_iterations`, using the previous best estimate as the new starting condition
-    best_res = None
-    best_obj_val = float("inf")
-    progress_callback = CallbackProgressor(max_iterations=max_iterations)
-
-    for i in range(max_iterations):
-        res = dual_annealing(objective_func, bounds, x0=x0, args=(system_column, unique_system_names, train_size, data), seed=seed, callback=progress_callback)
+    # Apply dual_annealing for up to `timeout` minutes
+    progress_callback = CallbackProgressor(timeout=timeout)
+    res = dual_annealing(objective_func, bounds, x0=x0, args=(system_column, unique_system_names, train_size, data), seed=seed, callback=progress_callback)
         # Note that the `seed` kwarg is being deprecated and should be replaced with `rng`
-        if res.fun < best_obj_val:
-            best_res = res
-            best_obj_val = res.fun
-        x0 = best_res.x.astype(int)
-        print("Main loop iteration", i)
+    x0 = res.x.astype(int)
 
     # Apply final result
     x_unique = np.unique(x0)
@@ -189,7 +194,7 @@ def similarity_score(D1, D2):
     return np.abs(D1[summary_cols].mean() - D2[summary_cols].mean()).sum()
 
 similarity_objective = partial(objective, scoring_func=similarity_score)
-system_wd_split = partial(system_data_split, objective_func=similarity_objective, max_iterations=10)
+system_wd_split = partial(system_data_split, objective_func=similarity_objective)
 
 ##############################
 # 3. Dataset split algorithm - Out-of-distribution
@@ -215,7 +220,7 @@ def dissimilarity_score(D1, D2):
     return -score
 
 dissimilarity_objective = partial(objective, scoring_func=dissimilarity_score)
-system_ood_split = partial(system_data_split, objective_func=dissimilarity_objective, max_iterations=15)
+system_ood_split = partial(system_data_split, objective_func=dissimilarity_objective)
 
 
 ################################
@@ -272,6 +277,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("filename", help="File with data to split", type=Path)
     parser.add_argument("-s", "--system_column", help="Column with system names, on which to split the data", default="lake_name")
+    parser.add_argument("-t", "--timeout", help="Maximum time [min] to spend on each split", type=float, default=10.)
     args = parser.parse_args()
 
     # Load file
@@ -285,12 +291,12 @@ if __name__ == "__main__":
 
     # Within-distribution split
     print("Now applying within-distribution split:")
-    train_set_wd, test_set_wd = system_wd_split(my_data, args.system_column, seed=43)
+    train_set_wd, test_set_wd = system_wd_split(my_data, args.system_column, timeout=args.timeout, seed=43)
     print_set_length("within-distribution", train_set_wd, test_set_wd)
     check_system_name_uniqueness(train_set_wd, test_set_wd, args.system_column)
 
     # Out-of-distribution split
     print("Now applying out-of-distribution split:")
-    train_set_ood, test_set_ood = system_ood_split(my_data, args.system_column, seed=42)
+    train_set_ood, test_set_ood = system_ood_split(my_data, args.system_column, timeout=args.timeout, seed=42)
     print_set_length("out-of-distribution", train_set_ood, test_set_ood)
     check_system_name_uniqueness(train_set_ood, test_set_ood, args.system_column)
