@@ -14,14 +14,14 @@ import pnn
 # Parse command-line args
 import argparse
 parser = argparse.ArgumentParser(__doc__)
-parser.add_argument("-i", "--insitu_folder", help="Folder containing in situ data.", default=pnn.c.data_path)
-parser.add_argument("-p", "--prisma_folder", help="Folder containing PRISMA match-up data.", default=pnn.c.prisma_path)
+parser.add_argument("-i", "--insitu_folder", help="Folder containing in situ data.", default=pnn.insitu_data_path)
+parser.add_argument("-p", "--prisma_folder", help="Folder containing PRISMA match-up data.", default=pnn.prisma_matchup_path)
 args = parser.parse_args()
 
 ### IN SITU DATA
 print("--- IN SITU DATA ---")
 # Load split data
-train_data, test_data = pnn.read_scenario123_data(args.insitu_folder)
+train_data, test_data = pnn.read_insitu_data(args.insitu_folder)
 print(f"Read in situ data from `{args.insitu_folder.absolute()}` into {len(train_data)}+{len(test_data)} DataFrames")
 
 # Load full data
@@ -41,7 +41,7 @@ print("Saved data splits plot")
 ### PRISMA DATA
 print("--- PRISMA MATCH-UP DATA ---")
 # Load split data
-train_data_prisma, test_data_prisma = pnn.read_prisma_data(args.prisma_folder)
+train_data_prisma, test_data_prisma = pnn.read_prisma_matchups(args.prisma_folder)
 
 # Since we only care about IOPs, use one dataset per subscenario
 train_data_prisma, test_data_prisma = train_data_prisma[::2], test_data_prisma[::2]

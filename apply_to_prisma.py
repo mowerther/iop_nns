@@ -23,7 +23,7 @@ args = parser.parse_args()
 
 
 ### Set up rescaling
-prisma_scenarios = pnn.data.read_prisma_data()
+prisma_scenarios = pnn.read_prisma_matchups()
 model_scenario = prisma_scenarios[0]
 print(f"Model training scenario: {model_scenario.train_scenario}")
 

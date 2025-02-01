@@ -31,9 +31,9 @@ def select_scenarios(prisma: bool) -> tuple[c.Parameter, list[c.Parameter], list
         - Function to load data
     """
     if prisma:
-        return c.prisma, c.scenarios_prisma, c.iops_aph, read_prisma_data
+        return c.prisma, c.scenarios_prisma, c.iops_aph, read_prisma_matchups
     else:
-        return c.gloria, c.scenarios_123, c.iops, read_scenario123_data
+        return c.gloria, c.scenarios_123, c.iops, read_insitu_data
 
 
 @dataclass
@@ -58,11 +58,13 @@ class DataScenario:
 ### INPUT / OUTPUT
 rename_org = {"org_aph_443": "aph_443", "org_anap_443": "aNAP_443", "org_acdom_443": "aCDOM_443",
               "org_aph_675": "aph_675", "org_anap_675": "aNAP_675", "org_acdom_675": "aCDOM_675",}
-def read_scenario123_data(folder: Path | str=c.data_path) -> tuple[DataScenario]:
+def read_insitu_data(folder: Path | str=c.insitu_data_path) -> tuple[DataScenario]:
     """
-    Read the GLORIA scenario 1, 2, 3 data from a given folder into a number of DataFrames.
+    Read the random/wd/ood-split in situ data from a given folder into a number of DataFrames.
     The output consists of DataScenario objects which can be iterated over.
     Note that the data in the CSV files have already been rescaled (RobustScaler), so this should not be done again.
+    TO DO: UPDATE TO NEW FILENAMES + ROBUSTSCALER
+        the scalers are included in the DataScenarios for re-use if desired.
     Filenames are hardcoded.
     """
     folder = Path(folder)
@@ -90,9 +92,9 @@ def read_scenario123_data(folder: Path | str=c.data_path) -> tuple[DataScenario]
 
 
 capitalise_iops = {"acdom_443": "aCDOM_443", "acdom_675": "aCDOM_675", "anap_443": "aNAP_443", "anap_675": "aNAP_675",}
-def read_prisma_data(folder: Path | str=c.prisma_path) -> tuple[DataScenario]:
+def read_prisma_matchups(folder: Path | str=c.prisma_matchup_path) -> tuple[DataScenario]:
     """
-    Read the PRISMA subscenario 1--3 data from a given folder into a number of DataFrames.
+    Read the PRISMA match-up data from a given folder into a number of DataFrames.
     The output consists of DataScenario objects which can be iterated over.
     Note that the data in the CSV files have NOT been rescaled, so this must be done here;
         the scalers are included in the DataScenarios for re-use if desired.
