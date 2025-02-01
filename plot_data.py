@@ -20,26 +20,22 @@ args = parser.parse_args()
 
 ### IN SITU DATA
 print("--- IN SITU DATA ---")
-# Load split data
-train_data, test_data = pnn.read_insitu_data(args.insitu_folder)
-print(f"Read in situ data from `{args.insitu_folder.absolute()}` into {len(train_data)}+{len(test_data)} DataFrames")
-
-# Load full data
-data_full = pd.concat([train_data[0], test_data[0]])
-print(data_full)
-
-# Plot full data
+# Full dataset
+data_full = pnn.data.read_insitu_full(args.insitu_folder)
+print(f"Loaded full in situ dataset from `{args.insitu_folder.absolute()}`.")
 pnn.output.plot_full_dataset(data_full)
 print("Saved full data plot")
 
-# Plot split data
-pnn.output.plot_scenarios(train_data, test_data)
+# Split datasets
+data_random, data_wd, data_ood = pnn.read_insitu_data(args.insitu_folder)
+print(f"Read in situ data splits from `{args.insitu_folder.absolute()}`.")
+pnn.output.plot_scenarios(data_random, data_wd, data_ood)
 print("Saved data splits plot")
-
 
 
 ### PRISMA DATA
 print("--- PRISMA MATCH-UP DATA ---")
+raise NotImplementedError("PRISMA match-up plots currently not working.")
 # Load split data
 train_data_prisma, test_data_prisma = pnn.read_prisma_matchups(args.prisma_folder)
 

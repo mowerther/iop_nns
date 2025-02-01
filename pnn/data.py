@@ -23,9 +23,9 @@ def _find_rrs_columns(data: pd.DataFrame) -> list[str]:
 ### PRE-PROCESSING
 def select_scenarios(prisma: bool) -> tuple[c.Parameter, list[c.Parameter], list[c.Parameter], Callable]:
     """
-    Select the desired scenarios - GLORIA (`prisma=False`) or PRISMA (`prisma=True`).
+    Select the desired scenarios - in situ (`prisma=False`) or PRISMA (`prisma=True`).
     Returns:
-        - Label (GLORIA or PRISMA)
+        - Label (in situ or PRISMA)
         - Scenarios for plotting: flat list
         - IOPs for plotting: flat list
         - Function to load data
@@ -56,6 +56,15 @@ class DataScenario:
 
 
 ### INPUT / OUTPUT
+def read_insitu_full(folder: Path | str=c.insitu_data_path) -> pd.DataFrame:
+    """
+    Read the original in situ dataset from a given folder into a DataFrame.
+    """
+    folder = Path(folder)
+    data = pd.read_csv(folder/"filtered_df_2319.csv")
+    return data
+
+
 rename_org = {"org_aph_443": "aph_443", "org_anap_443": "aNAP_443", "org_acdom_443": "aCDOM_443",
               "org_aph_675": "aph_675", "org_anap_675": "aNAP_675", "org_acdom_675": "aCDOM_675",}
 def read_insitu_data(folder: Path | str=c.insitu_data_path) -> tuple[DataScenario]:
