@@ -13,6 +13,8 @@ from . import constants as c
 
 
 ### HELPER FUNCTIONS
+capitalise_iops = {"acdom_443": "aCDOM_443", "acdom_675": "aCDOM_675", "anap_443": "aNAP_443", "anap_675": "aNAP_675",}
+
 def _find_rrs_columns(data: pd.DataFrame) -> list[str]:
     """
     Find all columns that contain the string "Rrs_" and return these in order.
@@ -23,17 +25,17 @@ def _find_rrs_columns(data: pd.DataFrame) -> list[str]:
 ### PRE-PROCESSING
 def select_scenarios(prisma: bool) -> tuple[c.Parameter, list[c.Parameter], list[c.Parameter], Callable]:
     """
-    Select the desired scenarios - GLORIA (`prisma=False`) or PRISMA (`prisma=True`).
+    Select the desired scenarios - in situ (`prisma=False`) or PRISMA (`prisma=True`).
     Returns:
-        - Label (GLORIA or PRISMA)
+        - Label (in situ or PRISMA)
         - Scenarios for plotting: flat list
         - IOPs for plotting: flat list
         - Function to load data
     """
     if prisma:
-        return c.prisma, c.scenarios_prisma, c.iops_aph, read_prisma_data
+        return c.prisma, c.scenarios_prisma, c.iops_aph, read_prisma_matchups
     else:
-        return c.gloria, c.scenarios_123, c.iops, read_scenario123_data
+        return c.gloria, c.scenarios_123, c.iops, read_insitu_data
 
 
 @dataclass
@@ -55,16 +57,29 @@ class DataScenario:
         return iter([self.train_scenario, self.train_data, self.test_scenarios_and_data])
 
 
-### READ GLORIA+ DATA
+### INPUT / OUTPUT
+def read_insitu_full(folder: Path | str=c.insitu_data_path) -> pd.DataFrame:
+    """
+    Read the original in situ dataset from a given folder into a DataFrame.
+    """
+    folder = Path(folder)
+    data = pd.read_csv(folder/"filtered_df_2319.csv")
+    return data
+
+
 rename_org = {"org_aph_443": "aph_443", "org_anap_443": "aNAP_443", "org_acdom_443": "aCDOM_443",
               "org_aph_675": "aph_675", "org_anap_675": "aNAP_675", "org_acdom_675": "aCDOM_675",}
-def read_scenario123_data(folder: Path | str=c.data_path) -> tuple[DataScenario]:
+def read_insitu_data(folder: Path | str=c.insitu_data_path) -> tuple[DataScenario]:
     """
-    Read the GLORIA scenario 1, 2, 3 data from a given folder into a number of DataFrames.
+    Read the random/wd/ood-split in situ data from a given folder into a number of DataFrames.
     The output consists of DataScenario objects which can be iterated over.
     Note that the data in the CSV files have already been rescaled (RobustScaler), so this should not be done again.
+    TO DO: UPDATE TO NEW FILENAMES + ROBUSTSCALER
+        the scalers are included in the DataScenarios for re-use if desired.
     Filenames are hardcoded.
     """
+    folder = Path(folder)
+
     ### LOAD DATA AND RENAME COLUMNS TO CONSISTENT FORMAT
     train_set_random = pd.read_csv(folder/"random_df_train_org.csv")
     test_set_random = pd.read_csv(folder/"random_df_test_org.csv")
@@ -88,8 +103,6 @@ def read_scenario123_data(folder: Path | str=c.data_path) -> tuple[DataScenario]
 
 
 ### READ PRISMA MATCH-UP DATA (INCLUDING GLORIA+)
-capitalise_iops = {"acdom_443": "aCDOM_443", "acdom_675": "aCDOM_675", "anap_443": "aNAP_443", "anap_675": "aNAP_675",}
-
 def _convert_excel_date(dates: pd.Series) -> pd.Series:
     """
     Convert Excel-format dates (e.g. 44351) to strings in PRISMA/CNR format (e.g. "04.06.2021").
@@ -99,7 +112,7 @@ def _convert_excel_date(dates: pd.Series) -> pd.Series:
     return strings
 
 
-def read_prisma_insitu(filename: Path | str=c.prisma_path/"case_1_insitu_vs_insitu"/"prisma_insitu.csv", *,
+def read_prisma_insitu(filename: Path | str=c.prisma_matchup_path/"case_1_insitu_vs_insitu"/"prisma_insitu.csv", *,
                        filter_invalid_dates=False) -> pd.DataFrame:
     """
     Read the PRISMA in situ match-up data.
@@ -115,9 +128,9 @@ def read_prisma_insitu(filename: Path | str=c.prisma_path/"case_1_insitu_vs_insi
     return data
 
 
-def read_prisma_data(folder: Path | str=c.prisma_path) -> tuple[DataScenario]:
+def read_prisma_matchups(folder: Path | str=c.prisma_matchup_path) -> tuple[DataScenario]:
     """
-    Read the PRISMA subscenario 1--3 data from a given folder into a number of DataFrames.
+    Read the PRISMA match-up data from a given folder into a number of DataFrames.
     The output consists of DataScenario objects which can be iterated over.
     Note that the data in the CSV files have NOT been rescaled, so this must be done here;
         the scalers are included in the DataScenarios for re-use if desired.

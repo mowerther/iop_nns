@@ -11,8 +11,8 @@ from cmcrameri.cm import managua
 
 
 ### FILENAMES
-data_path = Path("datasets_train_test/")
-prisma_path = Path("prisma_subscenarios/")
+insitu_data_path = Path("datasets_train_test/")
+prisma_matchup_path = Path("prisma_subscenarios/")
 map_data_path = Path("prisma_map_data/")
 map_output_path = Path("prisma_map_outputs/")
 

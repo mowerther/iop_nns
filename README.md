@@ -42,35 +42,68 @@ options:
                         number of models to train per scenario (default: 25)
 ```
 
-## *In situ* data & data splitting
-
-### *In situ* data
+## *In situ* data
 The core *in situ* datasets used in our study originate from [GLORIA](https://doi.org/10.1038/s41597-023-01973-y) and [SeaBASS](https://seabass.gsfc.nasa.gov/).
 These datasets are not currently hosted within this repository for licensing reasons; we aim to make them available so the study can be reproduced.
 
-### Dataset splitting
+## Dataset splitting
 A data file in CSV format with column headers can be split using the [dataset_split.py](dataset_split.py) script.
 This script does not require installation of the wider `pnn` module, but can be used by itself.
-Its requirements are Numpy, Pandas, Scipy, and Scikit-learn.
+[dataset_split.py](dataset_split.py) can also be safely imported if you want to re-use its functionality elsewhere.
+Its dependencies are Numpy, Pandas, Scipy, and Scikit-learn.
+The within-distribution and out-of-distribution splits are implemented through general functions called `system_data_split` and `objective`,
+which can easily be built upon for new data split types,
+by introducing new scoring functions.
 
-*The script is called as follows*:
+The script is called as follows:
 ```console
 python dataset_split.py path/to/data.csv
 ```
 
-*This will save the corresponding split data files to your working directory as 6 new CSV files:*
-(`"random_df_train_org.csv"`, `"random_df_test_org.csv"`, `"wd_train_set_org.csv"`, `"wd_test_set_org.csv"`, `"ood_train_set_2.csv"`, `"ood_test_set_2.csv"`)
+Several options are available, as shown below:
+```console
+python dataset_split.py -h
+
+usage: 
+Script for splitting a dataset using random, within-distribution, and out-of-distribution splits.
+Data are split on one system column, provided with the `-s` flag (default: "lake_name").
+(Dis)similarity scores are evaluated on multiple `summary_cols`, specified at the start of the script.
+Please note that the script can slightly run past its `timeout`; this is not a bug.
+
+Example:
+    python dataset_split.py datasets_train_test/filtered_df_2319.csv
+    python dataset_split.py datasets_train_test/filtered_df_2319.csv -o path/to/outputs/ -s site_name -t 10 -r 42
+
+       [-h] [-o OUTPUT_FOLDER] [-s SYSTEM_COLUMN] [-t TIMEOUT] [-r RNG]
+       filename
+
+positional arguments:
+  filename              File with data to split.
+
+options:
+  -h, --help            show this help message and exit
+  -o OUTPUT_FOLDER, --output_folder OUTPUT_FOLDER
+                        Folder to save files with splits to.
+  -s SYSTEM_COLUMN, --system_column SYSTEM_COLUMN
+                        Column with system names, on which to split the data.
+  -t TIMEOUT, --timeout TIMEOUT
+                        Maximum time [min] to spend on each split.
+  -r RNG, --rng RNG     Seed for random number generator (RNG).
+```
+
+The dataset_split.py script will save the resulting dataframes to your chosen location (by default, the working directory) in 6 new CSV files:
+(`"random_train_set.csv"`, `"random_test_set.csv"`, `"wd_train_set.csv"`, `"wd_test_set.csv"`, `"ood_train_set.csv"`, `"ood_test_set.csv"`)
 
 
 ### Loading split datasets
 All other steps in the model training, estimation, and analysis for the *in situ* scenarios use the resulting split data files (random, within-distribution, out-of-distribution).
-These files are read using the [`pnn.data.read_scenario123_data`](pnn/data.py#L61) function.
+These files are read using the [`pnn.data.read_insitu_data`](pnn/data.py#L61) function.
 This function can load files from any folder on your computer; it will try to load the aforementioned 6 CSV files from the given folder.
-By default, it uses the [datasets_train_test](datasets_train_test) folder within the repository folder; this setting can be changed at [`pnn.constants.data_path`](pnn/constants.py#L14).
+By default, it uses the [datasets_train_test](datasets_train_test) folder within the repository folder; this setting can be changed at [`pnn.constants.insitu_data_path`](pnn/constants.py#L14).
 
 Example:
 ```python
-train_data, test_data = pnn.read_scenario123_data()
+train_data, test_data = pnn.read_insitu_data()
 ```
 
 *Explain data format in Python.*

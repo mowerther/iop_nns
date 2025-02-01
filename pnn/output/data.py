@@ -12,6 +12,7 @@ from matplotlib import patches
 from matplotlib.colors import to_rgba
 
 from .. import constants as c
+from ..data import DataScenario
 from .common import IOP_LIMS, IOP_SCALE, IOP_TICKS, label_topleft
 
 ### CONSTANTS
@@ -64,7 +65,7 @@ def plot_full_dataset(df: pd.DataFrame, *,
 
 
 ## PLOT TRAIN/TEST SPLITS FOR DIFFERENT SCENARIOS
-def plot_scenarios(train_sets: Iterable[pd.DataFrame], test_sets: Iterable[pd.DataFrame], *,
+def plot_scenarios(*data_scenarios: Iterable[DataScenario],
                    variables: Iterable[c.Parameter]=c.iops_443, scenarios: Iterable[c.Parameter]=c.scenarios_123,
                    title: Optional[str]=None,
                    saveto: Path | str=c.output_path/"scenarios.pdf") -> None:
@@ -78,13 +79,16 @@ def plot_scenarios(train_sets: Iterable[pd.DataFrame], test_sets: Iterable[pd.Da
     nrows = len(scenarios)
 
     # Checks
-    assert len(train_sets) == len(test_sets) == len(scenarios), f"Mismatch between number of scenarios ({len(scenarios)}), number of training datasets ({len(train_sets)}), and number of test datasets ({len(test_sets)})."
+    assert len(data_scenarios) == len(scenarios), f"Mismatch between number of scenarios ({len(scenarios)}) and number of data scenarios provided ({len(data_scenarios)})."
 
     # Create figure
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=True, figsize=(10, 5), squeeze=False, layout="constrained", gridspec_kw={"hspace": 0.12})
 
     # Plot data per row
-    for ax_row, df_train, df_test in zip(axs, train_sets, test_sets):
+    for ax_row, data_scenario in zip(axs, data_scenarios):
+        df_train = data_scenario.train_data
+        df_test = list(data_scenario.test_scenarios_and_data.values())[0]
+
         for ax, var in zip(ax_row, variables):
             # Plot data
             ax.hist(df_train[var], bins=bins, color=TRAIN_COLOR, histtype="step")
