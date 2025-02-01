@@ -65,6 +65,8 @@ def read_scenario123_data(folder: Path | str=c.data_path) -> tuple[DataScenario]
     Note that the data in the CSV files have already been rescaled (RobustScaler), so this should not be done again.
     Filenames are hardcoded.
     """
+    folder = Path(folder)
+
     ### LOAD DATA AND RENAME COLUMNS TO CONSISTENT FORMAT
     train_set_random = pd.read_csv(folder/"random_df_train_org.csv")
     test_set_random = pd.read_csv(folder/"random_df_test_org.csv")
