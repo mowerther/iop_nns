@@ -5,24 +5,20 @@ Trains N networks, evaluates them, and saves their outputs.
 Selects the type of network from the first argument: [bnn_dc, bnn_mcd, ens_nn, mdn, rnn]
 Example:
     python train_nn.py bnn_mcd
-
-Optionally, use the -p flag to use PRISMA data:
-Example:
     python train_nn.py bnn_mcd -p
-
-Optionally, use the -c flag to enable recalibration.
-Example:
     python train_nn.py bnn_mcd -c
+    python train_nn.py bnn_mcd -pc -o path/to/outputs/ -n 10
 """
 import pnn
 
 ### Parse command line arguments
 import argparse
-parser = argparse.ArgumentParser("Script for loading data and training a neural network.")
+parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("pnn_type", help="PNN architecture to use")
-parser.add_argument("-p", "--prisma", help="use PRISMA data", action="store_true")
-parser.add_argument("-c", "--recalibrate", help="apply recalibration", action="store_true")
-parser.add_argument("-n", "--n_models", help="number of models to train per scenario (default: 25)", type=int, default=25)
+parser.add_argument("-o", "--output_folder", help="Folder to save models to.", type=pnn.c.Path, default=pnn.model_path)
+parser.add_argument("-p", "--prisma", help="Use PRISMA data.", action="store_true")
+parser.add_argument("-c", "--recalibrate", help="Apply recalibration.", action="store_true")
+parser.add_argument("-n", "--n_models", help="Number of models to train per scenario (default: 25).", type=int, default=25)
 args = parser.parse_args()
 
 # Select PNN class
@@ -42,7 +38,7 @@ for scenario_train, data_train, scenarios_and_data_test in datascenarios:
     if args.recalibrate:
         tag_train += "_recal"
 
-    saveto_model = pnn.model_path/f"{tag_train}.keras"
+    saveto_model = args.output_folder/f"{tag_train}.keras"
     print("\n\n----------")
     print(f"Now training: {scenario_train.label}")
     print(f"Models will be saved to {saveto_model.absolute()}")
