@@ -67,32 +67,30 @@ def read_insitu_full(folder: Path | str=c.insitu_data_path) -> pd.DataFrame:
     return data
 
 
-rename_org = {"org_aph_443": "aph_443", "org_anap_443": "aNAP_443", "org_acdom_443": "aCDOM_443",
-              "org_aph_675": "aph_675", "org_anap_675": "aNAP_675", "org_acdom_675": "aCDOM_675",}
+def _read_and_preprocess_insitu_data(filename: Path | str) -> pd.DataFrame:
+    """
+    Read and pre-process a single in situ dataset.
+    """
+    data = pd.read_csv(filename)
+
+    # Filter wavelengths
+    data = data.drop(columns=[col for col in _find_rrs_columns(data) if int(col.split("_")[1]) not in c.wavelengths_123])
+
+    return data
+
+
+_filenames_insitu = ["random_train_set.csv", "random_test_set.csv", "wd_train_set.csv", "wd_test_set.csv", "ood_train_set.csv", "ood_test_set.csv"]
 def read_insitu_data(folder: Path | str=c.insitu_data_path) -> tuple[DataScenario]:
     """
     Read the random/wd/ood-split in situ data from a given folder into a number of DataFrames.
     The output consists of DataScenario objects which can be iterated over.
-    Note that the data in the CSV files have already been rescaled (RobustScaler), so this should not be done again.
-    TO DO: UPDATE TO NEW FILENAMES + ROBUSTSCALER
         the scalers are included in the DataScenarios for re-use if desired.
     Filenames are hardcoded.
     """
     folder = Path(folder)
 
-    ### LOAD DATA AND RENAME COLUMNS TO CONSISTENT FORMAT
-    train_set_random = pd.read_csv(folder/"random_df_train_org.csv")
-    test_set_random = pd.read_csv(folder/"random_df_test_org.csv")
-
-    train_set_wd = pd.read_csv(folder/"wd_train_set_org.csv")
-    test_set_wd = pd.read_csv(folder/"wd_test_set_org.csv")
-
-    train_set_ood = pd.read_csv(folder/"ood_train_set_2.csv").drop(columns=rename_org.values()).rename(columns=rename_org)
-    test_set_ood = pd.read_csv(folder/"ood_test_set_2.csv").drop(columns=rename_org.values()).rename(columns=rename_org)
-
-    ### SELECT WAVELENGTHS
-    for data in [train_set_random, test_set_random, train_set_wd, test_set_wd, train_set_ood, test_set_ood]:
-        data.drop(columns=[col for col in _find_rrs_columns(data) if int(col.split("_")[1]) not in c.wavelengths_123], inplace=True)
+    ### LOAD DATA IN ORDER
+    train_set_random, test_set_random, train_set_wd, test_set_wd, train_set_ood, test_set_ood = [_read_and_preprocess_insitu_data(folder/filename) for filename in _filenames_insitu]
 
     ### ORGANISE TRAIN/TEST SETS
     random = DataScenario(c.random_split, train_set_random, {c.random_split: test_set_random})
