@@ -65,28 +65,24 @@ def read_insitu_full(folder: Path | str=c.insitu_data_path) -> pd.DataFrame:
     return data
 
 
-rename_org = {"org_aph_443": "aph_443", "org_anap_443": "aNAP_443", "org_acdom_443": "aCDOM_443",
-              "org_aph_675": "aph_675", "org_anap_675": "aNAP_675", "org_acdom_675": "aCDOM_675",}
 def read_insitu_data(folder: Path | str=c.insitu_data_path) -> tuple[DataScenario]:
     """
     Read the random/wd/ood-split in situ data from a given folder into a number of DataFrames.
     The output consists of DataScenario objects which can be iterated over.
-    Note that the data in the CSV files have already been rescaled (RobustScaler), so this should not be done again.
-    TO DO: UPDATE TO NEW FILENAMES + ROBUSTSCALER
         the scalers are included in the DataScenarios for re-use if desired.
     Filenames are hardcoded.
     """
     folder = Path(folder)
 
-    ### LOAD DATA AND RENAME COLUMNS TO CONSISTENT FORMAT
-    train_set_random = pd.read_csv(folder/"random_df_train_org.csv")
-    test_set_random = pd.read_csv(folder/"random_df_test_org.csv")
+    ### LOAD DATA IN ORDER
+    train_set_random = pd.read_csv(folder/"random_train_set.csv")
+    test_set_random = pd.read_csv(folder/"random_test_set.csv")
 
-    train_set_wd = pd.read_csv(folder/"wd_train_set_org.csv")
-    test_set_wd = pd.read_csv(folder/"wd_test_set_org.csv")
+    train_set_wd = pd.read_csv(folder/"wd_train_set.csv")
+    test_set_wd = pd.read_csv(folder/"wd_test_set.csv")
 
-    train_set_ood = pd.read_csv(folder/"ood_train_set_2.csv").drop(columns=rename_org.values()).rename(columns=rename_org)
-    test_set_ood = pd.read_csv(folder/"ood_test_set_2.csv").drop(columns=rename_org.values()).rename(columns=rename_org)
+    train_set_ood = pd.read_csv(folder/"ood_train_set.csv")
+    test_set_ood = pd.read_csv(folder/"ood_test_set.csv")
 
     ### SELECT WAVELENGTHS
     for data in [train_set_random, test_set_random, train_set_wd, test_set_wd, train_set_ood, test_set_ood]:
