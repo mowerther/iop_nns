@@ -57,25 +57,6 @@ class DataScenario:
         return iter([self.train_scenario, self.train_data, self.test_scenarios_and_data])
 
 
-### DATA RESCALING
-def generate_rescaler_rrs(data: np.ndarray) -> RobustScaler:
-    """
-    Train a rescaler on R_rs data, but do not apply it.
-    Just a thin wrapper around RobustScaler for interface consistency.
-    """
-    scaler = RobustScaler().fit(data)
-    return scaler
-
-
-def generate_rescaler_iops(data: np.ndarray) -> MinMaxScaler:
-    """
-    Train a rescaler on R_rs data, but do not apply it.
-    Just a thin wrapper around RobustScaler for interface consistency.
-    """
-    scaler = MinMaxScaler().fit(data)
-    return scaler
-
-
 ### INPUT / OUTPUT
 def read_insitu_full(folder: Path | str=c.insitu_data_path) -> pd.DataFrame:
     """
@@ -103,7 +84,6 @@ def read_insitu_data(folder: Path | str=c.insitu_data_path) -> tuple[DataScenari
     """
     Read the random/wd/ood-split in situ data from a given folder into a number of DataFrames.
     The output consists of DataScenario objects which can be iterated over.
-        the scalers are included in the DataScenarios for re-use if desired.
     Filenames are hardcoded.
     """
     folder = Path(folder)
@@ -214,39 +194,50 @@ def extract_inputs_outputs(data: pd.DataFrame, *,
 
 
 ### SCALING
-def scale_y(y_train: np.ndarray, *y_other: Optional[Iterable[np.ndarray]],
-            scaled_range: tuple[int]=(-1, 1)) -> tuple[np.ndarray, np.ndarray]:
+def generate_rescaler_rrs(data: np.ndarray) -> RobustScaler:
     """
-    Apply log and minmax scaling to the input arrays, training the scaler on y_train only (per IOP).
-    y_other can be any number (including 0) of other arrays.
+    Train a rescaler on R_rs data, but do not apply it.
+    Just a thin wrapper around RobustScaler for interface consistency.
     """
-    # Apply log transformation to the target variables
-    y_train_log = np.log(y_train)
-    y_other_log = [np.log(y) for y in y_other]
-
-    # Apply Min-Max scaling to log-transformed target variables
-    scaler_y = MinMaxScaler(feature_range=scaled_range)
-    y_train_scaled = scaler_y.fit_transform(y_train_log)
-    y_other_scaled = [scaler_y.transform(y_log) for y_log in y_other_log]
-
-    return scaler_y, y_train_scaled, *y_other_scaled
+    scaler = RobustScaler().fit(data)
+    return scaler
 
 
-def inverse_scale_y(mean_scaled: np.ndarray, variance_scaled: np.ndarray, scaler_y: MinMaxScaler) -> tuple[np.ndarray, np.ndarray]:
+def generate_rescaler_iops(data: np.ndarray) -> MinMaxScaler:
+    """
+    Train a rescaler on R_rs data, but do not apply it.
+    Just a thin wrapper around MinMaxScaler for interface consistency.
+    """
+    logdata = np.log(data)
+    scaler = MinMaxScaler(feature_range=(-1, 1)).fit(logdata)
+    return scaler
+
+
+def scale_y(scaler: MinMaxScaler, y: np.ndarray) -> np.ndarray:
+    """
+    Apply log and minmax scaling to the input array using the provided scaler.
+    """
+    logy = np.log(y)
+    yscaled = scaler.transform(logy)
+
+    return yscaled
+
+
+def inverse_scale_y(scaler: MinMaxScaler, mean_scaled: np.ndarray, variance_scaled: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """
     Go back from log-minmax-scaled space to real units.
     """
     # Setup
-    N = scaler_y.n_features_in_  # Number of predicted values
+    N = scaler.n_features_in_  # Number of predicted values
     original_shape = mean_scaled.shape
 
     # Convert from scaled space to log space: Means
     mean_scaled = mean_scaled.reshape(-1, N)
-    mean_log = scaler_y.inverse_transform(mean_scaled)
+    mean_log = scaler.inverse_transform(mean_scaled)
     mean_log = mean_log.reshape(original_shape)
 
     # Convert from scaled space to log space: Variance
-    scaling_factor = (scaler_y.data_max_ - scaler_y.data_min_) / 2
+    scaling_factor = (scaler.data_max_ - scaler.data_min_) / 2
     variance_log = variance_scaled * (scaling_factor**2)  # Uncertainty propagation for linear equations
 
     # Convert from log space to the original space, i.e. actual IOPs in [m^-1]

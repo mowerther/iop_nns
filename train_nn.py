@@ -53,15 +53,16 @@ for scenario_train, data_train, scenarios_and_data_test in datascenarios:
     # Select Rrs values in 5 nm steps, IOP columns
     X_train, y_train = pnn.data.extract_inputs_outputs(data_train)
 
-    # Rescale y data (log, minmax)
-    scaler_y, y_train_scaled = pnn.data.scale_y(y_train)
-    print("Rescaled data.")
-    raise Exception
+    # Train X and y rescalers
+    scaler_X = pnn.data.generate_rescaler_rrs(X_train)
+    scaler_y = pnn.data.generate_rescaler_iops(y_train)
+    print("Trained X and y rescalers.")
 
     ### TRAINING
     # Train multiple models
-    models = pnn.nn.train_N_models(PNN, X_train, y_train_scaled, n_models=args.n_models)
+    models = pnn.nn.train_N_models(PNN, X_train, y_train, scaler_X=scaler_X, scaler_y=scaler_y, n_models=args.n_models)
     print(f"Trained {len(models)}/{args.n_models} models.")
+    raise Exception
 
     # Optional: Train recalibration
     if args.recalibrate:
@@ -92,7 +93,7 @@ for scenario_train, data_train, scenarios_and_data_test in datascenarios:
         X_test, y_test = pnn.data.extract_inputs_outputs(data_test)
 
         # Calculate estimates
-        estimates = pnn.nn.estimate_N_models(models, X_test, scaler_y)
+        estimates = pnn.nn.estimate_N_models(models, X_test)
 
         # Save estimates to file
         pnn.nn.save_estimates(y_test, estimates, saveto_estimates)

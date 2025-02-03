@@ -112,17 +112,12 @@ class MDN(BasePNN):
     ### CONFIGURATION
     name = c.mdn
 
-    def __init__(self, model: Model | Iterable[Model]) -> None:
-        """
-        Initialisation with just a Model so it can be used for training new models or loading from file.
-        """
-        self.model = model
 
     ### CREATION
     @classmethod
     def build(cls, input_shape: tuple, output_size: int, *,
               n_mix: int=5, hidden_layers: Iterable[int]=5*[100], lr: float=1e-3, l2_reg=1e-3, activation="relu",
-              dropout=False, dropout_rate: float=0.25) -> Self:
+              dropout=False, dropout_rate: float=0.25, **kwargs) -> Self:
         """
         Build the MDN.
 
@@ -163,7 +158,7 @@ class MDN(BasePNN):
         # Pass the correct parameters to the custom MDN loss function
         mdn_loss = mdn_loss_constructor(n_mix, output_size)
         model.compile(optimizer=optimizer, loss=mdn_loss)
-        return cls(model)
+        return cls(model, **kwargs)
 
 
     @property
@@ -181,6 +176,10 @@ class MDN(BasePNN):
         Train on the provided X and y data, with early stopping.
         **kwargs are passed to self.model.fit.
         """
+        # Data scaling
+        X_train = self.scale_X(X_train) if self.scaler_X is not None else X_train
+        y_train = self.scale_y(y_train) if self.scaler_y is not None else y_train
+
         # Setup
         early_stopping = EarlyStopping(monitor="val_loss", patience=80, verbose=1, mode="min", restore_best_weights=True)
 
@@ -189,10 +188,13 @@ class MDN(BasePNN):
 
 
     ### APPLICATION
-    def predict_with_uncertainty(self, X: np.ndarray, scaler_y: MinMaxScaler, **predict_kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def predict_with_uncertainty(self, X: np.ndarray, **predict_kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Use the given model to predict y values for given X values, including the rescaling back to regular units.
         """
+        # Data scaling
+        X = self.scale_X(X) if self.scaler_X is not None else X
+
         # Generate MDN predictions
         raw_predictions = self._predict_samples(X, **predict_kwargs)
         pi, mu, chol_params = split_mdn_outputs(raw_predictions, self.n_mix, self.output_size)
@@ -219,10 +221,14 @@ class MDN(BasePNN):
         square_of_expected_mu = tf.square(tf.reduce_sum(mu_weighted, axis=1))  # [batch_size, output_size]
         epistemic_variance_scaled = expected_mu_squared - square_of_expected_mu  # [batch_size, output_size]
 
-        # Go from scaled space to real units
+        # Convert from scaled space to real units
         mean_predictions_scaled = mean_predictions_scaled.numpy()
-        mean_predictions, aleatoric_variance = inverse_scale_y(mean_predictions_scaled, aleatoric_variance_scaled, scaler_y)
-        mean_predictions, epistemic_variance = inverse_scale_y(mean_predictions_scaled, epistemic_variance_scaled, scaler_y)
+        if self.scaler_y is not None:
+            mean_predictions, aleatoric_variance = self.inverse_scale_y(mean_predictions_scaled, aleatoric_variance_scaled)
+            mean_predictions, epistemic_variance = self.inverse_scale_y(mean_predictions_scaled, epistemic_variance_scaled)
+        else:
+            mean_predictions, aleatoric_variance = mean_predictions_scaled, aleatoric_variance_scaled
+            mean_predictions, epistemic_variance = mean_predictions_scaled, epistemic_variance_scaled
 
         total_variance = aleatoric_variance + epistemic_variance
 

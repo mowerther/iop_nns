@@ -16,18 +16,19 @@ from ..modeloutput import save_model_outputs
 
 
 ### TRAINING
-def train_N_models(model_class: type, X_train: np.ndarray, y_train_scaled: np.ndarray, *,
-                   n_models: int=10) -> list[BasePNN]:
+def train_N_models(model_class: type, X_train: np.ndarray, y_train: np.ndarray, *,
+                   n_models: int=25, **kwargs) -> list[BasePNN]:
     """
     Train N instances of the provided model class.
+    **kwargs are passed to the build_and_train method of the desired class.
     """
     all_models = []
 
     for i in range(n_models):
-        label = f"{i}/{n_models}"
+        label = f"{i+1}/{n_models}"
 
         # Train model
-        model = model_class.build_and_train(X_train, y_train_scaled)
+        model = model_class.build_and_train(X_train, y_train, **kwargs)
         all_models.append(model)
         print(f"\n\n   Model {label}: Finished training.   \n\n")
 
@@ -35,12 +36,12 @@ def train_N_models(model_class: type, X_train: np.ndarray, y_train_scaled: np.nd
 
 
 ### APPLICATION
-def estimate_N_models(models: Iterable[BasePNN], X: np.ndarray, scaler_y: MinMaxScaler, **kwargs) -> list[tuple[np.ndarray]]:
+def estimate_N_models(models: Iterable[BasePNN], X: np.ndarray, **kwargs) -> list[tuple[np.ndarray]]:
     """
     Run predictions on testing data (X) for N models.
     The different estimates (mean, variance, etc.) are not separated.
     """
-    estimates = [model.predict_with_uncertainty(X, scaler_y, **kwargs) for model in models]
+    estimates = [model.predict_with_uncertainty(X, **kwargs) for model in models]
     return estimates
 
 

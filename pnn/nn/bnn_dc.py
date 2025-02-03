@@ -52,7 +52,7 @@ class BNN_DC(DropoutPNN):
     ### CREATION
     @classmethod
     def build(cls, input_shape: tuple, output_size: int, *,
-              hidden_units: int=100, n_layers: int=5, dropout_rate: float=0.25, l2_reg: float=1e-3, activation="relu") -> Self:
+              hidden_units: int=100, n_layers: int=5, dropout_rate: float=0.25, l2_reg: float=1e-3, activation="relu", **kwargs) -> Self:
         """
         Construct a BNN with DC based on the input hyperparameters.
         """
@@ -66,4 +66,4 @@ class BNN_DC(DropoutPNN):
         # Output layer: Adjust for 6 means and 6 variances (12 outputs in total)
         model.add(Dense(output_size * 2, activation="linear", name="output_dense"))  # Naming the output layer explicitly
 
-        return cls(model)
+        return cls(model, **kwargs)
