@@ -57,6 +57,25 @@ class DataScenario:
         return iter([self.train_scenario, self.train_data, self.test_scenarios_and_data])
 
 
+### DATA RESCALING
+def generate_rescaler_rrs(data: np.ndarray) -> RobustScaler:
+    """
+    Train a rescaler on R_rs data, but do not apply it.
+    Just a thin wrapper around RobustScaler for interface consistency.
+    """
+    scaler = RobustScaler().fit(data)
+    return scaler
+
+
+def generate_rescaler_iops(data: np.ndarray) -> MinMaxScaler:
+    """
+    Train a rescaler on R_rs data, but do not apply it.
+    Just a thin wrapper around RobustScaler for interface consistency.
+    """
+    scaler = MinMaxScaler().fit(data)
+    return scaler
+
+
 ### INPUT / OUTPUT
 def read_insitu_full(folder: Path | str=c.insitu_data_path) -> pd.DataFrame:
     """

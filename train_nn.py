@@ -56,7 +56,7 @@ for scenario_train, data_train, scenarios_and_data_test in datascenarios:
     # Rescale y data (log, minmax)
     scaler_y, y_train_scaled = pnn.data.scale_y(y_train)
     print("Rescaled data.")
-
+    raise Exception
 
     ### TRAINING
     # Train multiple models
