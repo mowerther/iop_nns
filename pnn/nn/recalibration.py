@@ -5,13 +5,13 @@ from pathlib import Path
 from typing import Callable, Iterable, Self
 from zipfile import ZipFile
 
+import dill as pickle
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
 
 from .pnn_base import BasePNN, dump_into_zipfile
 from ..recalibration import apply_recalibration, fit_recalibration_functions
 
-_PICKLE_SUFFIX = ".funcs"
+RECALIBRATOR_FILENAME = "recalibrators.funcs"
 
 
 class RecalibratedPNN:
@@ -21,6 +21,8 @@ class RecalibratedPNN:
     ### CONFIGURATION
     def __init__(self, model: BasePNN, recalibrators: Iterable[Callable]) -> None:
         self.model = model
+        self.scaler_X = model.scaler_X
+        self.scaler_y = model.scaler_y
         self.recalibrators = recalibrators
 
     @property
@@ -33,32 +35,40 @@ class RecalibratedPNN:
 
     ### CREATION
     @classmethod
-    def recalibrate_pnn(cls, model: BasePNN, X: np.ndarray, y: np.ndarray, scaler_y: MinMaxScaler) -> Self:
+    def recalibrate_pnn(cls, model: BasePNN, X: np.ndarray, y: np.ndarray) -> Self:
         """
         Take an existing PNN and train recalibration functions.
         """
-        mean_predictions, total_variance, *_ = model.predict_with_uncertainty(X, scaler_y)
+        mean_predictions, total_variance, *_ = model.predict_with_uncertainty(X)
         recalibrators = fit_recalibration_functions(y, mean_predictions, total_variance)
         return cls(model, recalibrators)
 
 
     ### SAVING / LOADING
     def save(self, filename: Path | str, *args, **kwargs) -> None:
+        filename = Path(filename)
+
         # Save model normally
         self.model.save(filename, *args, **kwargs)
 
         # Pickle and save recalibrators
-        filename = Path(filename)
-        filename_funcs = filename.with_suffix(_PICKLE_SUFFIX)
-        with open(filename_funcs, mode="w") as file:
-            pass
-
-        print("Note: saving not fully implemented yet.")
+        with ZipFile(filename, mode="a") as zipfile:
+            dump_into_zipfile(zipfile, RECALIBRATOR_FILENAME, self.recalibrators)
 
 
     @classmethod
-    def load(cls, *args, **kwargs) -> Self:
-        return NotImplemented
+    def load(cls, filename: Path | str, PNN_Class: type, *args, **kwargs) -> Self:
+        filename = Path(filename)
+
+        # Load model
+        model = PNN_Class.load(filename)
+
+        # Load recalibrators
+        with ZipFile(filename, mode="r") as zipfile:
+            with zipfile.open(RECALIBRATOR_FILENAME, mode="r") as recal_file:
+                recalibrators = pickle.load(recal_file)
+
+        return cls(model, recalibrators)
 
 
     ### APPLICATION
@@ -74,13 +84,13 @@ class RecalibratedPNN:
         return apply_recalibration(self.recalibrators, predicted_mean, total_variance)
 
 
-    def predict_with_uncertainty(self, X: np.ndarray, scaler_y: MinMaxScaler, **predict_kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def predict_with_uncertainty(self, X: np.ndarray, **predict_kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Use the PNN to predict y values for given X values, including the rescaling back to regular units.
         Then use the recalibrators to adjust the variances.
         """
         # Generate uncalibrated predictions
-        mean_predictions, total_variance_uncalibrated, aleatoric_variance, epistemic_variance = self.model.predict_with_uncertainty(X, scaler_y, **predict_kwargs)
+        mean_predictions, total_variance_uncalibrated, aleatoric_variance, epistemic_variance = self.model.predict_with_uncertainty(X, **predict_kwargs)
 
         # Apply recalibration
         total_variance = self.recalibrate(mean_predictions, total_variance_uncalibrated)
@@ -90,7 +100,7 @@ class RecalibratedPNN:
 
 
 ### CONVENIENCE FUNCTIONS
-def recalibrate_pnn(models: BasePNN, X: np.ndarray, y: np.ndarray, scaler_y: MinMaxScaler) -> list[RecalibratedPNN] | RecalibratedPNN:
+def recalibrate_pnn(models: BasePNN, X: np.ndarray, y: np.ndarray) -> list[RecalibratedPNN] | RecalibratedPNN:
     """
     Recalibrate existing PNNs.
     Returns a list if multiple models are provided; returns a single object if only one.
@@ -99,7 +109,7 @@ def recalibrate_pnn(models: BasePNN, X: np.ndarray, y: np.ndarray, scaler_y: Min
     if SINGLE:
         models = [models]
 
-    new_models = [RecalibratedPNN.recalibrate_pnn(model, X, y, scaler_y) for model in models]
+    new_models = [RecalibratedPNN.recalibrate_pnn(model, X, y) for model in models]
 
     if SINGLE:
         new_models = new_models[0]

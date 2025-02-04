@@ -66,7 +66,7 @@ for scenario_train, data_train, scenarios_and_data_test in datascenarios:
     # Optional: Train recalibration
     if args.recalibrate:
         X_cal, y_cal = pnn.data.extract_inputs_outputs(data_cal)
-        models = pnn.nn.recalibrate_pnn(models, X_cal, y_cal, scaler_y)
+        models = pnn.nn.recalibrate_pnn(models, X_cal, y_cal)
 
     # Save models to file
     pnn.nn.save_models(models, saveto_model)

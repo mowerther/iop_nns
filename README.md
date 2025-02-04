@@ -174,7 +174,7 @@ Models are saved in ZIP files containing TensorFlow/Keras (`.keras`) files, re-s
 A saved model can be loaded using the [`.load`](pnn/nn/pnn_base.py#L203) function of the relevant class, e.g. `BNN_DC.load` or `RNN.load`.
 The ENS-NN (ensemble neural network) is saved as a ZIP file containing its constituent networks within the general ZIP file, but otherwise works the same;
 the [`Ensemble.save`](pnn/nn/ens.py#L98) and [`Ensemble.load`](pnn/nn/ens.py#L121) functions will automatically take care of filename extensions.
-Please note that saving recalibrated models is not yet fully implemented; the model will be saved and loaded as normal, but not its corresponding recalibration function.
+Recalibrated models are saved and loaded with their corresponding recalibration functions.
 
 
 ## Analysis
