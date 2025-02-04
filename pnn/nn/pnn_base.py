@@ -16,6 +16,9 @@ from sklearn.preprocessing import MinMaxScaler, RobustScaler
 
 from .. import constants as c, data as d
 
+XSCALER_FILENAME = "X.scaler"
+YSCALER_FILENAME = "y.scaler"
+
 
 ### SAVING/LOADING
 def timestamp() -> str:
@@ -183,8 +186,8 @@ class BasePNN:
             zipfile.write(model_filename, model_filename_zip, compress_type=ZIP_DEFLATED)
 
             # Save scalers
-            dump_into_zipfile(zipfile, "X.scaler", self.scaler_X)
-            dump_into_zipfile(zipfile, "y.scaler", self.scaler_y)
+            dump_into_zipfile(zipfile, XSCALER_FILENAME, self.scaler_X)
+            dump_into_zipfile(zipfile, YSCALER_FILENAME, self.scaler_y)
 
         # Delete temporary files
         model_filename.unlink()
@@ -204,22 +207,23 @@ class BasePNN:
         """
         Load a model from a ZIP file, including scalers (can be None).
         """
+        # Generate temporary filename
         filename = Path(filename)
+        temp_folder = Path(f"temp_{timestamp()}")
 
-        # Find ZIP file, create temporary folder
-        temp_folder = filename.parent/f"temp_{timestamp()}/"
-        temp_folder.mkdir()
-
-        # Extract, find, and load individual files
+        # Open ZIP file
         with ZipFile(filename, mode="r") as zipfile:
-            zipfile.extractall(temp_folder)
+            # Extract model into temporary filename
+            zipfile.extract("model.keras", temp_folder)
 
-        # Load unpacked files
+            # Load pickled files directly from ZIP
+            with zipfile.open(XSCALER_FILENAME) as file:
+                scaler_X = pickle.load(file)
+            with zipfile.open(YSCALER_FILENAME) as file:
+                scaler_y = pickle.load(file)
+
+        # Load unpacked files and delete temporary folder
         model = cls._load_model(temp_folder/"model.keras")
-        scaler_X = load_dump(temp_folder/"X.scaler")
-        scaler_y = load_dump(temp_folder/"y.scaler")
-
-        # Delete temporary files
         rmtree(temp_folder)
 
         return cls(model, scaler_X=scaler_X, scaler_y=scaler_y)
