@@ -9,7 +9,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.regularizers import l2
 
 from .pnn_base import DropoutPNN
-from .. import constants as c
+from .. import constants as c, data as d
 
 
 ### DATA HANDLING
@@ -36,6 +36,21 @@ def reshape_data(X_train: np.ndarray, *, X_test: Optional[np.ndarray]=None, n_fe
 class RNN_MCD(DropoutPNN):
     ### CONFIGURATION
     name = c.rnn
+
+    ### DATA RESCALING
+    def scale_X(self, X: np.ndarray) -> np.ndarray:
+        """
+        Rescale X using the included scaler.
+        Specific to RNN due to the added axis in training.
+        """
+        assert self.scaler_X is not None, f"Model `{self}` does not have a rescaler for X."
+        assert (self_shape := self.scaler_X.center_.shape[0]) == (data_shape := X.shape[1]), f"Data ({data_shape}) and scaler ({self_shape}) have incompatible shapes."
+
+        if X.ndim == 2:
+            return d.scale_X(self.scaler_X, X)
+        elif X.ndim == 3:
+            return reshape_data(d.scale_X(self.scaler_X, X[..., 0]))
+
 
     ### CREATION
     @classmethod
