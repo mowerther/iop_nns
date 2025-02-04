@@ -66,6 +66,8 @@ def nll_loss(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
 class BasePNN:
     ### CONFIGURATION
     name = "BasePNN"
+    extension = ".keras"  # Default extension for model itself
+
     def __init__(self, model: Model | Iterable[Model], *,
                  scaler_X: Optional[RobustScaler]=None, scaler_y: Optional[MinMaxScaler]=None) -> None:
         """
@@ -159,14 +161,13 @@ class BasePNN:
 
 
     ### SAVING / LOADING
-    def _save_model(self, filename: Path | str, *args, **kwargs) -> Path:
+    def _save_model(self, filename: Path | str, *args, **kwargs) -> None:
         """
         Save the underlying model; can be overridden while maintaining general save function.
         Returns its Path so that any modifications are passed on.
         """
         filename = Path(filename)
         self.model.save(filename, *args, **kwargs)
-        return filename
 
 
     def save(self, filename: Path | str, **kwargs) -> None:
@@ -176,13 +177,13 @@ class BasePNN:
         filename = Path(filename)
 
         # Save underlying
-        model_filename = filename.parent/f"temp_{timestamp()}.keras"  # Temporary filename
-        model_filename = self._save_model(model_filename)  # May have been modified
+        model_filename = filename.parent/(f"temp_{timestamp()}" + self.extension)  # Temporary filename
+        self._save_model(model_filename)  # Save to temporary location
 
         # Save components into ZIP file
         with ZipFile(filename, mode="w") as zipfile:
             # Move underlying model file into ZIP folder
-            model_filename_zip = model_filename.with_stem("model").name  # Maintain extension, drop parents
+            model_filename_zip = "model" + self.extension  # Maintain extension, drop parents
             zipfile.write(model_filename, model_filename_zip, compress_type=ZIP_DEFLATED)
 
             # Save scalers
@@ -193,8 +194,8 @@ class BasePNN:
         model_filename.unlink()
 
 
-    @staticmethod
-    def _load_model(filename: Path | str, *args, **kwargs) -> Model | Iterable[Model]:
+    @classmethod
+    def _load_model(cls, filename: Path | str, *args, **kwargs) -> Model | Iterable[Model]:
         """
         Load the underlying model; can be overridden while maintaining general load function.
         Assumes the model has already been unzipped (but can itself be another zip file).
@@ -212,9 +213,10 @@ class BasePNN:
         temp_folder = Path(f"temp_{timestamp()}")
 
         # Open ZIP file
+        model_filename = "model" + cls.extension
         with ZipFile(filename, mode="r") as zipfile:
             # Extract model into temporary filename
-            zipfile.extract("model.keras", temp_folder)
+            zipfile.extract(model_filename, temp_folder)
 
             # Load pickled files directly from ZIP
             with zipfile.open(XSCALER_FILENAME) as file:
@@ -223,7 +225,7 @@ class BasePNN:
                 scaler_y = pickle.load(file)
 
         # Load unpacked files and delete temporary folder
-        model = cls._load_model(temp_folder/"model.keras")
+        model = cls._load_model(temp_folder/model_filename)
         rmtree(temp_folder)
 
         return cls(model, scaler_X=scaler_X, scaler_y=scaler_y)
