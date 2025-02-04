@@ -1,16 +1,46 @@
 """
 Base class for PNNs, to be imported elsewhere.
 """
-from typing import Iterable, Optional, Self
+from pathlib import Path
+from shutil import rmtree
+from time import time
+from typing import Any, Iterable, Optional, Self
+from zipfile import ZipFile, ZIP_DEFLATED
 
+import dill as pickle
 import numpy as np
-import pandas as pd
 import tensorflow as tf
-from tensorflow.keras.callbacks import EarlyStopping, History
+from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.models import Model, load_model
 from sklearn.preprocessing import MinMaxScaler, RobustScaler
 
-from .. import constants as c, data as d, metrics as m, modeloutput as mo
+from .. import constants as c, data as d
+
+
+### SAVING/LOADING
+def timestamp() -> str:
+    """
+    Create a timestamp based on time().
+    """
+    timestamp = str(time())
+    timestamp = timestamp.replace(".", "")
+    return timestamp
+
+
+def dump_into_zipfile(zipfile: ZipFile, filename: str, data, **kwargs) -> None:
+    """
+    Pickle data (any object) and write them into an open zipfile.
+    """
+    zipfile.writestr(filename, pickle.dumps(data), compress_type=ZIP_DEFLATED, **kwargs)
+
+
+def load_dump(filename: Path | str) -> Any:
+    """
+    Load pickled data from a file.
+    """
+    with open(filename, mode="rb") as file:
+        data = pickle.load(file)
+    return data
 
 
 ### LOSS FUNCTIONS
@@ -126,14 +156,73 @@ class BasePNN:
 
 
     ### SAVING / LOADING
-    def save(self, *args, **kwargs) -> None:
-        self.model.save(*args, **kwargs)
+    def _save_model(self, filename: Path | str, *args, **kwargs) -> Path:
+        """
+        Save the underlying model; can be overridden while maintaining general save function.
+        Returns its Path so that any modifications are passed on.
+        """
+        filename = Path(filename)
+        self.model.save(filename, *args, **kwargs)
+        return filename
+
+
+    def save(self, filename: Path | str, **kwargs) -> None:
+        """
+        Save the full model into a ZIP file, including scalers (can be None).
+        """
+        filename = Path(filename)
+
+        # Save underlying
+        model_filename = filename.parent/f"temp_{timestamp()}.keras"  # Temporary
+        model_filename = self._save_model(model_filename)  # May have been modified
+
+        # Save components into ZIP file
+        with ZipFile(filename, mode="w") as zipfile:
+            # Move underlying model file into ZIP folder
+            model_filename_zip = model_filename.with_stem("model").name  # Maintain extension, drop parents
+            zipfile.write(model_filename, model_filename_zip, compress_type=ZIP_DEFLATED)
+
+            # Save scalers
+            dump_into_zipfile(zipfile, "X.scaler", self.scaler_X)
+            dump_into_zipfile(zipfile, "y.scaler", self.scaler_y)
+
+        # Delete temporary files
+        model_filename.unlink()
+
+
+    @staticmethod
+    def _load_model(filename: Path | str, *args, **kwargs) -> Model | Iterable[Model]:
+        """
+        Load the underlying model; can be overridden while maintaining general load function.
+        Assumes the model has already been unzipped (but can itself be another zip file).
+        """
+        return load_model(filename, *args, **kwargs)
 
 
     @classmethod
-    def load(cls, *args, **kwargs) -> Self:
-        model = load_model(*args, **kwargs)
-        return cls(model)
+    def load(cls, filename: Path | str, *args, **kwargs) -> Self:
+        """
+        Load a model from a ZIP file, including scalers (can be None).
+        """
+        filename = Path(filename)
+
+        # Find ZIP file, create temporary folder
+        temp_folder = filename.parent/f"temp_{timestamp()}/"
+        temp_folder.mkdir()
+
+        # Extract, find, and load individual files
+        with ZipFile(filename, mode="r") as zipfile:
+            zipfile.extractall(temp_folder)
+
+        # Load unpacked files
+        model = cls._load_model(temp_folder/"model.keras")
+        scaler_X = load_dump(temp_folder/"X.scaler")
+        scaler_y = load_dump(temp_folder/"y.scaler")
+
+        # Delete temporary files
+        rmtree(temp_folder)
+
+        return cls(model, scaler_X=scaler_X, scaler_y=scaler_y)
 
 
     ### APPLICATION

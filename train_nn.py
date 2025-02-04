@@ -38,7 +38,7 @@ for scenario_train, data_train, scenarios_and_data_test in datascenarios:
     if args.recalibrate:
         tag_train += "_recal"
 
-    saveto_model = args.output_folder/f"{tag_train}.keras"
+    saveto_model = args.output_folder/f"{tag_train}.zip"
     print("\n\n----------")
     print(f"Now training: {scenario_train.label}")
     print(f"Models will be saved to {saveto_model.absolute()}")
@@ -62,7 +62,6 @@ for scenario_train, data_train, scenarios_and_data_test in datascenarios:
     # Train multiple models
     models = pnn.nn.train_N_models(PNN, X_train, y_train, scaler_X=scaler_X, scaler_y=scaler_y, n_models=args.n_models)
     print(f"Trained {len(models)}/{args.n_models} models.")
-    raise Exception
 
     # Optional: Train recalibration
     if args.recalibrate:

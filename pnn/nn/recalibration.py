@@ -1,16 +1,15 @@
 """
 PNN with recalibration.
 """
-import pickle
 from pathlib import Path
-from typing import Callable, Iterable, Optional, Self
+from typing import Callable, Iterable, Self
+from zipfile import ZipFile
 
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
-from .pnn_base import BasePNN
+from .pnn_base import BasePNN, dump_into_zipfile
 from ..recalibration import apply_recalibration, fit_recalibration_functions
-
 
 _PICKLE_SUFFIX = ".funcs"
 

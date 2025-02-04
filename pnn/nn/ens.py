@@ -2,7 +2,7 @@
 Ensemble neural networks (ENS-NN).
 """
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional, Self
+from typing import Self
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
@@ -12,19 +12,8 @@ from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.regularizers import l2
 
-from .common import timestamp
-from .pnn_base import BasePNN
+from .pnn_base import BasePNN, timestamp
 from .. import constants as c
-
-
-### HELPER FUNCTIONS
-def _convert_filename(filename: Path | str) -> Path:
-    """
-    Convert a ".keras" suffix, which the other models require in their filenames, to a ".zip" suffix.
-    """
-    filename = Path(filename)
-    filename = filename.with_suffix(".zip")
-    return filename
 
 
 ### SINGLE NN
@@ -95,17 +84,16 @@ class Ensemble(BasePNN):
 
 
     ### SAVING / LOADING
-    def save(self, filename: Path | str, **kwargs) -> None:
+    def _save_model(self, filename: Path | str, **kwargs) -> None:
         """
         Save the separate NNs in one ZIP file.
         Creates a temporary file in the parent folder, timestamped to prevent overwriting unrelated files.
         """
         # Create folder, filename for temporary Keras files
-        zip_filename = _convert_filename(filename)
-        temp_filename = zip_filename.parent/f"temp_{timestamp()}.keras"
+        temp_filename = filename.parent/f"temp_{timestamp()}.keras"
 
         # Save individual models into ZIP file
-        with ZipFile(zip_filename, mode="w") as zipfile:
+        with ZipFile(filename, mode="w") as zipfile:
             for i, m in enumerate(self.model):
                 # Save temporary file
                 m.save(temp_filename)
@@ -123,22 +111,21 @@ class Ensemble(BasePNN):
         Load the separate NNs from file, then combine them into an ensemble.
         """
         # Find ZIP file, create temporary folder
-        zip_filename = _convert_filename(filename)
-        temp_folder = zip_filename.parent/f"temp_{timestamp()}/"
+        temp_folder = filename.parent/f"temp_{timestamp()}/"
         temp_folder.mkdir()
 
         # Extract, find, and load individual files
-        with ZipFile(zip_filename, mode="r") as zipfile:
+        with ZipFile(filename, mode="r") as zipfile:
             zipfile.extractall(temp_folder)
 
         model_filenames = list(temp_folder.glob("*.keras"))
 
         models = [_SimpleNN.load(fn) for fn in model_filenames]
-        assert len(models) >= 1, f"Could not find any ensemble models in `{zip_filename.absolute()}`"
+        assert len(models) >= 1, f"Could not find any ensemble models in `{filename.absolute()}`"
 
         # Delete temporary files
-        for filename in model_filenames:
-            filename.unlink()
+        for mf in model_filenames:
+            mf.unlink()
         temp_folder.rmdir()
 
         return cls(models)
