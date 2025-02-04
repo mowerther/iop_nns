@@ -176,7 +176,7 @@ class BasePNN:
         filename = Path(filename)
 
         # Save underlying
-        model_filename = filename.parent/f"temp_{timestamp()}.keras"  # Temporary
+        model_filename = filename.parent/f"temp_{timestamp()}.keras"  # Temporary filename
         model_filename = self._save_model(model_filename)  # May have been modified
 
         # Save components into ZIP file

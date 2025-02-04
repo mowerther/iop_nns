@@ -84,13 +84,16 @@ class Ensemble(BasePNN):
 
 
     ### SAVING / LOADING
-    def _save_model(self, filename: Path | str, **kwargs) -> None:
+    def _save_model(self, filename: Path | str, **kwargs) -> Path:
         """
         Save the separate NNs in one ZIP file.
         Creates a temporary file in the parent folder, timestamped to prevent overwriting unrelated files.
+        Incoming `filename` suffix gets converted to .zip.
         """
+        filename = Path(filename).with_suffix(".zip")
+
         # Create folder, filename for temporary Keras files
-        temp_filename = filename.parent/f"temp_{timestamp()}.keras"
+        temp_filename = filename.parent/f"temp_single_{timestamp()}.keras"
 
         # Save individual models into ZIP file
         with ZipFile(filename, mode="w") as zipfile:
@@ -103,6 +106,8 @@ class Ensemble(BasePNN):
 
         # Delete temporary files
         temp_filename.unlink()
+
+        return filename
 
 
     @classmethod
