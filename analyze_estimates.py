@@ -12,8 +12,7 @@ To include recalibrated data, use the -c flag.
 import pnn
 
 ### Parse command line arguments
-import argparse
-parser = argparse.ArgumentParser(description=__doc__)
+parser = pnn.ArgumentParser(description=__doc__)
 parser.add_argument("-f", "--folder", help="folder to load data from", type=pnn.c.Path, default=pnn.c.model_estimates_path)
 parser.add_argument("-p", "--prisma", help="use PRISMA data", action="store_true")
 parser.add_argument("-c", "--recal", help="use recalibrated data", action="store_true")

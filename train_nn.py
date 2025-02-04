@@ -1,8 +1,8 @@
 """
 Script for loading data and training a probabilistic neural network.
 Trains N networks, evaluates them, and saves their outputs.
+Selects the type of network from the first argument: [bnn_dc, bnn_mcd, ens_nn, mdn, rnn].
 
-Selects the type of network from the first argument: [bnn_dc, bnn_mcd, ens_nn, mdn, rnn]
 Example:
     python train_nn.py bnn_mcd
     python train_nn.py bnn_mcd -p
@@ -12,8 +12,7 @@ Example:
 import pnn
 
 ### Parse command line arguments
-import argparse
-parser = argparse.ArgumentParser(description=__doc__)
+parser = pnn.ArgumentParser(description=__doc__)
 parser.add_argument("pnn_type", help="PNN architecture to use")
 parser.add_argument("-o", "--output_folder", help="Folder to save models to.", type=pnn.c.Path, default=pnn.model_path)
 parser.add_argument("-p", "--prisma", help="Use PRISMA data.", action="store_true")

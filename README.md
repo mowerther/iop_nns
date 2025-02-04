@@ -29,17 +29,29 @@ python train_nn.py -h
 ```
 will return:
 ```console
-usage: Script for loading data and training a neural network. [-h] [-p] [-c] [-n N_MODELS] pnn_type
+usage: train_nn.py [-h] [-o OUTPUT_FOLDER] [-p] [-c] [-n N_MODELS] pnn_type
+
+Script for loading data and training a probabilistic neural network.
+Trains N networks, evaluates them, and saves their outputs.
+Selects the type of network from the first argument: [bnn_dc, bnn_mcd, ens_nn, mdn, rnn].
+
+Example:
+    python train_nn.py bnn_mcd
+    python train_nn.py bnn_mcd -p
+    python train_nn.py bnn_mcd -c
+    python train_nn.py bnn_mcd -pc -o path/to/outputs/ -n 10
 
 positional arguments:
   pnn_type              PNN architecture to use
 
 options:
   -h, --help            show this help message and exit
-  -p, --prisma          use PRISMA data
-  -c, --recalibrate     apply recalibration
+  -o OUTPUT_FOLDER, --output_folder OUTPUT_FOLDER
+                        Folder to save models to.
+  -p, --prisma          Use PRISMA data.
+  -c, --recalibrate     Apply recalibration.
   -n N_MODELS, --n_models N_MODELS
-                        number of models to train per scenario (default: 25)
+                        Number of models to train per scenario (default: 25).
 ```
 
 ## *In situ* data
@@ -64,7 +76,10 @@ Several options are available, as shown below:
 ```console
 python dataset_split.py -h
 
-usage: 
+usage: dataset_split.py [-h] [-o OUTPUT_FOLDER] [-s SYSTEM_COLUMN]
+                        [-t TIMEOUT] [-r RNG]
+                        filename
+
 Script for splitting a dataset using random, within-distribution, and out-of-distribution splits.
 Data are split on one system column, provided with the `-s` flag (default: "lake_name").
 (Dis)similarity scores are evaluated on multiple `summary_cols`, specified at the start of the script.
@@ -73,9 +88,6 @@ Please note that the script can slightly run past its `timeout`; this is not a b
 Example:
     python dataset_split.py datasets_train_test/filtered_df_2319.csv
     python dataset_split.py datasets_train_test/filtered_df_2319.csv -o path/to/outputs/ -s site_name -t 10 -r 42
-
-       [-h] [-o OUTPUT_FOLDER] [-s SYSTEM_COLUMN] [-t TIMEOUT] [-r RNG]
-       filename
 
 positional arguments:
   filename              File with data to split.

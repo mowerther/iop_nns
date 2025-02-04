@@ -14,8 +14,7 @@ Example:
 import pnn
 
 ### Parse command line arguments
-import argparse
-parser = argparse.ArgumentParser(description=__doc__)
+parser = pnn.ArgumentParser(description=__doc__)
 parser.add_argument("pnn_type", help="PNN architecture to use")
 parser.add_argument("-f", "--folder", help="folder to load data from", type=pnn.c.Path, default=pnn.c.map_data_path)
 parser.add_argument("-a", "--acolite", help="use acolite data (if False: use L2C)", action="store_true")

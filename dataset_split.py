@@ -285,7 +285,7 @@ def check_system_name_uniqueness(train_set: pd.DataFrame, test_set: pd.DataFrame
 if __name__ == "__main__":
     # Parse command-line args
     import argparse
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("filename", help="File with data to split.", type=Path)
     parser.add_argument("-o", "--output_folder", help="Folder to save files with splits to.", type=Path, default=".")
     parser.add_argument("-s", "--system_column", help="Column with system names, on which to split the data.", default="lake_name")
