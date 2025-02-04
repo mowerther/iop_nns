@@ -3,6 +3,7 @@ Functions etc. to be shared between network architectures, e.g. loss functions.
 """
 from os import makedirs
 from pathlib import Path
+from time import time
 from typing import Iterable, Optional
 
 import numpy as np
@@ -56,6 +57,15 @@ def calculate_N_metrics(y_true: np.ndarray, estimates: Iterable[tuple[np.ndarray
 
 
 ### LOADING / SAVING
+def timestamp() -> str:
+    """
+    Create a timestamp based on time().
+    """
+    timestamp = str(time())
+    timestamp = timestamp.replace(".", "")
+    return timestamp
+
+
 def _saveto_iteration(saveto: Path | str, i: int) -> Path:
     """
     For a given path, create a variant in subfolder `i`.

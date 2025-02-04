@@ -172,8 +172,8 @@ Trained models are saved to the [`pnn.model_path`](pnn/constants.py#L19) constan
 by default, this is the [pnn_tf_models folder](pnn_tf_models).
 Models are saved in TensorFlow/Keras (`.keras`) format using the default save function, which can be accessed using [`BasePNN.save`](pnn/nn/pnn_base.py#L91).
 A saved model can be loaded using the [`.load`](pnn/nn/pnn_base.py#L96) function of the relevant class, e.g. `BNN_DC.load` or `RNN.load`.
-The ENS-NN (ensemble neural network) is saved as a folder containing its constituent networks, but otherwise works the same;
-the [`Ensemble.save`](pnn/nn/ens.py#L97) and [`Ensemble.load`](pnn/nn/ens.py#L112) functions will automatically take care of any lingering `.keras` extensions in filenames.
+The ENS-NN (ensemble neural network) is saved as a ZIP file containing its constituent networks, but otherwise works the same;
+the [`Ensemble.save`](pnn/nn/ens.py#L98) and [`Ensemble.load`](pnn/nn/ens.py#L121) functions will automatically take care of any lingering `.keras` extensions in filenames.
 Please note that saving recalibrated models is not yet fully implemented; the model will be saved and loaded as normal, but not its corresponding recalibration function.
 
 
