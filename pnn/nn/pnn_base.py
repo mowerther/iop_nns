@@ -89,7 +89,7 @@ class BasePNN:
         assert self.scaler_X is not None, f"Model `{self}` does not have a rescaler for X."
         assert (self_shape := self.scaler_X.center_.shape[0]) == (data_shape := X.shape[-1]), f"Data ({data_shape}) and scaler ({self_shape}) have incompatible shapes."
 
-        return self.scaler_X.transform(X)
+        return d.scale_X(self.scaler_X, X)
 
 
     def scale_y(self, y: np.ndarray) -> np.ndarray:

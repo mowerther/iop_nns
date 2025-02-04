@@ -2,7 +2,7 @@
 Ensemble neural networks (ENS-NN).
 """
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Self
+from typing import Optional, Self
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
@@ -11,9 +11,10 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.regularizers import l2
+from sklearn.preprocessing import MinMaxScaler, RobustScaler
 
 from .pnn_base import BasePNN, timestamp
-from .. import constants as c
+from .. import constants as c, data as d
 
 
 ### SINGLE NN
@@ -65,22 +66,29 @@ class Ensemble(BasePNN):
 
 
     @classmethod
-    def build_and_train(cls, X_train: np.ndarray, y_train: np.ndarray, *, N: int=10, **kwargs) -> Self:
+    def build_and_train(cls, X_train: np.ndarray, y_train: np.ndarray, *,
+                        scaler_X: Optional[RobustScaler]=None, scaler_y: Optional[MinMaxScaler]=None,
+                        N: int=10) -> Self:
         """
         Build and train N models on the provided X and y data, with early stopping.
-        **kwargs are passed to _SimpleNN.build_and_train.
+        Data re-scaling is handled here rather than having the sub-models do it individually.
         """
+        # Data scaling
+        X_train = d.scale_X(scaler_X, X_train) if scaler_X is not None else X_train
+        y_train = d.scale_y(scaler_y, y_train) if scaler_y is not None else y_train
+
+        # Training
         models = []
         with ThreadPoolExecutor(max_workers=N) as executor:  # Run concurrently
             futures = [
-                executor.submit(_SimpleNN.build_and_train, i, X_train, y_train, verbose=(i == 0), **kwargs)
+                executor.submit(_SimpleNN.build_and_train, i, X_train, y_train, verbose=(i == 0))
                 for i in range(N)
             ]
             for future in as_completed(futures):
                 model = future.result()
                 models.append(model)
 
-        return cls(models)
+        return cls(models, scaler_X=scaler_X, scaler_y=scaler_y)
 
 
     ### SAVING / LOADING

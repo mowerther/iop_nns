@@ -213,6 +213,13 @@ def generate_rescaler_iops(data: np.ndarray) -> MinMaxScaler:
     return scaler
 
 
+def scale_X(scaler: RobustScaler, X: np.ndarray) -> np.ndarray:
+    """
+    Apply RobustScaling to the input array.
+    """
+    return scaler.transform(X)
+
+
 def scale_y(scaler: MinMaxScaler, y: np.ndarray) -> np.ndarray:
     """
     Apply log and minmax scaling to the input array using the provided scaler.
