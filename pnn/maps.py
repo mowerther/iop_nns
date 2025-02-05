@@ -313,7 +313,7 @@ def _plot_matchups(matchups: pd.DataFrame, ax: GeoAxes,
 
 
 # Devon without white
-devon_discrete = LinearSegmentedColormap.from_list("devon_discrete", cmc.devon.colors[:-20]).resampled(N_colours)
+devon_discrete = LinearSegmentedColormap.from_list("devon_discrete", cmc.devon.colors[20:-20]).resampled(N_colours)
 
 def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
              ax: Optional[plt.Axes]=None, projected=True,
