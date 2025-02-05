@@ -462,6 +462,52 @@ def plot_Rrs_and_IOP(reflectance: xr.Dataset, iop_map: xr.Dataset, *, wavelength
     plt.close()
 
 
+def plot_Rrs_and_IOP_overview(reflectance: xr.Dataset, iop_map: xr.Dataset, *,
+                              projected=True,
+                              background: Optional[xr.Dataset]=None, background_rgb=False,
+                              title: Optional[str]=None,
+                              saveto: Optional[Path | str]=None, **kwargs) -> None:
+    """
+    Plot all IOPs with their uncertainties and the closest wavelengths.
+    Hard-coded for PRISMA.
+    """
+    # Create figure
+    fig, axs = _create_map_figure(ncols=4, nrows=4, projected=projected, figsize=(15, 12))
+    axs_rrs = axs[::2, 0]
+    axs_empty = axs[1::2, 0]
+    axs_iop_443 = axs[:2, 1:]
+    axs_iop_675 = axs[2:, 1:]
+
+    # Kwarg setup
+    kw_shared = {"projected": projected, "background": background, "background_rgb": background_rgb} | kwargs
+
+    # Plot Rrs
+    for ax, wvl in zip(axs_rrs, [446, 674]):
+        plot_Rrs(reflectance, wvl, ax=ax, **kw_shared)
+
+    for ax in axs_empty:
+        ax.axis("off")
+
+    # Plot IOPs
+    for axs_iop_wvl, iop_series in zip([axs_iop_443, axs_iop_675], [c.iops_443, c.iops_675]):
+        for axs_iop, iop in zip(axs_iop_wvl.T, iop_series):
+            # Plot data
+            plot_IOP_single(iop_map, iop, axs=axs_iop, **kw_shared)
+
+            # Labels
+            for ax in axs_iop:
+                o.label_topleft(ax, iop.label)
+
+    # Plot parameters
+    fig.suptitle(title)
+
+    if saveto:
+        plt.savefig(saveto, dpi=600)
+
+    plt.show()
+    plt.close()
+
+
 def filename_to_date(filename: Path | str) -> tuple[str, dt.datetime]:
     """
     Take a PRISMA NetCDF filename and extract its date.
