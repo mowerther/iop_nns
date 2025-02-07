@@ -300,7 +300,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Load file
-    my_data = pd.read_csv(args.filename)
+    my_data = pd.read_csv(args.filename, low_memory=False)
 
     # Apply splits
     for label, splitter in splitters.items():

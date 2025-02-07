@@ -2,6 +2,7 @@
 Functions for reading (split) input data.
 """
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import Callable, Iterable, Optional
 
@@ -13,6 +14,8 @@ from . import constants as c
 
 
 ### HELPER FUNCTIONS
+read_csv = partial(pd.read_csv, low_memory=False)
+
 capitalise_iops = {"acdom_443": "aCDOM_443", "acdom_675": "aCDOM_675", "anap_443": "aNAP_443", "anap_675": "aNAP_675",}
 
 def _find_rrs_columns(data: pd.DataFrame) -> list[str]:
@@ -62,7 +65,7 @@ def read_insitu_full(folder: Path | str=c.insitu_data_path) -> pd.DataFrame:
     Read the original in situ dataset from a given folder into a DataFrame.
     """
     folder = Path(folder)
-    data = pd.read_csv(folder/"insitu_data.csv")
+    data = read_csv(folder/"insitu_data.csv")
     return data
 
 
@@ -70,7 +73,7 @@ def _read_and_preprocess_insitu_data(filename: Path | str) -> pd.DataFrame:
     """
     Read and pre-process a single in situ dataset.
     """
-    data = pd.read_csv(filename)
+    data = read_csv(filename)
 
     # Filter wavelengths
     data = data.drop(columns=[col for col in _find_rrs_columns(data) if int(col.split("_")[1]) not in c.wavelengths_123])
