@@ -86,8 +86,8 @@ Data are split on one system column, provided with the `-s` flag (default: "lake
 Please note that the script can slightly run past its `timeout`; this is not a bug.
 
 Example:
-    python dataset_split.py datasets_train_test/filtered_df_2319.csv
-    python dataset_split.py datasets_train_test/filtered_df_2319.csv -o path/to/outputs/ -s site_name -t 10 -r 42
+    python dataset_split.py datasets_train_test/insitu_data.csv
+    python dataset_split.py datasets_train_test/insitu_data.csv -o path/to/outputs/ -s site_name -t 10 -r 42
 
 positional arguments:
   filename              File with data to split.
@@ -109,7 +109,7 @@ The dataset_split.py script will save the resulting dataframes to your chosen lo
 
 ### Loading split datasets
 All other steps in the model training, estimation, and analysis for the *in situ* scenarios use the resulting split data files (random, within-distribution, out-of-distribution).
-These files are read using the [`pnn.data.read_insitu_data`](pnn/data.py#L81) function.
+These files are read using the [`pnn.data.read_insitu_data`](pnn/data.py#L82) function.
 This function can load files from any folder on your computer; it will try to load the aforementioned 6 CSV files from the given folder.
 By default, it uses the [datasets_train_test](datasets_train_test) folder within the repository folder; this setting can be changed at [`pnn.constants.insitu_data_path`](pnn/constants.py#L14).
 

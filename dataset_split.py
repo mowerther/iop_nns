@@ -5,8 +5,8 @@ Data are split on one system column, provided with the `-s` flag (default: "lake
 Please note that the script can slightly run past its `timeout`; this is not a bug.
 
 Example:
-    python dataset_split.py datasets_train_test/filtered_df_2319.csv
-    python dataset_split.py datasets_train_test/filtered_df_2319.csv -o path/to/outputs/ -s site_name -t 10 -r 42
+    python dataset_split.py datasets_train_test/insitu_data.csv
+    python dataset_split.py datasets_train_test/insitu_data.csv -o path/to/outputs/ -s site_name -t 10 -r 42
 """
 from functools import partial
 from pathlib import Path
@@ -20,13 +20,16 @@ from sklearn.model_selection import train_test_split
 
 # Set up constants
 summary_cols = ["aph_443", "aNAP_443", "aCDOM_443"]  # Variables used in (dis)similarity scores
+_DEFAULT_RNG = 42
+_DEFAULT_TEST_FRACTION = 0.5  # Fraction
+_DEFAULT_TIMEOUT = 10  # Minutes
 
 
 ################################
 # 1. Random split
 ################################
 def random_split(data: pd.DataFrame, *args,
-                 test_size: float=0.5, seed: int=1, **kwargs) -> tuple[pd.DataFrame, pd.DataFrame]:
+                 test_fraction: float=_DEFAULT_TEST_FRACTION, seed: int=_DEFAULT_RNG, **kwargs) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Splits the dataset into train and test sets, completely at random.
 
@@ -42,7 +45,7 @@ def random_split(data: pd.DataFrame, *args,
     """
     np.random.seed(seed)
     randomized_df = data.sample(frac=1).reset_index(drop=True)
-    train_set, test_set = train_test_split(randomized_df, test_size=test_size)
+    train_set, test_set = train_test_split(randomized_df, test_size=test_fraction)
 
     return train_set, test_set
 
@@ -113,6 +116,8 @@ def objective(x: np.ndarray,
     data (pd.DataFrame): Input dataset
     scoring_func (Callable): Function that determines the score
 
+    TO DO: Add test fraction to balance penalty
+
     Returns:
     float: Objective function value (similarity score + balance penalty)
     """
@@ -130,7 +135,7 @@ def objective(x: np.ndarray,
 
 
 def system_data_split(data: pd.DataFrame, system_column: str, objective_func: Callable, *,
-                      train_ratio: float=0.5, seed: int=11, timeout: float=10.) -> tuple[pd.DataFrame, pd.DataFrame]:
+                      test_fraction: float=_DEFAULT_TEST_FRACTION, seed: int=_DEFAULT_RNG, timeout: int=10) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Splits the dataset into train and test sets, ensuring that each set has unique system names.
 
@@ -143,7 +148,7 @@ def system_data_split(data: pd.DataFrame, system_column: str, objective_func: Ca
     system_column (str): Name of the column to split on (e.g. lake_name).
     objective_func (Callable): Objective function.
 
-    train_ratio (float): Ratio of unique system names to be assigned to the train set.
+    test_size (float): Ratio of unique system names to be assigned to the test set.
     seed (int): Random seed for reproducibility.
     timeout (float): Maximum time [min] to spend optimizing.
 
@@ -156,7 +161,8 @@ def system_data_split(data: pd.DataFrame, system_column: str, objective_func: Ca
     # Find unique systems and determine train/test set size
     unique_system_names = data[system_column].unique()
     n_systems = len(unique_system_names)
-    train_size = int(train_ratio * n_systems)
+    train_fraction = 1 - test_fraction
+    train_size = int(train_fraction * n_systems)
 
     # Set up variables for dual_annealing function
     x0 = np.random.permutation(n_systems)[:train_size]
@@ -288,9 +294,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("filename", help="File with data to split.", type=Path)
     parser.add_argument("-o", "--output_folder", help="Folder to save files with splits to.", type=Path, default=".")
-    parser.add_argument("-s", "--system_column", help="Column with system names, on which to split the data.", default="lake_name")
-    parser.add_argument("-t", "--timeout", help="Maximum time [min] to spend on each split.", type=float, default=10.)
-    parser.add_argument("-r", "--rng", help="Seed for random number generator (RNG).", type=int, default=42)
+    parser.add_argument("-s", "--system_column", help="Column with system names, on which to split the data.", default="Waterbody_name")
+    parser.add_argument("-t", "--timeout", help="Maximum time [min] to spend on each split.", type=int, default=_DEFAULT_TIMEOUT)
+    parser.add_argument("-r", "--rng", help="Seed for random number generator (RNG).", type=int, default=_DEFAULT_RNG)
     args = parser.parse_args()
 
     # Load file

@@ -62,7 +62,7 @@ def read_insitu_full(folder: Path | str=c.insitu_data_path) -> pd.DataFrame:
     Read the original in situ dataset from a given folder into a DataFrame.
     """
     folder = Path(folder)
-    data = pd.read_csv(folder/"filtered_df_2319.csv")
+    data = pd.read_csv(folder/"insitu_data.csv")
     return data
 
 
