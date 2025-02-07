@@ -24,13 +24,7 @@ parser.add_argument("-m", "--model_file", help="specific file to load model from
 args = parser.parse_args()
 
 
-### Set up rescaling and match-ups
-# Rescaling
-prisma_scenarios = pnn.read_prisma_matchups()
-model_scenario = prisma_scenarios[0]
-print(f"Model training scenario: {model_scenario.train_scenario}")
-
-# Match-ups
+### Set up match-ups
 matchups = pnn.data.read_prisma_insitu(filter_invalid_dates=True)
 
 
@@ -56,7 +50,6 @@ else:
     model = PNN.load(args.model_file)
     print(f"Loaded model: {model} from file: {args.model_file.absolute()}")
 
-raise Exception
 ### Load data
 filenames = args.folder.glob(pnn.maps.pattern_prisma_acolite if args.acolite else pnn.maps.pattern_prisma_l2)
 
@@ -80,18 +73,11 @@ for filename in filenames:
     # Convert Rrs to list of spectra
     spectra, *_ = pnn.maps.map_to_spectra(scene)
 
-    # Rescale Rrs to the same scale the models were trained on
-    X_scaler = model_scenario.X_scaler
-    spectra_trans = X_scaler.transform(spectra)
-
-    *_, y_train = pnn.data.extract_inputs_outputs(model_scenario.train_data)
-    scaler_y, *_ = pnn.data.scale_y(y_train)
-
     # Set up output label
     label = f"{filename.stem}-{PNN.name}-{scenario_for_average}"
 
     # Apply PNN
-    iop_mean, iop_variance, *_ = model.predict_with_uncertainty(spectra_trans, scaler_y)
+    iop_mean, iop_variance, *_ = model.predict_with_uncertainty(spectra)
 
     # Convert IOPs to maps
     iop_map = pnn.maps.create_iop_map(iop_mean, iop_variance, scene)
