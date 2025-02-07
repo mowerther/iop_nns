@@ -47,7 +47,6 @@ class DataScenario:
     train_scenario: c.Parameter
     train_data: pd.DataFrame
     test_scenarios_and_data: dict[c.Parameter, pd.DataFrame]
-    X_scaler: Optional[RobustScaler] = None
 
     def __iter__(self):
         """
@@ -153,31 +152,13 @@ def read_prisma_matchups(folder: Path | str=c.prisma_matchup_path) -> tuple[Data
     prisma_l2_gen = prisma_l2
     prisma_l2_lk = prisma_l2.copy()
 
-    ### APPLY ROBUST SCALERS
-    # Setup
-    rrs_columns = _find_rrs_columns(gloria_resampled)
-    gloria_scaler, combined_scaler = RobustScaler(), RobustScaler()
-
-    # Train on training data
-    gloria_resampled[rrs_columns] = gloria_scaler.fit_transform(gloria_resampled[rrs_columns])
-    combined_insitu[rrs_columns] = combined_scaler.fit_transform(combined_insitu[rrs_columns])
-
-    # Apply to test data
-    prisma_insitu[rrs_columns] = gloria_scaler.transform(prisma_insitu[rrs_columns])  # case 1
-
-    prisma_l2_gen[rrs_columns] = gloria_scaler.transform(prisma_l2_gen[rrs_columns])  # general case
-    prisma_acolite_gen[rrs_columns] = gloria_scaler.transform(prisma_acolite_gen[rrs_columns])
-
-    prisma_l2_lk[rrs_columns] = combined_scaler.transform(prisma_l2_lk[rrs_columns])  # local knowledge
-    prisma_acolite_lk[rrs_columns] = combined_scaler.transform(prisma_acolite_lk[rrs_columns])
-
     ### ORGANISE TRAIN/TEST SETS
     general = DataScenario(c.prisma_gen, gloria_resampled, {c.prisma_insitu: prisma_insitu,
                                                             c.prisma_gen_L2: prisma_l2_gen,
-                                                            c.prisma_gen_ACOLITE: prisma_acolite_gen}, X_scaler=gloria_scaler)
+                                                            c.prisma_gen_ACOLITE: prisma_acolite_gen})
 
     local_knowledge = DataScenario(c.prisma_lk, combined_insitu, {c.prisma_lk_L2: prisma_l2_lk,
-                                                                  c.prisma_lk_ACOLITE: prisma_acolite_lk}, X_scaler=combined_scaler)
+                                                                  c.prisma_lk_ACOLITE: prisma_acolite_lk})
 
     return general, local_knowledge
 
