@@ -4,7 +4,7 @@ Functions for reading (split) input data.
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Callable, Iterable, Optional
+from typing import Callable, Hashable, Iterable, Optional
 
 import numpy as np
 import pandas as pd
@@ -15,8 +15,6 @@ from . import constants as c
 
 ### HELPER FUNCTIONS
 read_csv = partial(pd.read_csv, low_memory=False)
-
-capitalise_iops = {"acdom_443": "aCDOM_443", "acdom_675": "aCDOM_675", "anap_443": "aNAP_443", "anap_675": "aNAP_675",}
 
 def _find_rrs_columns(data: pd.DataFrame) -> list[str]:
     """
@@ -45,7 +43,6 @@ def select_scenarios(prisma: bool) -> tuple[c.Parameter, list[c.Parameter], list
 class DataScenario:
     """
     Simple class to combine training/testing data, ensuring they are always in the correct order.
-    Optionally includes a re-scaler for X, so that it may be used again later.
     """
     train_scenario: c.Parameter
     train_data: pd.DataFrame
@@ -111,15 +108,14 @@ def _convert_excel_date(dates: pd.Series) -> pd.Series:
     return strings
 
 
-def read_prisma_insitu(filename: Path | str=c.prisma_matchup_path/"case_1_insitu_vs_insitu"/"prisma_insitu.csv", *,
+def read_prisma_insitu(filename: Path | str=c.insitu_data_path/"prisma_insitu_data.csv", *,
                        filter_invalid_dates=False) -> pd.DataFrame:
     """
     Read the PRISMA in situ match-up data.
     If `filter_invalid_dates`, filter out invalid time stamps.
     """
     data = pd.read_csv(filename)
-    data = data.rename(columns={f"{nm}_prisma_insitu": f"Rrs_{nm}" for nm in c.wavelengths_prisma})
-    data = data.rename(columns=capitalise_iops)
+
     if filter_invalid_dates:
         to_filter = ~data["date"].str.contains(".", regex=False)
         data.loc[to_filter, "date"] = _convert_excel_date(data.loc[to_filter, "date"])
@@ -127,36 +123,34 @@ def read_prisma_insitu(filename: Path | str=c.prisma_matchup_path/"case_1_insitu
     return data
 
 
-def read_prisma_matchups(folder: Path | str=c.prisma_matchup_path) -> tuple[DataScenario]:
+def read_prisma_matchups(folder: Path | str=c.insitu_data_path) -> tuple[DataScenario]:
     """
     Read the PRISMA match-up data from a given folder into a number of DataFrames.
     The output consists of DataScenario objects which can be iterated over.
-    Note that the data in the CSV files have NOT been rescaled, so this must be done here;
-        the scalers are included in the DataScenarios for re-use if desired.
     Filenames are hardcoded.
     """
     ### LOAD DATA AND RENAME COLUMNS TO CONSISTENT FORMAT
-    # train_X, train_y for GLORIA-based scenarios (general case)
-    gloria_resampled = pd.read_csv(folder/"case_1_insitu_vs_insitu"/"gloria_res_prisma_s.csv").rename(columns={f"{nm}_prisma_res": f"Rrs_{nm}" for nm in c.wavelengths_prisma})
+    # train_X, train_y for general case scenarios
+    insitu_resampled = pd.read_csv(folder/"insitu_data_resampled.csv")
 
-    # train_X, train_y for GLORIA+PRISMA-based scenarios (local knowledge)
-    combined_insitu = pd.read_csv(folder/"case_3_local_insitu_vs_aco"/"combined_local_train_df.csv").rename(columns={f"{nm}_prisma_local": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns={"cdom_443": "aCDOM_443", "cdom_675": "aCDOM_675", "nap_443": "aNAP_443", "nap_675": "aNAP_675", "ph_443": "aph_443", "ph_675": "aph_675",})
+    # test_X, test_y for in situ vs in situ ; train_X, train_y for local knowledge scenarios
+    prisma_insitu = read_prisma_insitu(folder/"prisma_insitu_data.csv")
 
-    # test_X, test_y for in situ vs in situ
-    prisma_insitu = read_prisma_insitu(folder/"case_1_insitu_vs_insitu"/"prisma_insitu.csv")
+    # train_X, train_y for local knowledge scenarios
+    combined_insitu = pd.concat([insitu_resampled, prisma_insitu])
 
     # test_X, test_y for ACOLITE scenarios
-    prisma_acolite = pd.read_csv(folder/"case_2_insitu_vs_aco"/"prisma_aco.csv").rename(columns={f"aco_{nm}": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
+    prisma_acolite = pd.read_csv(folder/"prisma_acolite.csv")
     prisma_acolite_gen = prisma_acolite
     prisma_acolite_lk = prisma_acolite.copy()
 
     # test_X, test_y for L2 scenarios
-    prisma_l2 = pd.read_csv(folder/"case_2_insitu_vs_l2"/"prisma_l2.csv").rename(columns={f"L2C_{nm}": f"Rrs_{nm}" for nm in c.wavelengths_prisma}).rename(columns=capitalise_iops)
+    prisma_l2 = pd.read_csv(folder/"prisma_l2c.csv")
     prisma_l2_gen = prisma_l2
     prisma_l2_lk = prisma_l2.copy()
 
     ### ORGANISE TRAIN/TEST SETS
-    general = DataScenario(c.prisma_gen, gloria_resampled, {c.prisma_insitu: prisma_insitu,
+    general = DataScenario(c.prisma_gen, insitu_resampled, {c.prisma_insitu: prisma_insitu,
                                                             c.prisma_gen_L2: prisma_l2_gen,
                                                             c.prisma_gen_ACOLITE: prisma_acolite_gen})
 
@@ -167,7 +161,7 @@ def read_prisma_matchups(folder: Path | str=c.prisma_matchup_path) -> tuple[Data
 
 
 def extract_inputs_outputs(data: pd.DataFrame, *,
-                           y_columns: Iterable[str]=c.iops) -> tuple[np.ndarray, np.ndarray]:
+                           y_columns: Iterable[Hashable]=c.iops) -> tuple[np.ndarray, np.ndarray]:
     """
     For a given DataFrame, extract the Rrs columns (X) and IOP columns (y).
     """

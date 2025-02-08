@@ -180,7 +180,7 @@ python train_nn.py bnn_dc -n 5
 ```
 
 ### Output format
-Trained models are saved to the [`pnn.model_path`](pnn/constants.py#L19) constant;
+Trained models are saved to the [`pnn.model_path`](pnn/constants.py#L18) constant;
 by default, this is the [pnn_tf_models folder](pnn_tf_models).
 Models are saved in ZIP files containing TensorFlow/Keras (`.keras`) files, re-scaling functions for X and y, and recalibration functions (where appropriate).
 A saved model can be loaded using the [`.load`](pnn/nn/pnn_base.py#L203) function of the relevant class, e.g. `BNN_DC.load` or `RNN.load`.

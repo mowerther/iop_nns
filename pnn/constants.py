@@ -12,12 +12,11 @@ from cmcrameri.cm import managua
 
 ### FILENAMES
 insitu_data_path = Path("datasets_train_test/")
-prisma_matchup_path = Path("prisma_subscenarios/")
 map_data_path = Path("prisma_map_data/")
-map_output_path = Path("prisma_map_outputs/")
 
 model_path = Path("pnn_tf_models/")
 model_estimates_path = Path("pnn_model_estimates/")
+map_output_path = Path("prisma_map_outputs/")
 
 output_path = Path("manuscript_figures/")
 supplementary_path = output_path/"supplementary/"
