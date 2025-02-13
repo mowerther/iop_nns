@@ -13,8 +13,8 @@ import pnn
 
 # Parse command-line args
 parser = pnn.ArgumentParser(description=__doc__)
-parser.add_argument("-i", "--insitu_folder", help="Folder containing in situ data.", default=pnn.insitu_data_path)
-parser.add_argument("-p", "--prisma_folder", help="Folder containing PRISMA match-up data.", default=pnn.insitu_data_path)
+parser.add_argument("-i", "--insitu_folder", help="Folder containing in situ data.", default=pnn.insitu_data_path, type=pnn.c.Path)
+parser.add_argument("-p", "--prisma_folder", help="Folder containing PRISMA match-up data.", default=pnn.insitu_data_path, type=pnn.c.Path)
 args = parser.parse_args()
 
 ### IN SITU DATA
