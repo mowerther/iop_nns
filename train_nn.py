@@ -2,12 +2,13 @@
 Script for loading data and training a probabilistic neural network.
 Trains N networks, evaluates them, and saves their outputs.
 Selects the type of network from the first argument: [bnn_dc, bnn_mcd, ens_nn, mdn, rnn].
+Note that model files and estimates are saved to default folders and will override existing files; custom locations can be specified (-o, -e).
 
 Example:
     python train_nn.py bnn_mcd
     python train_nn.py bnn_mcd -p
     python train_nn.py bnn_mcd -c
-    python train_nn.py bnn_mcd -pc -o path/to/outputs/ -n 10
+    python train_nn.py bnn_mcd -pc -o path/to/models/ -e path/to/estimates/ -n 10
 """
 import pnn
 
@@ -15,6 +16,7 @@ import pnn
 parser = pnn.ArgumentParser(description=__doc__)
 parser.add_argument("pnn_type", help="PNN architecture to use")
 parser.add_argument("-o", "--output_folder", help="Folder to save models to.", type=pnn.c.Path, default=pnn.model_path)
+parser.add_argument("-e", "--estimates_folder", help="Folder to save model estimates to.", type=pnn.c.Path, default=pnn.model_estimates_path)
 parser.add_argument("-p", "--prisma", help="Use PRISMA data.", action="store_true")
 parser.add_argument("-c", "--recalibrate", help="Apply recalibration.", action="store_true")
 parser.add_argument("-n", "--n_models", help="Number of models to train per scenario (default: 25).", type=int, default=25)
@@ -79,8 +81,8 @@ for scenario_train, data_train, scenarios_and_data_test in datascenarios:
         if args.recalibrate:
             tag_test += "_recal"
 
-        saveto_estimates = pnn.model_estimates_path/f"{tag_test}_estimates.csv"
-        saveto_metrics = pnn.model_estimates_path/f"{tag_test}_metrics.csv"
+        saveto_estimates = args.estimates_folder/f"{tag_test}_estimates.csv"
+        saveto_metrics = args.estimates_folder/f"{tag_test}_metrics.csv"
 
         print("\n----------")
         print(f"Now testing: {scenario_test.label}")

@@ -29,17 +29,20 @@ python train_nn.py -h
 ```
 will return:
 ```console
-usage: train_nn.py [-h] [-o OUTPUT_FOLDER] [-p] [-c] [-n N_MODELS] pnn_type
+usage: train_nn.py [-h] [-o OUTPUT_FOLDER] [-e ESTIMATES_FOLDER] [-p] [-c]
+                   [-n N_MODELS]
+                   pnn_type
 
 Script for loading data and training a probabilistic neural network.
 Trains N networks, evaluates them, and saves their outputs.
 Selects the type of network from the first argument: [bnn_dc, bnn_mcd, ens_nn, mdn, rnn].
+Note that model files and estimates are saved to default folders and will override existing files; custom locations can be specified (-o, -e).
 
 Example:
     python train_nn.py bnn_mcd
     python train_nn.py bnn_mcd -p
     python train_nn.py bnn_mcd -c
-    python train_nn.py bnn_mcd -pc -o path/to/outputs/ -n 10
+    python train_nn.py bnn_mcd -pc -o path/to/models/ -e path/to/estimates/ -n 10
 
 positional arguments:
   pnn_type              PNN architecture to use
@@ -48,6 +51,8 @@ options:
   -h, --help            show this help message and exit
   -o OUTPUT_FOLDER, --output_folder OUTPUT_FOLDER
                         Folder to save models to.
+  -e ESTIMATES_FOLDER, --estimates_folder ESTIMATES_FOLDER
+                        Folder to save model estimates to.
   -p, --prisma          Use PRISMA data.
   -c, --recalibrate     Apply recalibration.
   -n N_MODELS, --n_models N_MODELS
