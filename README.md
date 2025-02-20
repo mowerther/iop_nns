@@ -61,7 +61,11 @@ options:
 
 ## *In situ* data
 The core *in situ* datasets used in our study originate from [GLORIA](https://doi.org/10.1038/s41597-023-01973-y) and [SeaBASS](https://seabass.gsfc.nasa.gov/).
-These datasets are not currently hosted within this repository for licensing reasons; we aim to make them available so the study can be reproduced.
+The combined *in situ* dataset is available from
+*zenodo link*
+
+The *in situ* dataset is located at [datasets_train_test/insitu_data.csv](datasets_train_test) by default.
+Also available is the same dataset resampled to the PRISMA spectral bands, at [datasets_train_test/insitu_data_resampled.csv](datasets_train_test)
 
 ## Dataset splitting
 A data file in CSV format with column headers can be split using the [dataset_split.py](dataset_split.py) script.
@@ -140,6 +144,19 @@ python plot_data.py
 ## PRISMA data
 
 ### Match-up data
+*In situ* match-up data from PRISMA validation campaigns are used to evaluate the performance of PNN models in realistic scenarios.
+The *in situ* match-up data are read using the [`pnn.data.read_prisma_insitu`](pnn/data.py#L111) function;
+by default, this reads [datasets_train_test/prisma_insitu_data.csv](datasets_train_test).
+
+Matching measurements from the PRISMA satellite,
+atmospherically corrected using ACOLITE or the PRISMA L2C processor,
+are also used.
+By default, these files are located at [datasets_train_test/prisma_acolite.csv](datasets_train_test) and [datasets_train_test/prisma_l2c.csv](datasets_train_test), respectively.
+
+The [`pnn.data.read_prisma_matchups`](pnn/data.py#L126) function is used to read PRISMA match-up data.
+This function will return two [`DataScenario`](pnn/data.py#L43) objects,
+the first representing the general case (train on the resampled *in situ* dataset; test on the PRISMA *in situ* data or the ACOLITE/L2C-processed satellite data),
+the second representing the local knowledge case (train on the resampled *in situ* and PRISMA *in situ* match-up data together; test on the ACOLITE/L2C-processed satellite data).
 
 
 ### Scenes
