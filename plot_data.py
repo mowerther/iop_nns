@@ -23,6 +23,8 @@ print("--- IN SITU DATA ---")
 # Full dataset
 data_full = pnn.data.read_insitu_full(args.insitu_folder)
 print(f"Loaded full in situ dataset from `{args.insitu_folder.absolute()}`.")
+
+# Print statistics
 print(f"Number of records in in situ dataset: {len(data_full)}")
 
 unique_systems = data_full[args.system_column].unique()
@@ -33,6 +35,7 @@ try:
 except:
     pass
 
+# Plot full data
 pnn.output.plot_full_dataset(data_full)
 print("Saved full data plot")
 
@@ -45,26 +48,19 @@ print("Saved data splits plot")
 
 ### PRISMA DATA
 print("--- PRISMA MATCH-UP DATA ---")
-raise NotImplementedError("PRISMA match-up plots currently not working.")
-# Load split data
-train_data_prisma, test_data_prisma = pnn.read_prisma_matchups(args.prisma_folder)
+# Load PRISMA in situ data
+prisma_insitu = pnn.data.read_prisma_insitu()  # Default filename for now
+print(f"Loaded PRISMA in situ data.")
+print(f"Number of records in PRISMA in situ dataset: {len(prisma_insitu)}")
 
-# Since we only care about IOPs, use one dataset per subscenario
-train_data_prisma, test_data_prisma = train_data_prisma[::2], test_data_prisma[::2]
-print(f"Read PRISMA data into {len(train_data_prisma)}+{len(test_data_prisma)} DataFrames")
+# Load data scenarios
+prisma_gen, prisma_lk = pnn.read_prisma_matchups(args.prisma_folder)
+print(f"Loaded PRISMA data scenarios from `{args.prisma_folder.absolute()}`.")
 
-# Iterate over core scenarios
-for scenario, train_data, test_data in zip(pnn.scenarios_prisma_overview, train_data_prisma, test_data_prisma):
-    print(scenario)
-
-    # Load full data
-    data_full = pd.concat([train_data, test_data])
-    print(data_full)
-
-    # Plot full data
-    pnn.output.plot_full_dataset(data_full, saveto=pnn.output_path/f"dataset_{scenario}.pdf")
-    print("Saved full data plot")
+for testscenario, testdata in prisma_lk.test_scenarios_and_data.items():
+    print(f"PRISMA test scenario {testscenario}: {len(testdata)} match-ups.")
 
 # Plot split data
+raise NotImplementedError("PRISMA match-up plots currently not working.")
 pnn.output.plot_prisma_scenarios(train_data_prisma, test_data_prisma)
 print("Saved data splits plot")
