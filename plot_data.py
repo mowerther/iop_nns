@@ -15,6 +15,7 @@ import pnn
 parser = pnn.ArgumentParser(description=__doc__)
 parser.add_argument("-i", "--insitu_folder", help="Folder containing in situ data.", default=pnn.insitu_data_path, type=pnn.c.Path)
 parser.add_argument("-p", "--prisma_folder", help="Folder containing PRISMA match-up data.", default=pnn.insitu_data_path, type=pnn.c.Path)
+parser.add_argument("--system_column", help="Column containing system names.", default="Waterbody_name")
 args = parser.parse_args()
 
 ### IN SITU DATA
@@ -22,6 +23,16 @@ print("--- IN SITU DATA ---")
 # Full dataset
 data_full = pnn.data.read_insitu_full(args.insitu_folder)
 print(f"Loaded full in situ dataset from `{args.insitu_folder.absolute()}`.")
+print(f"Number of records in in situ dataset: {len(data_full)}")
+
+unique_systems = data_full[args.system_column].unique()
+print(f"Number of unique systems in in situ dataset: {len(unique_systems)}")
+try:
+    unique_countries = data_full["Country"].unique()
+    print(f"Number of unique countries in in situ dataset: {len(unique_countries)}")
+except:
+    pass
+
 pnn.output.plot_full_dataset(data_full)
 print("Saved full data plot")
 
