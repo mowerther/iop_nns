@@ -117,7 +117,7 @@ print("Saved uncertainty heatmap plot")
 
 # Average uncertainty: ratios between scenarios
 if not args.prisma:
-    pnn.output.compare_uncertainty_scenarios_123(uncertainty_averages)
+    pnn.output.compare_uncertainty_scenarios_insitu(uncertainty_averages)
 
 # Calibration curves
 calibration_curves = pnn.aggregate.calibration_curve(results)

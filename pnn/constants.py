@@ -80,7 +80,7 @@ networks = [bnn_mcd, bnn_dc, mdn, ensemble, rnn]
 
 ### SCENARIOS
 # Overview
-gloria = Parameter("gloria", "GLORIA+")
+insitu = Parameter("in_situ", "in situ")
 prisma = Parameter("prisma", "PRISMA")
 
 # Scenarios 1, 2, 3 (GLORIA+)
@@ -88,11 +88,11 @@ random_split = Parameter("random_split", "Random split", label_2lines="Random\ns
 wd = Parameter("wd_split", "Within-distribution", label_2lines="Within-\ndistribution")
 ood = Parameter("ood_split", "Out-of-distribution", label_2lines="Out-of-\ndistribution")
 
-training_123 = [random_split, wd, ood]
-testing_123 = {s: [s] for s in training_123}  # 1:1 match between training and testing scenarios
-scenarios_123 = training_123  # Scenarios for assessment
+training_insitu = [random_split, wd, ood]
+testing_insitu = {s: [s] for s in training_insitu}  # 1:1 match between training and testing scenarios
+scenarios_insitu = training_insitu  # Scenarios for assessment
 
-wavelengths_123 = list(range(400, 701, 5))
+wavelengths_insitu = list(range(400, 701, 5))
 
 # PRISMA scenarios
 _insitu = r"$\it{in}$ $\it{situ}$"
@@ -160,6 +160,8 @@ aNAP_443 = Parameter("aNAP_443", f"$a_{_NAP}$(443)", label_2lines=f"$a_{_NAP}$\n
 aNAP_675 = Parameter("aNAP_675", f"$a_{_NAP}$(675)", label_2lines=f"$a_{_NAP}$\n(675)", color="saddlebrown", unit=m1)
 
 iops = [aph_443, aph_675, aCDOM_443, aCDOM_675, aNAP_443, aNAP_675]
+iops_4 = [aph_443, aph_675, aCDOM_443, aNAP_443]
+# iops = iops_4
 iops_names = [iop.name for iop in iops]
 
 _iop_subset = lambda substring: [iop for iop in iops if substring in iop.name]

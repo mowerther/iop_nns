@@ -85,7 +85,7 @@ def title_type_for_scenarios(scenarios: Iterable[c.Parameter]) -> int:
     """
     Pick the title type (to be used in _apply_titles) for scenarios.
     """
-    return 1 if scenarios is c.scenarios_123 else 2
+    return 1 if scenarios is c.scenarios_insitu else 2
 
 
 ### HIDDEN HELPER FUNCTIONS
@@ -303,7 +303,7 @@ _relative_std = lambda df: 100 * df.std() / df.median()  # df can also be a grou
 _metric_statistics = {"Minimum": GroupBy.min, "Median": GroupBy.median, "Maximum": GroupBy.max,
                       "Standard deviation relative to the median [%]": _relative_std}
 def print_metric_range(metrics_all: pd.DataFrame, metric: c.Parameter, *,
-                       scenarios: Iterable[c.Parameter]=c.scenarios_123, variables: Iterable[c.Parameter]=c.iops) -> None:
+                       scenarios: Iterable[c.Parameter]=c.scenarios_insitu, variables: Iterable[c.Parameter]=c.iops) -> None:
     """
     For one metric, print its median, maximum etc. across the N different model instances.
     """

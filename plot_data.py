@@ -57,6 +57,9 @@ print(f"Number of records in PRISMA in situ dataset: {len(prisma_insitu)}")
 prisma_gen, prisma_lk = pnn.read_prisma_matchups(args.prisma_folder)
 print(f"Loaded PRISMA data scenarios from `{args.prisma_folder.absolute()}`.")
 
+for trainscenario, traindata, *_ in [prisma_gen, prisma_lk]:
+    print(f"PRISMA train scenario {trainscenario}: {len(traindata)} training data.")
+
 for testscenario, testdata in prisma_lk.test_scenarios_and_data.items():
     print(f"PRISMA test scenario {testscenario}: {len(testdata)} match-ups.")
 

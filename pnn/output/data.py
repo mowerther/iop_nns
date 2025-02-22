@@ -66,7 +66,7 @@ def plot_full_dataset(df: pd.DataFrame, *,
 
 ## PLOT TRAIN/TEST SPLITS FOR DIFFERENT SCENARIOS
 def plot_scenarios(*data_scenarios: Iterable[DataScenario],
-                   variables: Iterable[c.Parameter]=c.iops_443, scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                   variables: Iterable[c.Parameter]=c.iops_443, scenarios: Iterable[c.Parameter]=c.scenarios_insitu,
                    title: Optional[str]=None,
                    saveto: Path | str=c.output_path/"scenarios.pdf") -> None:
     """

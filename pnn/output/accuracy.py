@@ -81,7 +81,7 @@ def plot_performance_scatter(df: pd.DataFrame, *,
 ## Loop over scenarios and networks, and make a scatter plot for each combination
 _scatter_levels = ["scenario", "network"]
 def plot_performance_scatter_multi(results: pd.DataFrame, *,
-                                   scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                                   scenarios: Iterable[c.Parameter]=c.scenarios_insitu,
                                    saveto: Path | str=c.supplementary_path/"scatterplot.pdf", tag: Optional[str]=None,
                                    **kwargs) -> None:
     """
@@ -208,7 +208,7 @@ def plot_prisma_scatter_multi(results: pd.DataFrame, *,
 ## Combined plot
 _accuracy_metrics = [c.mdsa, c.sspb, c.log_r_squared]
 def plot_accuracy_metrics(data: pd.DataFrame, *,
-                          scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                          scenarios: Iterable[c.Parameter]=c.scenarios_insitu,
                           saveto: Path | str=c.output_path/"accuracy_metrics.pdf", tag: Optional[str]=None) -> None:
     """
     Generate a boxplot of accuracy metrics contained in a DataFrame.
@@ -241,7 +241,7 @@ def plot_accuracy_metrics(data: pd.DataFrame, *,
 
 ## Plot a single metric (default: MdSA, aph)
 def plot_mdsa(data: pd.DataFrame, *,
-              metric: c.Parameter=c.mdsa, scenarios: Iterable[c.Parameter]=c.scenarios_123, variables: Iterable[c.Parameter]=[c.aph_443, c.aph_675],
+              metric: c.Parameter=c.mdsa, scenarios: Iterable[c.Parameter]=c.scenarios_insitu, variables: Iterable[c.Parameter]=[c.aph_443, c.aph_675],
               saveto: Path | str=c.output_path/"mdsa.pdf", tag: Optional[str]=None,
               **kwargs) -> None:
     """

@@ -36,7 +36,7 @@ def select_scenarios(prisma: bool) -> tuple[c.Parameter, list[c.Parameter], list
     if prisma:
         return c.prisma, c.scenarios_prisma, c.iops_aph, read_prisma_matchups
     else:
-        return c.gloria, c.scenarios_123, c.iops, read_insitu_data
+        return c.insitu, c.scenarios_insitu, c.iops, read_insitu_data
 
 
 @dataclass
@@ -73,7 +73,7 @@ def _read_and_preprocess_insitu_data(filename: Path | str) -> pd.DataFrame:
     data = read_csv(filename)
 
     # Filter wavelengths
-    data = data.drop(columns=[col for col in _find_rrs_columns(data) if int(col.split("_")[1]) not in c.wavelengths_123])
+    data = data.drop(columns=[col for col in _find_rrs_columns(data) if int(col.split("_")[1]) not in c.wavelengths_insitu])
 
     return data
 

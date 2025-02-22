@@ -22,7 +22,7 @@ from .common import dash, median_with_confidence_interval, print_metric_range
 _heatmap_uncertainties = [c.total_unc_pct, c.ale_frac]
 # Single
 def plot_uncertainty_heatmap(data: pd.DataFrame, *,
-                             uncertainties: Iterable[c.Parameter]=_heatmap_uncertainties, variables: Iterable[c.Parameter]=c.iops, scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                             uncertainties: Iterable[c.Parameter]=_heatmap_uncertainties, variables: Iterable[c.Parameter]=c.iops, scenarios: Iterable[c.Parameter]=c.scenarios_insitu,
                              saveto: Path | str=c.output_path/"uncertainty_heatmap.pdf", tag: Optional[str]=None) -> None:
     """
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
@@ -50,7 +50,7 @@ def plot_uncertainty_heatmap(data: pd.DataFrame, *,
 
 # With recalibration
 def plot_uncertainty_heatmap_with_recal(data: pd.DataFrame, data_recal: pd.DataFrame, *,
-                                        uncertainties: Iterable[c.Parameter]=_heatmap_uncertainties, variables: Iterable[c.Parameter]=c.iops, scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                                        uncertainties: Iterable[c.Parameter]=_heatmap_uncertainties, variables: Iterable[c.Parameter]=c.iops, scenarios: Iterable[c.Parameter]=c.scenarios_insitu,
                                         saveto: Path | str=c.output_path/"uncertainty_heatmap_recal.pdf", tag: Optional[str]=None) -> None:
     """
     Plot a heatmap showing the average uncertainty and aleatoric fraction for each combination of network, IOP, and splitting method.
@@ -108,7 +108,7 @@ def add_coverage_k_lines(*axs: Iterable[plt.Axes], klim: int=1) -> None:
 
 ## Plot coverage per IOP, network, scenario
 def plot_coverage(data: pd.DataFrame, *,
-                  scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                  scenarios: Iterable[c.Parameter]=c.scenarios_insitu,
                   saveto: Path | str=c.output_path/"uncertainty_coverage.pdf", tag: Optional[str]=None) -> None:
     """
     Box plot showing the coverage factor (pre-calculated).
@@ -138,7 +138,7 @@ def plot_coverage(data: pd.DataFrame, *,
 
 ## Plot coverage per IOP, network, scenario -- with recalibrated data
 def plot_coverage_with_recal(data: pd.DataFrame, data_recal: pd.DataFrame, *,
-                             scenarios: Iterable[c.Parameter]=c.scenarios_123, groups: Iterable[c.Parameter]=c.iops,
+                             scenarios: Iterable[c.Parameter]=c.scenarios_insitu, groups: Iterable[c.Parameter]=c.iops,
                              saveto: Path | str=c.output_path/"uncertainty_coverage_recal.pdf", tag: Optional[str]=None) -> None:
     """
     Box plot showing the coverage factor (pre-calculated).
@@ -177,7 +177,7 @@ def plot_coverage_with_recal(data: pd.DataFrame, data_recal: pd.DataFrame, *,
 ### MISCALIBRATION AREA
 ## Table
 def table_miscalibration_area(df: pd.DataFrame, *,
-                              scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                              scenarios: Iterable[c.Parameter]=c.scenarios_insitu,
                               saveto: Path | str=c.output_path/"miscalibration_area.csv", tag: Optional[str]=None) -> None:
     """
     Reorder the miscalibration area table and save it to file.
@@ -197,7 +197,7 @@ def table_miscalibration_area(df: pd.DataFrame, *,
 ## Plot
 @plt.rc_context({"axes.titleweight": "bold"})
 def miscalibration_area_heatmap(data: pd.DataFrame, data_recal: pd.DataFrame, *,
-                                metric: c.Parameter=c.miscalibration_area, scenarios: Iterable[c.Parameter]=c.scenarios_123, variables: Iterable[c.Parameter]=c.iops,
+                                metric: c.Parameter=c.miscalibration_area, scenarios: Iterable[c.Parameter]=c.scenarios_insitu, variables: Iterable[c.Parameter]=c.iops,
                                 precision: int=2, diff_range: float=0.4,
                                 saveto: Path | str=c.output_path/"miscalibration_area.pdf", tag: Optional[str]=None) -> None:
     """
@@ -298,7 +298,7 @@ def _plot_calibration_curves_base(axs: np.ndarray[plt.Axes], calibration_curves:
 
 # Applied
 def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
-                            rows: Iterable[c.Parameter]=c.scenarios_123, columns: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks,
+                            rows: Iterable[c.Parameter]=c.scenarios_insitu, columns: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks,
                             saveto: Path | str=c.output_path/"calibration_curves.pdf", tag: Optional[str]=None) -> None:
     """
     Plot calibration curves (expected vs. observed).
@@ -319,7 +319,7 @@ def plot_calibration_curves(calibration_curves: pd.DataFrame, *,
 
 # With recalibration
 def plot_calibration_curves_with_recal(calibration_curves: pd.DataFrame, calibration_curves_recal: pd.DataFrame, *,
-                                       rows: Iterable[c.Parameter]=c.scenarios_123, columns: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks,
+                                       rows: Iterable[c.Parameter]=c.scenarios_insitu, columns: Iterable[c.Parameter]=c.iops, groupmembers: Iterable[c.Parameter]=c.networks,
                                        saveto: Path | str=c.output_path/"calibration_curves_recal.pdf", tag: Optional[str]=None) -> None:
     """
     Plot calibration curves (expected vs. observed).
@@ -363,10 +363,10 @@ def plot_calibration_curves_with_recal(calibration_curves: pd.DataFrame, calibra
 
 ### PRINT STATISTICS
 ## Ratios between scenarios
-def compare_uncertainty_scenarios_123(data: pd.DataFrame, *,
-                                      uncertainty: c.Parameter=c.total_unc_pct) -> None:
+def compare_uncertainty_scenarios_insitu(data: pd.DataFrame, *,
+                                         uncertainty: c.Parameter=c.total_unc_pct) -> None:
     """
-    Compare the predicted uncertainty across the three scenarios.
+    Compare the predicted uncertainty across the three in situ scenarios.
     `data` should be averaged uncertainties.
     """
     data = data.loc[uncertainty]
@@ -446,8 +446,10 @@ recalibration_change_in_mdsa = partial(recalibration_improvement, statistic=c.md
 
 
 ## Threshold for applying recalibration
+_MA_BINSIZE = 0.01
+
 def bin_by_column(data: pd.DataFrame, column: c.Parameter, *,
-                  vmin: Optional[float]=None, vmax: Optional[float]=None, binsize: float=0.01, N: Optional[int]=None, log=False) -> Callable:
+                  vmin: Optional[float]=None, vmax: Optional[float]=None, binsize: float=_MA_BINSIZE, N: Optional[int]=None, log=False) -> Callable:
     """
     Generate a function for grouping data into bins, as determined by one column (e.g. an IOP or a metric).
     If N is specified, use a linear/logarithmic spacing.
@@ -480,7 +482,7 @@ def bin_by_column(data: pd.DataFrame, column: c.Parameter, *,
 
 
 def _plot_recalibration_MA_difference(ax: plt.Axes, metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
-                                      binsize: float=0.01,
+                                      binsize: float=_MA_BINSIZE,
                                       legend=True) -> None:
     """
     Based on the without- and with-recalibration metrics, plot the miscalibration improvement as a function of original miscalibration area.
@@ -510,7 +512,7 @@ def _plot_recalibration_MA_difference(ax: plt.Axes, metrics: pd.DataFrame, metri
 
 
 def plot_recalibration_MA(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
-                          binsize: float=0.01,
+                          binsize: float=_MA_BINSIZE,
                           saveto: str | Path=c.output_path/"miscalibration_scatter.pdf", tag: Optional[str]=None) -> None:
     """
     Based on the without- and with-recalibration metrics, plot the miscalibration improvement as a function of original miscalibration area.
@@ -529,7 +531,7 @@ def plot_recalibration_MA(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
 
 
 def plot_recalibration_MA_PRISMA(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *,
-                                 binsize: float=0.01,
+                                 binsize: float=_MA_BINSIZE,
                                  saveto: str | Path=c.output_path/"miscalibration_scatter_PRISMA.pdf") -> None:
     """
     Based on the without- and with-recalibration metrics, plot the miscalibration improvement as a function of original miscalibration area.
@@ -552,7 +554,7 @@ def plot_recalibration_MA_PRISMA(metrics: pd.DataFrame, metrics_recal: pd.DataFr
     plt.close()
 
 
-def recalibration_MA_threshold(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *, binsize: float=0.01) -> None:
+def recalibration_MA_threshold(metrics: pd.DataFrame, metrics_recal: pd.DataFrame, *, binsize: float=_MA_BINSIZE) -> None:
     """
     Based on the without- and with-recalibration metrics, determine the threshold miscalibration area at which recalibration becomes useful.
     """

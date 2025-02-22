@@ -25,7 +25,7 @@ def read_model_metrics(filename: Path | str, **kwargs) -> pd.DataFrame:
 
 
 def read_all_model_metrics(folder: Path | str=c.model_estimates_path, *,
-                           scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                           scenarios: Iterable[c.Parameter]=c.scenarios_insitu,
                            use_recalibration_data=False) -> pd.DataFrame:
     """
     Read all data from a given folder into one big dataframe.
@@ -165,7 +165,7 @@ def read_model_outputs(filename: Path | str, **kwargs) -> pd.DataFrame:
 
 
 def read_all_model_outputs(folder: Path | str=c.model_estimates_path, *,
-                           scenarios: Iterable[c.Parameter]=c.scenarios_123,
+                           scenarios: Iterable[c.Parameter]=c.scenarios_insitu,
                            subfolder_indices: Optional[pd.Series]=None,
                            use_recalibration_data=False) -> pd.DataFrame:
     """
