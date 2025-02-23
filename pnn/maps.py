@@ -35,7 +35,7 @@ kw_cbar = {"location": "bottom", "fraction": 0.1, "pad": 0.05, "extend": "both"}
 N_colours = 12
 
 ### DATA LOADING
-def _load_general(filename: Path | str) -> xr.Dataset:
+def load_map(filename: Path | str) -> xr.Dataset:
     """
     Load and pre-process NetCDF files.
     """
@@ -82,7 +82,7 @@ def _load_l2c(filename: Path | str) -> xr.Dataset:
     """
     Load L2C processed data.
     """
-    data = _load_general(filename)
+    data = load_map(filename)
 
     # Filter Rrs
     data_Rrs = select_prisma_columns(data, key="Rrs")
@@ -98,7 +98,7 @@ def _load_acolite(filename: Path | str) -> xr.Dataset:
     """
     Load ACOLITE-processed data and convert rho_w to R_rs.
     """
-    data = _load_general(filename)
+    data = load_map(filename)
 
     # Convert rho_w to R_rs
     renamer = {rhos: f"Rrs_{rhos[9:]}" for rhos in data.keys()}
