@@ -88,3 +88,31 @@ class RNN_MCD(DropoutPNN):
         """
         X_train_reshaped = reshape_data(X_train)
         return super().build_and_train(X_train_reshaped, y_train, *args, batch_size=batch_size, **kwargs)
+
+
+    ### APPLICATION
+    def _predict_samples(self, X: np.ndarray, *, split_over: int=5000, debug=False, **kwargs) -> np.ndarray:
+        """
+        Use the model to predict y values for X.
+        Because the RNN is very computationally intensive, X is split into chunks if it has more than `split_over` entries.
+        Future work: do this in a keras-y way.
+        """
+        if len(X) > split_over:
+            # Split into chunks
+            N = len(X)
+            N_chunks = int(np.ceil(N / split_over)) + 1
+            X_split = np.array_split(X, N_chunks)
+            if debug:
+                print("Number of chunks:", N_chunks)
+
+            # Recursively apply prediction to chunks
+            samples = [self._predict_samples(chunk, **kwargs) for chunk in X_split]
+            samples = np.concatenate(samples, axis=1)
+
+        else:
+            # Simple case: just predict for X
+            samples = super()._predict_samples(X, **kwargs)
+            if debug:
+                print("Chunk output shape:", samples.shape)
+
+        return samples
