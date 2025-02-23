@@ -32,7 +32,12 @@ projection = PlateCarree()
 kw_projection = {"transform": projection, "x": "lon", "y": "lat"}
 kw_xy = {"add_labels": False, "yincrease": False}
 kw_cbar = {"location": "bottom", "fraction": 0.1, "pad": 0.05, "extend": "both"}
+
 N_colours = 12
+cmap_iop = cmc.navia.resampled(N_colours)
+cmap_unc = cmc.turku.resampled(N_colours)
+cmap_Rrs = LinearSegmentedColormap.from_list("devon_discrete", cmc.devon.colors[20:-20]).resampled(N_colours)  # Devon without white
+
 
 ### DATA LOADING
 def load_map(filename: Path | str) -> xr.Dataset:
@@ -312,8 +317,7 @@ def _plot_matchups(matchups: pd.DataFrame, ax: GeoAxes,
                **kwargs)
 
 
-# Devon without white
-devon_discrete = LinearSegmentedColormap.from_list("devon_discrete", cmc.devon.colors[20:-20]).resampled(N_colours)
+
 
 def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
              ax: Optional[plt.Axes]=None, projected=True,
@@ -334,7 +338,6 @@ def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
     # Get `projected` from ax type?
 
     # Set up colours
-    cmap = devon_discrete
     norm = Normalize(0, 0.02)
 
     # Plot
@@ -342,11 +345,11 @@ def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
     im = _plot_with_background(data, col,
                                ax=ax, projected=projected,
                                mask_land=mask_land, background=background, background_rgb=background_rgb,
-                               cmap=cmap, norm=norm, cbar_kwargs=cbar_kwargs, **kwargs)
+                               cmap=cmap_Rrs, norm=norm, cbar_kwargs=cbar_kwargs, **kwargs)
 
     # Plot match-ups
     if projected and matchups is not None:
-        _plot_matchups(matchups, ax=ax, c=matchups[col], cmap=cmap, norm=norm)
+        _plot_matchups(matchups, ax=ax, c=matchups[col], cmap=cmap_Rrs, norm=norm)
 
     # Plot parameters
     if newfig:
@@ -358,6 +361,7 @@ def plot_Rrs(data: xr.Dataset, wavelength: int=446, *,
 
 
 def plot_IOP_single(data: xr.Dataset, iop: c.Parameter=c.aph_443, *,
+                    uncmin: Optional[float]=None, uncmax: Optional[float]=None,
                     axs: Optional[Iterable[plt.Axes]]=None, projected=True,
                     background: Optional[xr.Dataset]=None, background_rgb=False,
                     matchups: Optional[pd.DataFrame]=None,
@@ -374,12 +378,10 @@ def plot_IOP_single(data: xr.Dataset, iop: c.Parameter=c.aph_443, *,
 
     # Setup cmaps and norms
     unc = f"{iop}_std_pct"
-    cmap_iop = cmc.navia.resampled(N_colours)
-    cmap_unc = cmc.turku.resampled(N_colours)
 
     f = 10**(2/4)  # ticks beyond 1e-2  /  ticks between 1e-2 and 1e-1
     norm_mean = LogNorm(vmin=1e-2/f, vmax=1e0*f)
-    norm_unc = Normalize()
+    norm_unc = Normalize(vmin=uncmin, vmax=uncmax)
 
     # Plot data
     kw_shared = {"mask_land": False, "background": background, "background_rgb": background_rgb, "robust": True}

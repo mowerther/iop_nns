@@ -9,6 +9,8 @@ Please note that figures will still be saved to the same location.
 Example:
     python plot_prisma_scenes.py bnn_mcd
 """
+import numpy as np
+from matplotlib import pyplot as plt
 import pnn
 
 ### Parse command line arguments
@@ -23,24 +25,119 @@ matchups = pnn.data.read_prisma_insitu(filter_invalid_dates=True)
 
 ### Setup
 def load_data(template: str, pnn1, pnn2) -> tuple[pnn.maps.xr.Dataset, pnn.maps.xr.Dataset]:
+    # Load outputs
     filename1, filename2 = [args.folder/template.format(pnn_type=pnn_type) for pnn_type in (pnn1, pnn2)]
-    data1, data2 = [pnn.maps.load_map(filename) for filename in (filename1, filename2)]
-    return data1, data2
+    iop1, iop2 = [pnn.maps.load_map(filename) for filename in (filename1, filename2)]
+
+    # Load original scene for Rrs
+    acolite = ("converted_L2C" in template)
+    ac_label = "converted_L2C" if acolite else "L2W"
+    scenename = pnn.c.map_data_path / (template[:26] + f"_{ac_label}" + ".nc")
+    scene = pnn.maps.load_prisma_map(scenename, acolite=acolite)
+
+    # Load RGB background image
+    filename_h5 = pnn.maps.get_h5_filename(scenename)
+    rgb_cube = pnn.maps.load_h5_as_rgb(filename_h5)
+    background = pnn.maps.rgb_to_xarray(scene, rgb_cube)
+
+    # Find match-ups
+    _, date = pnn.maps.filename_to_date(scenename)
+    matchups_here = pnn.maps.find_matchups_on_date(matchups, date)
+
+    return scene, background, matchups_here, iop1, iop2
+
+
+def create_figure() -> tuple[plt.Figure, np.ndarray]:
+    fig, axs = pnn.maps._create_map_figure(nrows=4, ncols=4, projected=True, figsize=(15, 12))
+    for ax in axs[1::2, 0]:
+        ax.axis("off")
+
+    return fig, axs
 
 
 ### Figure 1: Prisma_2023_05_24_10_17_20_converted L2C, 443 nm, ens-nn and mdn
 filename_template = "PRISMA_2023_05_24_10_17_20_converted_L2C-{pnn_type}-prisma_gen_aco_iops.nc"
 pnn1, pnn2 = pnn.c.ensemble, pnn.c.mdn
-data1, data2 = load_data(filename_template, pnn1, pnn2)
+scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1, pnn2)
 
-raise Exception
+fig, axs = create_figure()
+
+shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
+pnn.maps.plot_Rrs(scene, 446, ax=axs[0, 0], **shared_kw)
+pnn.output.label_topleft(axs[0, 0], r"$R_{rs}$(446)")
+axs[2, 0].axis("off")
+
+axs1 = axs[:2, 1:]
+axs2 = axs[2:, 1:]
+
+for data, pnn_type, axs_here in zip([iop1, iop2], [pnn1, pnn2], [axs1, axs2]):
+    for iop, axs_iop in zip(pnn.c.iops_443, axs_here.T):
+        pnn.maps.plot_IOP_single(data, iop, axs=axs_iop, uncmin=0, uncmax=300, **shared_kw)
+
+        # Labels
+        for ax in axs_iop:
+            pnn.output.label_topleft(ax, f"{iop.label} ({pnn_type.label})")
+
+plt.savefig("Map1.pdf", dpi=600)
+plt.show()
+plt.close()
+
+
+
+
 
 ### Figure 2: Prisma_2023_09_11_10_13_53_L2W, 675 nm, bnn-mcd and rnn
 filename_template = "PRISMA_2023_09_11_10_13_53_L2W-{pnn_type}-prisma_gen_l2_iops.nc"
 pnn1, pnn2 = pnn.c.bnn_mcd, pnn.c.rnn
-data1, data2 = load_data(filename_template, pnn1, pnn2)
+scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1, pnn2)
+
+fig, axs = create_figure()
+
+shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
+pnn.maps.plot_Rrs(scene, 674, ax=axs[0, 0], **shared_kw)
+pnn.output.label_topleft(axs[0, 0], r"$R_{rs}$(674)")
+axs[2, 0].axis("off")
+
+axs1 = axs[:2, 1:]
+axs2 = axs[2:, 1:]
+
+for data, pnn_type, axs_here in zip([iop1, iop2], [pnn1, pnn2], [axs1, axs2]):
+    for iop, axs_iop in zip(pnn.c.iops_675, axs_here.T):
+        pnn.maps.plot_IOP_single(data, iop, axs=axs_iop, uncmin=0, uncmax=300, **shared_kw)
+
+        # Labels
+        for ax in axs_iop:
+            pnn.output.label_topleft(ax, f"{iop.label} ({pnn_type.label})")
+
+plt.savefig("Map2.pdf", dpi=600)
+plt.show()
+plt.close()
+
+
 
 ### Figure 3: Trasimeno
-filename_template = "PRISMA_2023_05_24_10_17_20_L2W-{pnn_type}-prisma_gen_l2_iops.nc"
+filename_template = "PRISMA_2022_07_20_10_08_04_L2W-{pnn_type}-prisma_gen_l2_iops.nc"
 pnn1, pnn2 = pnn.c.bnn_mcd, pnn.c.bnn_dc
-data1, data2 = load_data(filename_template, pnn1, pnn2)
+scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1, pnn2)
+
+fig, axs = create_figure()
+
+shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
+pnn.maps.plot_Rrs(scene, 446, ax=axs[0, 0], **shared_kw)
+pnn.output.label_topleft(axs[0, 0], r"$R_{rs}$(446)")
+axs[2, 0].axis("off")
+
+axs1 = axs[:2, 1:]
+axs2 = axs[2:, 1:]
+
+for data, pnn_type, axs_here in zip([iop1, iop2], [pnn1, pnn2], [axs1, axs2]):
+    for iop, axs_iop in zip(pnn.c.iops_443, axs_here.T):
+        pnn.maps.plot_IOP_single(data, iop, axs=axs_iop, uncmin=0, uncmax=300, **shared_kw)
+
+        # Labels
+        for ax in axs_iop:
+            pnn.output.label_topleft(ax, f"{iop.label} ({pnn_type.label})")
+
+plt.savefig("Map3.pdf", dpi=600)
+plt.show()
+plt.close()
