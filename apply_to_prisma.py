@@ -30,6 +30,7 @@ matchups = pnn.data.read_prisma_insitu(filter_invalid_dates=True)
 
 ### Load PNN
 # Setup
+training_scenario = pnn.c.prisma_gen
 scenario_for_average = pnn.c.prisma_gen_ACOLITE if args.acolite else pnn.c.prisma_gen_L2
 PNN = pnn.nn.select_nn(args.pnn_type)
 
@@ -42,7 +43,7 @@ if args.model_file is None:
     print(f"Model number {median_index} is the average-performing {args.pnn_type} in the '{scenario_for_average}' scenario")
 
     # Load model
-    model = pnn.nn.load_model_iteration(PNN, median_index, model_scenario.train_scenario)
+    model = pnn.nn.load_model_iteration(PNN, median_index, training_scenario)
     print(f"Loaded model: {model}")
 
 ## Custom

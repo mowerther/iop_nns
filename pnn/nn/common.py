@@ -86,11 +86,11 @@ def load_model_iteration(pnn_type: type, i: int, scenario: c.Parameter | str,
     From a given save folder, load the i'th model for a given scenario.
     Convenience function for dealing with multi-model save folders.
     Example:
-        load_model_iteration(BNN_DC, 16, c.prisma_gen) will load the model at c.model_path/16/bnn_dc_prisma_gen.keras
+        load_model_iteration(BNN_DC, 16, c.prisma_gen) will load the model at c.model_path/16/bnn_dc_prisma_gen.zip
     """
     saveto = Path(saveto)
     saveto_i = saveto / str(i)
-    filename = saveto_i / f"{pnn_type.name}_{scenario}.keras"
+    filename = saveto_i / f"{pnn_type.name}_{scenario}.zip"
     return pnn_type.load(filename)
 
 
