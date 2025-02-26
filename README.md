@@ -158,9 +158,18 @@ This function will return two [`DataScenario`](pnn/data.py#L43) objects,
 the first representing the general case (train on the resampled *in situ* dataset; test on the PRISMA *in situ* data or the ACOLITE/L2C-processed satellite data),
 the second representing the local knowledge case (train on the resampled *in situ* and PRISMA *in situ* match-up data together; test on the ACOLITE/L2C-processed satellite data).
 
-
 ### Scenes
+Trained models can be applied to PRISMA scenes using the [`apply_to_prisma.py`](apply_to_prisma.py) script.
+This script takes all atmospherically corrected (L2C or ACOLITE) NetCDF4 (`.nc`) files in a given folder ([`prisma_map_data`](prisma_map_data) by default) and applies a given model type (`bnn_mcd`, `bnn_dc`, etc.) to each.
+By default, the average-performing instance of that architecture is found in [`pnn_tf_models`](pnn_tf_models);
+a custom model file can be used through the `-m` flag.
+A water mask will be generated using a normalised differential water index (NDWI).
+If available, level-1 HDF5 (`.h5`) data for the same scene will be used to generate a greyscale background, using an approximated luminance function.
+The script will save the results to a new NetCDF4 file so they can be re-used without having to re-run the analysis.
+It will also save a figure showing the Rrs and IOPs at 443-446 nm.
+Please note that due to the number of pixels (up to a million), PNN application can be very slow, especially for RNNs.
 
+*Plot script*
 
 ## Model training
 Neural network models are trained using the [train_nn.py](train_nn.py) script.
