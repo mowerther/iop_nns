@@ -55,6 +55,12 @@ def create_figure() -> tuple[plt.Figure, np.ndarray]:
     return fig, axs
 
 
+def plot_Rrs(axs: np.ndarray, scene: pnn.maps.xr.Dataset, wavelength: int, **kwargs) -> None:
+    ax_Rrs = axs[0, 0]
+    pnn.maps.plot_Rrs(scene, wavelength, ax=ax_Rrs, **kwargs)
+    pnn.output.label_topleft(ax_Rrs, r"$R_{rs}$" f"({wavelength})")
+    axs[2, 0].axis("off")
+
 ### Figure 1: Prisma_2023_05_24_10_17_20_converted L2C, 443 nm, ens-nn and mdn
 filename_template = "PRISMA_2023_05_24_10_17_20_converted_L2C-{pnn_type}-prisma_gen_aco_iops.nc"
 pnn1, pnn2 = pnn.c.ensemble, pnn.c.mdn
@@ -63,9 +69,7 @@ scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1
 fig, axs = create_figure()
 
 shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
-pnn.maps.plot_Rrs(scene, 446, ax=axs[0, 0], **shared_kw)
-pnn.output.label_topleft(axs[0, 0], r"$R_{rs}$(446)")
-axs[2, 0].axis("off")
+plot_Rrs(axs, scene, 446, **shared_kw)
 
 axs1 = axs[:2, 1:]
 axs2 = axs[2:, 1:]
@@ -94,9 +98,7 @@ scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1
 fig, axs = create_figure()
 
 shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
-pnn.maps.plot_Rrs(scene, 674, ax=axs[0, 0], **shared_kw)
-pnn.output.label_topleft(axs[0, 0], r"$R_{rs}$(674)")
-axs[2, 0].axis("off")
+plot_Rrs(axs, scene, 446, **shared_kw)
 
 axs1 = axs[:2, 1:]
 axs2 = axs[2:, 1:]
@@ -123,9 +125,7 @@ scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1
 fig, axs = create_figure()
 
 shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
-pnn.maps.plot_Rrs(scene, 446, ax=axs[0, 0], **shared_kw)
-pnn.output.label_topleft(axs[0, 0], r"$R_{rs}$(446)")
-axs[2, 0].axis("off")
+plot_Rrs(axs, scene, 446, **shared_kw)
 
 axs1 = axs[:2, 1:]
 axs2 = axs[2:, 1:]
