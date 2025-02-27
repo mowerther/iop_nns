@@ -61,7 +61,7 @@ def plot_Rrs(axs: np.ndarray, scene: pnn.maps.xr.Dataset, wavelength: int, **kwa
 
 ### Figure 1: Prisma_2023_05_24_10_17_20_converted L2C, 443 nm, ens-nn and mdn
 filename_template = "PRISMA_2023_05_24_10_17_20_converted_L2C-{pnn_type}-prisma_gen_aco_iops.nc"
-pnn1, pnn2 = pnn.c.ensemble, pnn.c.mdn
+pnn1, pnn2 = pnn.c.ensemble, pnn.c.bnn_mcd
 scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1, pnn2)
 
 fig, axs = create_figure()
@@ -90,7 +90,7 @@ plt.close()
 
 ### Figure 2: Prisma_2023_09_11_10_13_53_L2W, 675 nm, bnn-mcd and rnn
 filename_template = "PRISMA_2023_09_11_10_13_53_L2W-{pnn_type}-prisma_gen_l2_iops.nc"
-pnn1, pnn2 = pnn.c.bnn_mcd, pnn.c.rnn
+pnn1, pnn2 = pnn.c.mdn, pnn.c.rnn
 scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1, pnn2)
 
 fig, axs = create_figure()
@@ -117,7 +117,7 @@ plt.close()
 
 ### Figure 3: Trasimeno
 filename_template = "PRISMA_2022_07_20_10_08_04_L2W-{pnn_type}-prisma_gen_l2_iops.nc"
-pnn1, pnn2 = pnn.c.bnn_mcd, pnn.c.bnn_dc
+pnn1, pnn2 = pnn.c.rnn, pnn.c.bnn_dc
 scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1, pnn2)
 
 fig, axs = create_figure()
