@@ -48,18 +48,16 @@ def load_data(template: str, pnn1, pnn2) -> tuple[pnn.maps.xr.Dataset, pnn.maps.
 
 
 def create_figure() -> tuple[plt.Figure, np.ndarray]:
-    fig, axs = pnn.maps._create_map_figure(nrows=4, ncols=4, projected=True, figsize=(15, 12))
-    for ax in axs[1::2, 0]:
-        ax.axis("off")
-
+    fig, axs = pnn.maps._create_map_figure(nrows=5, ncols=3, projected=True, figsize=(9, 12))
     return fig, axs
 
 
 def plot_Rrs(axs: np.ndarray, scene: pnn.maps.xr.Dataset, wavelength: int, **kwargs) -> None:
-    ax_Rrs = axs[0, 0]
+    ax_Rrs = axs[0, 1]
     pnn.maps.plot_Rrs(scene, wavelength, ax=ax_Rrs, **kwargs)
     pnn.output.label_topleft(ax_Rrs, r"$R_{rs}$" f"({wavelength})")
-    axs[2, 0].axis("off")
+    axs[0, 0].axis("off")
+    axs[0, 2].axis("off")
 
 ### Figure 1: Prisma_2023_05_24_10_17_20_converted L2C, 443 nm, ens-nn and mdn
 filename_template = "PRISMA_2023_05_24_10_17_20_converted_L2C-{pnn_type}-prisma_gen_aco_iops.nc"
@@ -71,8 +69,8 @@ fig, axs = create_figure()
 shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
 plot_Rrs(axs, scene, 446, **shared_kw)
 
-axs1 = axs[:2, 1:]
-axs2 = axs[2:, 1:]
+axs1 = axs[1:3]
+axs2 = axs[3:]
 
 for data, pnn_type, axs_here in zip([iop1, iop2], [pnn1, pnn2], [axs1, axs2]):
     for iop, axs_iop in zip(pnn.c.iops_443, axs_here.T):
@@ -100,8 +98,8 @@ fig, axs = create_figure()
 shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
 plot_Rrs(axs, scene, 446, **shared_kw)
 
-axs1 = axs[:2, 1:]
-axs2 = axs[2:, 1:]
+axs1 = axs[1:3]
+axs2 = axs[3:]
 
 for data, pnn_type, axs_here in zip([iop1, iop2], [pnn1, pnn2], [axs1, axs2]):
     for iop, axs_iop in zip(pnn.c.iops_675, axs_here.T):
@@ -127,8 +125,8 @@ fig, axs = create_figure()
 shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
 plot_Rrs(axs, scene, 446, **shared_kw)
 
-axs1 = axs[:2, 1:]
-axs2 = axs[2:, 1:]
+axs1 = axs[1:3]
+axs2 = axs[3:]
 
 for data, pnn_type, axs_here in zip([iop1, iop2], [pnn1, pnn2], [axs1, axs2]):
     for iop, axs_iop in zip(pnn.c.iops_443, axs_here.T):
