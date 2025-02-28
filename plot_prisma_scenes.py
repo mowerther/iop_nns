@@ -96,7 +96,7 @@ scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1
 fig, axs = create_figure()
 
 shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
-plot_Rrs(axs, scene, 446, **shared_kw)
+plot_Rrs(axs, scene, 674, **shared_kw)
 
 axs1 = axs[1:3]
 axs2 = axs[3:]
