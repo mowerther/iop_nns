@@ -313,7 +313,7 @@ def _plot_matchups(matchups: pd.DataFrame, ax: GeoAxes,
 
     # Determine colours
     ax.scatter(matchups["lon"], matchups["lat"], transform=projection,
-               s=50, edgecolor="black", marker="D",
+               s=25, edgecolor="black", marker="D",
                **kwargs)
 
 
