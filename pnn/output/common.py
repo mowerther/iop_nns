@@ -3,7 +3,9 @@ Anything that needs to be shared between modules.
 """
 from functools import partial
 from pathlib import Path
+from string import ascii_lowercase
 from typing import Iterable, Optional
+import itertools
 
 import numpy as np
 import pandas as pd
@@ -54,11 +56,38 @@ def get_axes_size(ax: plt.Axes) -> tuple[float, float]:
     return bbox.width, bbox.height
 
 
-def label_topleft(ax: plt.Axes, text: str, **kwargs) -> None:
+def _label_in_box(ax: plt.Axes, text: str, x: float, y: float, **kwargs) -> None:
     """
     Add a label to the top left corner of a panel.
     """
-    ax.text(0.05, 0.90, text, transform=ax.transAxes, horizontalalignment="left", verticalalignment="top", fontsize=12, color="black", bbox={"facecolor": "white", "edgecolor": "black", "boxstyle": "round"})
+    ax.text(x, y, text, transform=ax.transAxes, fontsize=12, color="black", bbox={"facecolor": "white", "edgecolor": "black", "boxstyle": "round"}, **kwargs)
+
+label_topleft = partial(_label_in_box, x=0.05, y=0.90, horizontalalignment="left", verticalalignment="top")
+label_bottomright = partial(_label_in_box, x=0.95, y=0.10, horizontalalignment="right", verticalalignment="bottom")
+
+def _ax_or_ravel(ax: plt.Axes | np.ndarray) -> list[plt.Axes]:
+    """
+    Flatten an array of axes into a list or pack a single ax into a list.
+    """
+    if isinstance(ax, plt.Axes):
+        return [ax, ]
+    elif isinstance(ax, np.ndarray):
+        return ax.ravel().tolist()
+    else:
+        return ax
+
+def label_axes_sequentially(*axs: plt.Axes | np.ndarray, labels=ascii_lowercase) -> None:
+    """
+    Label any number of axes sequentially (a, b, c, ...).
+    Split out any iterables of Axes, so that the function can take individual Axes and arrays thereof.
+    """
+    axs_split = [_ax_or_ravel(ax) for ax in axs]
+    axs_split = list(itertools.chain.from_iterable(axs_split))
+
+    assert (n_axs := len(axs_split)) <= (n_label := len(labels)), f"Too many axes ({n_axs}) for number of labels ({n_label})"
+
+    for ax, s in zip(axs_split, labels):
+        label_bottomright(ax, s)
 
 
 def pick_textcolor(cmap: colors.Colormap, value: float) -> str:

@@ -87,6 +87,8 @@ for data, pnn_type, axs_here in zip([iop1, iop2], [pnn1, pnn2], [axs1, axs2]):
         for ax in axs_iop:
             pnn.output.label_topleft(ax, f"{iop.label} ({pnn_type.label})")
 
+pnn.maps.o.label_axes_sequentially([ax for ax in axs.ravel() if ax.collections])
+
 plt.savefig("Map1.pdf", dpi=600)
 plt.show()
 plt.close()
@@ -112,6 +114,8 @@ for data, pnn_type, is_recal, ax_row in zip([iop1, iop1_recal, iop2, iop2_recal]
 
         # Label
         pnn.maps.o.label_topleft(ax, f"{pnn_type.label}{' (rec.)' if is_recal else ''}")
+
+pnn.maps.o.label_axes_sequentially(axs)
 
 plt.savefig("Map1_recal.pdf", dpi=600)
 plt.show()
@@ -140,6 +144,8 @@ for data, pnn_type, axs_here in zip([iop1, iop2], [pnn1, pnn2], [axs1, axs2]):
         # Labels
         for ax in axs_iop:
             pnn.output.label_topleft(ax, f"{iop.label} ({pnn_type.label})")
+
+pnn.maps.o.label_axes_sequentially([ax for ax in axs.ravel() if ax.collections])
 
 plt.savefig("Map2.pdf", dpi=600)
 plt.show()
@@ -174,6 +180,8 @@ for data, pnn_type, axs_here in zip([iop1, iop2], [pnn1, pnn2], [axs1, axs2]):
         # Labels
         for ax in axs_iop:
             pnn.output.label_topleft(ax, f"{iop.label} ({pnn_type.label})")
+
+pnn.maps.o.label_axes_sequentially([ax for ax in axs.ravel() if ax.collections])
 
 plt.savefig("Map3.pdf", dpi=600)
 plt.show()
