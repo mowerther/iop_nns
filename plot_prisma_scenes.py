@@ -51,14 +51,13 @@ def load_data(template: str, *pnn_types, use_recalibrated_data=False) -> tuple[p
 
 
 def create_figure() -> tuple[plt.Figure, np.ndarray]:
-    fig, axs = pnn.maps._create_map_figure(nrows=5, ncols=3, projected=True, figsize=(9, 12))
+    fig, axs = pnn.maps._create_map_figure(nrows=5, ncols=3, projected=True, figsize=(6.6, 12), gridspec_kw={"hspace": 0.10, "wspace": 0.02})
     return fig, axs
 
 
 def plot_Rrs(axs: np.ndarray, scene: pnn.maps.xr.Dataset, wavelength: int, **kwargs) -> None:
     ax_Rrs = axs[0, 1]
     pnn.maps.plot_Rrs(scene, wavelength, ax=ax_Rrs, **kwargs)
-    pnn.output.label_topleft(ax_Rrs, r"$R_{rs}$" f"({wavelength})")
     axs[0, 0].axis("off")
     axs[0, 2].axis("off")
 
@@ -85,7 +84,7 @@ for data, pnn_type, axs_here in zip([iop1, iop2], [pnn1, pnn2], [axs1, axs2]):
 
         # Labels
         for ax in axs_iop:
-            pnn.output.label_topleft(ax, f"{iop.label} ({pnn_type.label})")
+            pnn.output.label_topleft(ax, pnn_type.label)
 
 pnn.maps.o.label_axes_sequentially([ax for ax in axs.ravel() if ax.collections])
 
@@ -99,15 +98,16 @@ plt.close()
 ### Figure 1.5: uncertainties of map 1: without and with recalibration just from the two models, without the IOP maps
 *_, iop1_recal, iop2_recal = load_data(filename_template, pnn1, pnn2, use_recalibrated_data=True)
 
-fig, axs = pnn.maps._create_map_figure(nrows=4, ncols=3, projected=True, figsize=(9, 12))
+fig, axs = pnn.maps._create_map_figure(nrows=4, ncols=3, projected=True, figsize=(6.6, 9), gridspec_kw={"wspace": 0.02})
 
-for data, pnn_type, is_recal, ax_row in zip([iop1, iop1_recal, iop2, iop2_recal], [pnn1, pnn1, pnn2, pnn2], [False, True, False, True], axs):
+norm_unc = pnn.maps.Normalize(vmin=0, vmax=300)
+
+for j, (data, pnn_type, is_recal, ax_row) in enumerate(zip([iop1, iop1_recal, iop2, iop2_recal], [pnn1, pnn1, pnn2, pnn2], [False, True, False, True], axs)):
+    cbar_kwargs = {"label": "Uncertainty [%]" if j == len(axs)-1 else None} | pnn.maps.kw_cbar
+
     for iop, ax in zip(pnn.c.iops_443, ax_row):
         # Setup cmaps and norms
         unc = f"{iop}_std_pct"
-        norm_unc = pnn.maps.Normalize(vmin=0, vmax=300)
-
-        cbar_kwargs = {"label": "Uncertainty [%]"} | pnn.maps.kw_cbar
 
         pnn.maps._plot_with_background(data, unc, ax=ax,
                                        norm=norm_unc, cmap=pnn.maps.cmap_unc, mask_land=False, projected=True, background=background, cbar_kwargs=cbar_kwargs)
@@ -115,15 +115,12 @@ for data, pnn_type, is_recal, ax_row in zip([iop1, iop1_recal, iop2, iop2_recal]
         # Label
         pnn.maps.o.label_topleft(ax, f"{pnn_type.label}{' (rec.)' if is_recal else ''}")
 
-# Titles
-for iop, ax in zip(pnn.c.iops_443, axs[0]):
-    ax.set_title(iop.label)
-
 pnn.maps.o.label_axes_sequentially(axs)
 
 plt.savefig("Map1_recal.pdf", dpi=600)
 plt.show()
 plt.close()
+
 
 
 
@@ -147,7 +144,7 @@ for data, pnn_type, axs_here in zip([iop1, iop2], [pnn1, pnn2], [axs1, axs2]):
 
         # Labels
         for ax in axs_iop:
-            pnn.output.label_topleft(ax, f"{iop.label} ({pnn_type.label})")
+            pnn.output.label_topleft(ax, pnn_type.label)
 
 pnn.maps.o.label_axes_sequentially([ax for ax in axs.ravel() if ax.collections])
 
