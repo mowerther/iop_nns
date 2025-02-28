@@ -24,10 +24,13 @@ matchups = pnn.data.read_prisma_insitu(filter_invalid_dates=True)
 
 
 ### Setup
-def load_data(template: str, pnn1, pnn2) -> tuple[pnn.maps.xr.Dataset, pnn.maps.xr.Dataset]:
+def load_data(template: str, *pnn_types, use_recalibrated_data=False) -> tuple[pnn.maps.xr.Dataset, pnn.maps.pd.DataFrame]:
     # Load outputs
-    filename1, filename2 = [args.folder/template.format(pnn_type=pnn_type) for pnn_type in (pnn1, pnn2)]
-    iop1, iop2 = [pnn.maps.load_map(filename) for filename in (filename1, filename2)]
+    filenames = [args.folder/template.format(pnn_type=pnn_type) for pnn_type in pnn_types]
+    if use_recalibrated_data:
+        filenames = [fn.with_stem(fn.stem.replace("_iops", "-recal_iops")) for fn in filenames]
+
+    iop_maps = [pnn.maps.load_map(filename) for filename in filenames]
 
     # Load original scene for Rrs
     acolite = ("converted_L2C" in template)
@@ -44,7 +47,7 @@ def load_data(template: str, pnn1, pnn2) -> tuple[pnn.maps.xr.Dataset, pnn.maps.
     _, date = pnn.maps.filename_to_date(scenename)
     matchups_here = pnn.maps.find_matchups_on_date(matchups, date)
 
-    return scene, background, matchups_here, iop1, iop2
+    return scene, background, matchups_here, *iop_maps
 
 
 def create_figure() -> tuple[plt.Figure, np.ndarray]:
@@ -88,6 +91,11 @@ plt.savefig("Map1.pdf", dpi=600)
 plt.show()
 plt.close()
 
+
+
+
+### Figure 1.5: uncertainties of map 1: without and with recalibration just from the two models, without the IOP maps
+*_, iop1_recal, iop2_recal = load_data(filename_template, pnn1, pnn2, use_recalibrated_data=True)
 
 
 
