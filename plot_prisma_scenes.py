@@ -115,6 +115,10 @@ for data, pnn_type, is_recal, ax_row in zip([iop1, iop1_recal, iop2, iop2_recal]
         # Label
         pnn.maps.o.label_topleft(ax, f"{pnn_type.label}{' (rec.)' if is_recal else ''}")
 
+# Titles
+for iop, ax in zip(pnn.c.iops_443, axs[0]):
+    ax.set_title(iop.label)
+
 pnn.maps.o.label_axes_sequentially(axs)
 
 plt.savefig("Map1_recal.pdf", dpi=600)
