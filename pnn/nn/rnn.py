@@ -91,7 +91,7 @@ class RNN_MCD(DropoutPNN):
 
 
     ### APPLICATION
-    def _predict_samples(self, X: np.ndarray, *, split_over: int=5000, debug=False, **kwargs) -> np.ndarray:
+    def _predict_samples(self, X: np.ndarray, *, split_over: int=5000, debug=True, **kwargs) -> np.ndarray:
         """
         Use the model to predict y values for X.
         Because the RNN is very computationally intensive, X is split into chunks if it has more than `split_over` entries.

@@ -21,6 +21,7 @@ parser = pnn.ArgumentParser(description=__doc__)
 parser.add_argument("pnn_type", help="PNN architecture to use")
 parser.add_argument("-f", "--folder", help="folder to load data from", type=pnn.c.Path, default=pnn.c.map_data_path)
 parser.add_argument("-a", "--acolite", help="use acolite data (if False: use L2C)", action="store_true")
+parser.add_argument("-c", "--recalibrate", help="use recalibrated model", action="store_true")
 parser.add_argument("-m", "--model_file", help="specific file to load model from", type=pnn.c.Path, default=None)
 args = parser.parse_args()
 
@@ -38,18 +39,18 @@ PNN = pnn.nn.select_nn(args.pnn_type)
 ## Default: load average-performing
 if args.model_file is None:
     # Load metrics
-    metrics = pnn.modeloutput.read_all_model_metrics(pnn.c.model_estimates_path, scenarios=[scenario_for_average])
+    metrics = pnn.modeloutput.read_all_model_metrics(pnn.c.model_estimates_path, scenarios=[scenario_for_average], use_recalibration_data=args.recalibrate)
     median_indices, *_ = pnn.modeloutput.select_median_metrics(metrics)
     median_index = median_indices.loc[scenario_for_average, args.pnn_type]
-    print(f"Model number {median_index} is the average-performing {args.pnn_type} in the '{scenario_for_average}' scenario")
+    print(f"Model number {median_index} is the average-performing {'recalibrated ' if args.recalibrate else ''}{args.pnn_type} in the '{scenario_for_average}' scenario")
 
     # Load model
-    model = pnn.nn.load_model_iteration(PNN, median_index, training_scenario)
+    model = pnn.nn.load_model_iteration(PNN, median_index, training_scenario, use_recalibrated_model=args.recalibrate)
     print(f"Loaded model: {model}")
 
 ## Custom
 else:
-    model = PNN.load(args.model_file)
+    model = pnn.nn.load_model_type(args.model_file, PNN, use_recalibrated_model=args.recalibrate)
     print(f"Loaded model: {model} from file: {args.model_file.absolute()}")
 
 ### Load data
