@@ -59,7 +59,11 @@ def plot_Rrs(axs: np.ndarray, scene: pnn.maps.xr.Dataset, wavelength: int, **kwa
     axs[0, 0].axis("off")
     axs[0, 2].axis("off")
 
+
+
+
 ### Figure 1: Prisma_2023_05_24_10_17_20_converted L2C, 443 nm, ens-nn and mdn
+# Map 1: Exchange MDN with BNN-MCD
 filename_template = "PRISMA_2023_05_24_10_17_20_converted_L2C-{pnn_type}-prisma_gen_aco_iops.nc"
 pnn1, pnn2 = pnn.c.ensemble, pnn.c.bnn_mcd
 scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1, pnn2)
@@ -89,6 +93,7 @@ plt.close()
 
 
 ### Figure 2: Prisma_2023_09_11_10_13_53_L2W, 675 nm, bnn-mcd and rnn
+# Map 2: replace BNN-MCD with MDN
 filename_template = "PRISMA_2023_09_11_10_13_53_L2W-{pnn_type}-prisma_gen_l2_iops.nc"
 pnn1, pnn2 = pnn.c.mdn, pnn.c.rnn
 scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1, pnn2)
@@ -115,8 +120,15 @@ plt.close()
 
 
 
+
+
 ### Figure 3: Trasimeno
-filename_template = "PRISMA_2022_07_20_10_08_04_L2W-{pnn_type}-prisma_gen_l2_iops.nc"
+# Map 3: Replace BNN-MCD with RNN, keep BNN-DC
+# Options:
+# PRISMA_2022_07_20_10_08_04_L2W
+# PRISMA_2023_02_14_10_11_19_L2W  <- Best
+# PRISMA_2023_11_08_10_14_44_L2W
+filename_template = "PRISMA_2023_02_14_10_11_19_L2W-{pnn_type}-prisma_gen_l2_iops.nc"
 pnn1, pnn2 = pnn.c.rnn, pnn.c.bnn_dc
 scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1, pnn2)
 
