@@ -77,7 +77,8 @@ for filename in filenames:
     spectra, *_ = pnn.maps.map_to_spectra(scene)
 
     # Set up output label
-    label = f"{filename.stem}-{PNN.name}-{scenario_for_average}"
+    label = f"{filename.stem}-{PNN.name}-{scenario_for_average}{'-recal' if args.recalibrate else ''}"
+    print("Output label:", label)
 
     # Apply PNN
     iop_mean, iop_variance, *_ = model.predict_with_uncertainty(spectra)
