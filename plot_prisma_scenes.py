@@ -154,39 +154,3 @@ pnn.maps.o.label_axes_sequentially([ax for ax in axs.ravel() if ax.collections])
 plt.savefig("Map2.pdf", dpi=600)
 plt.show()
 plt.close()
-
-
-
-
-
-### Figure 3: Trasimeno
-# Map 3: Replace BNN-MCD with RNN, keep BNN-DC
-# Options:
-# PRISMA_2022_07_20_10_08_04_L2W
-# PRISMA_2023_02_14_10_11_19_L2W  <- Best
-# PRISMA_2023_11_08_10_14_44_L2W
-filename_template = "PRISMA_2023_02_14_10_11_19_L2W-{pnn_type}-prisma_gen_l2_iops.nc"
-pnn1, pnn2 = pnn.c.rnn, pnn.c.bnn_dc
-scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1, pnn2)
-
-fig, axs = create_figure()
-
-shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
-plot_Rrs(axs, scene, 446, **shared_kw)
-
-axs1 = axs[1:3]
-axs2 = axs[3:]
-
-for data, pnn_type, axs_here in zip([iop1, iop2], [pnn1, pnn2], [axs1, axs2]):
-    for iop, axs_iop in zip(pnn.c.iops_443, axs_here.T):
-        pnn.maps.plot_IOP_single(data, iop, axs=axs_iop, uncmin=0, uncmax=300, **shared_kw)
-
-        # Labels
-        for ax in axs_iop:
-            pnn.output.label_topleft(ax, f"{iop.label} ({pnn_type.label})")
-
-pnn.maps.o.label_axes_sequentially([ax for ax in axs.ravel() if ax.collections])
-
-plt.savefig("Map3.pdf", dpi=600)
-plt.show()
-plt.close()
