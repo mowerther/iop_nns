@@ -97,6 +97,25 @@ plt.close()
 ### Figure 1.5: uncertainties of map 1: without and with recalibration just from the two models, without the IOP maps
 *_, iop1_recal, iop2_recal = load_data(filename_template, pnn1, pnn2, use_recalibrated_data=True)
 
+fig, axs = pnn.maps._create_map_figure(nrows=4, ncols=3, projected=True, figsize=(9, 12))
+
+for data, pnn_type, is_recal, ax_row in zip([iop1, iop1_recal, iop2, iop2_recal], [pnn1, pnn1, pnn2, pnn2], [False, True, False, True], axs):
+    for iop, ax in zip(pnn.c.iops_443, ax_row):
+        # Setup cmaps and norms
+        unc = f"{iop}_std_pct"
+        norm_unc = pnn.maps.Normalize(vmin=0, vmax=300)
+
+        cbar_kwargs = {"label": "Uncertainty [%]"} | pnn.maps.kw_cbar
+
+        pnn.maps._plot_with_background(data, unc, ax=ax,
+                                       norm=norm_unc, cmap=pnn.maps.cmap_unc, mask_land=False, projected=True, background=background, cbar_kwargs=cbar_kwargs)
+
+        # Label
+        pnn.maps.o.label_topleft(ax, f"{pnn_type.label}{' (rec.)' if is_recal else ''}")
+
+plt.savefig("Map1_recal.pdf", dpi=600)
+plt.show()
+plt.close()
 
 
 
