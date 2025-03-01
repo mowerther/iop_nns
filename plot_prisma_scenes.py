@@ -71,22 +71,37 @@ def _matchup_pixels_single(matchup: pd.Series, scene: pnn.maps.xr.Dataset) -> pd
     return closest
 
 
-def _matchup_get_value(matchup: pd.Series, scene: pnn.maps.xr.Dataset) -> pd.DataFrame:
+def _matchup_get_value(matchup: pd.Series, scene: pnn.maps.xr.Dataset) -> pd.Series:
     indices = matchup.to_dict()
     indices = {key: slice(val-1, val+2) for key, val in indices.items()}  # 3x3 square
     pixels = scene[indices]
     return pixels.mean().to_pandas()
 
 
-def matchup_pixels(matchups: pd.DataFrame, scene: pnn.maps.xr.Dataset, iops: pnn.maps.xr.Dataset) -> pd.DataFrame:
+def matchup_pixels(matchups: pd.DataFrame, scene: pnn.maps.xr.Dataset, iops: pnn.maps.xr.Dataset) -> None:
     """
     Find pixels in the scene (Rrs) and IOP map that are closest to the matchups and compare the corresponding data.
     """
-    matchups_xy_scene = matchups.apply(_matchup_pixels_single, axis=1, args=(scene,))
+    # Find coordinates closest to matchups
+    matchups_xy_rrs = matchups.apply(_matchup_pixels_single, axis=1, args=(scene,))
     matchups_xy_iops = matchups.apply(_matchup_pixels_single, axis=1, args=(iops,))
 
-    matchups_values_scene = matchups_xy_scene.apply(_matchup_get_value, axis=1, args=(scene,))
+    matchups_values_rrs = matchups_xy_rrs.apply(_matchup_get_value, axis=1, args=(scene,))
     matchups_values_iops = matchups_xy_iops.apply(_matchup_get_value, axis=1, args=(iops,))
+
+    # Compare Rrs, including renaming columns to match
+    wavelengths_diff = [int(col[4:]) for col in matchups_values_rrs.columns.difference(matchups.columns) if "Rrs" in col]
+    matchups_values_rrs = matchups_values_rrs.rename(columns={f"Rrs_{wvl}": f"Rrs_{wvl-1}" for wvl in wavelengths_diff})
+
+    prisma_rrs_cols = [f"Rrs_{wvl}" for wvl in pnn.c.wavelengths_prisma]
+    matchups_rrs, matchups_values_rrs = matchups[prisma_rrs_cols], matchups_values_rrs[prisma_rrs_cols]
+    mdsa_rrs = pnn.metrics.mdsa(matchups_rrs, matchups_values_rrs)
+    print(mdsa_rrs)
+
+    # Compare IOPs
+    matchups_iops, matchups_values_iops = matchups[pnn.c.iops], matchups_values_iops[pnn.c.iops]
+    mdsa_iops = pnn.metrics.mdsa(matchups_iops, matchups_values_iops)
+    print(mdsa_iops)
 
 
 ### Figure 1: Prisma_2023_05_24_10_17_20_converted L2C, 443 nm, ens-nn and mdn
@@ -95,6 +110,15 @@ filename_template = "PRISMA_2023_05_24_10_17_20_converted_L2C-{pnn_type}-prisma_
 pnn1, pnn2 = pnn.c.ensemble, pnn.c.bnn_mcd
 scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1, pnn2)
 
+# Compare matchups
+print(filename_template)
+print(f"{pnn1.label} match-ups:")
+matchup_pixels(matchups_here, scene, iop1)
+
+print(f"{pnn2.label} match-ups:")
+matchup_pixels(matchups_here, scene, iop2)
+
+# Plot
 fig, axs = create_figure()
 
 shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
@@ -116,7 +140,7 @@ pnn.maps.o.label_axes_sequentially([ax for ax in axs.ravel() if ax.collections])
 plt.savefig("Map1.pdf", dpi=600)
 plt.show()
 plt.close()
-
+print("Saved Map1.pdf\n\n\n")
 
 
 
@@ -144,7 +168,7 @@ pnn.maps.o.label_axes_sequentially(axs)
 plt.savefig("Map1_recal.pdf", dpi=600)
 plt.show()
 plt.close()
-
+print("Saved Map1_recal.pdf\n\n\n")
 
 
 
@@ -154,6 +178,15 @@ filename_template = "PRISMA_2023_09_11_10_13_53_L2W-{pnn_type}-prisma_gen_l2_iop
 pnn1, pnn2 = pnn.c.mdn, pnn.c.rnn
 scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1, pnn2)
 
+# Compare matchups
+print(filename_template)
+print(f"{pnn1.label} match-ups:")
+matchup_pixels(matchups_here, scene, iop1)
+
+print(f"{pnn2.label} match-ups:")
+matchup_pixels(matchups_here, scene, iop2)
+
+# Plot
 fig, axs = create_figure()
 
 shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
@@ -175,3 +208,4 @@ pnn.maps.o.label_axes_sequentially([ax for ax in axs.ravel() if ax.collections])
 plt.savefig("Map2.pdf", dpi=600)
 plt.show()
 plt.close()
+print("Saved Map2.pdf\n\n\n")
