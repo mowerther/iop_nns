@@ -10,6 +10,7 @@ Example:
     python plot_prisma_scenes.py bnn_mcd
 """
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 import pnn
 
@@ -24,7 +25,7 @@ matchups = pnn.data.read_prisma_insitu(filter_invalid_dates=True)
 
 
 ### Setup
-def load_data(template: str, *pnn_types, use_recalibrated_data=False) -> tuple[pnn.maps.xr.Dataset, pnn.maps.pd.DataFrame]:
+def load_data(template: str, *pnn_types, use_recalibrated_data=False) -> tuple[pnn.maps.xr.Dataset, pd.DataFrame]:
     # Load outputs
     filenames = [args.folder/template.format(pnn_type=pnn_type) for pnn_type in pnn_types]
     if use_recalibrated_data:
@@ -62,6 +63,30 @@ def plot_Rrs(axs: np.ndarray, scene: pnn.maps.xr.Dataset, wavelength: int, **kwa
     axs[0, 2].axis("off")
 
 
+def _matchup_pixels_single(matchup: pd.Series, scene: pnn.maps.xr.Dataset) -> pd.Series:
+    distance2 = (scene["lat"] - matchup["lat"])**2 + (scene["lon"] - matchup["lon"])**2  # Ignore geospatial effects for now
+    closest = distance2.argmin(dim=["x", "y"])
+    closest = {key: int(val) for key, val in closest.items()}
+    closest = pd.Series(closest)
+    return closest
+
+
+def _matchup_get_value(matchup: pd.Series, scene: pnn.maps.xr.Dataset) -> pd.DataFrame:
+    indices = matchup.to_dict()
+    indices = {key: slice(val-1, val+2) for key, val in indices.items()}  # 3x3 square
+    pixels = scene[indices]
+    return pixels.mean().to_pandas()
+
+
+def matchup_pixels(matchups: pd.DataFrame, scene: pnn.maps.xr.Dataset, iops: pnn.maps.xr.Dataset) -> pd.DataFrame:
+    """
+    Find pixels in the scene (Rrs) and IOP map that are closest to the matchups and compare the corresponding data.
+    """
+    matchups_xy_scene = matchups.apply(_matchup_pixels_single, axis=1, args=(scene,))
+    matchups_xy_iops = matchups.apply(_matchup_pixels_single, axis=1, args=(iops,))
+
+    matchups_values_scene = matchups_xy_scene.apply(_matchup_get_value, axis=1, args=(scene,))
+    matchups_values_iops = matchups_xy_iops.apply(_matchup_get_value, axis=1, args=(iops,))
 
 
 ### Figure 1: Prisma_2023_05_24_10_17_20_converted L2C, 443 nm, ens-nn and mdn
