@@ -103,11 +103,10 @@ fig, axs = pnn.maps._create_map_figure(nrows=4, ncols=3, projected=True, figsize
 norm_unc = pnn.maps.Normalize(vmin=0, vmax=300)
 
 for j, (data, pnn_type, is_recal, ax_row) in enumerate(zip([iop1, iop1_recal, iop2, iop2_recal], [pnn1, pnn1, pnn2, pnn2], [False, True, False, True], axs)):
-    cbar_kwargs = {"label": "Uncertainty [%]" if j == len(axs)-1 else None} | pnn.maps.kw_cbar
-
     for iop, ax in zip(pnn.c.iops_443, ax_row):
         # Setup cmaps and norms
         unc = f"{iop}_std_pct"
+        cbar_kwargs = {"label": f"Uncertainty in {iop.label} [%]" if j == len(axs)-1 else None} | pnn.maps.kw_cbar
 
         pnn.maps._plot_with_background(data, unc, ax=ax,
                                        norm=norm_unc, cmap=pnn.maps.cmap_unc, mask_land=False, projected=True, background=background, cbar_kwargs=cbar_kwargs)
