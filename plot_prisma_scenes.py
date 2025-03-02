@@ -83,25 +83,38 @@ def matchup_pixels(matchups: pd.DataFrame, scene: pnn.maps.xr.Dataset, iops: pnn
     Find pixels in the scene (Rrs) and IOP map that are closest to the matchups and compare the corresponding data.
     """
     # Find coordinates closest to matchups
-    matchups_xy_rrs = matchups.apply(_matchup_pixels_single, axis=1, args=(scene,))
-    matchups_xy_iops = matchups.apply(_matchup_pixels_single, axis=1, args=(iops,))
+    matchups_xy = matchups.apply(_matchup_pixels_single, axis=1, args=(scene,))
+    matchups_scene = [matchups_xy.apply(_matchup_get_value, axis=1, args=(data,)) for data in [scene, iops]]
+    matchups_scene = pd.concat(matchups_scene, axis=1)
 
-    matchups_values_rrs = matchups_xy_rrs.apply(_matchup_get_value, axis=1, args=(scene,))
-    matchups_values_iops = matchups_xy_iops.apply(_matchup_get_value, axis=1, args=(iops,))
+    # Filter entries with only land pixels
+    water_filter = (matchups_scene["water"] > 0)
+    matchups, matchups_scene = matchups.loc[water_filter], matchups_scene.loc[water_filter]
 
-    # Compare Rrs, including renaming columns to match
-    wavelengths_diff = [int(col[4:]) for col in matchups_values_rrs.columns.difference(matchups.columns) if "Rrs" in col]
-    matchups_values_rrs = matchups_values_rrs.rename(columns={f"Rrs_{wvl}": f"Rrs_{wvl-1}" for wvl in wavelengths_diff})
+    # Rename Rrs columns to match (different rounding between in situ data and scenes)
+    wavelengths_diff = [int(col[4:]) for col in matchups_scene.columns.difference(matchups.columns) if "Rrs" in col]
+    matchups_scene = matchups_scene.rename(columns={f"Rrs_{wvl}": f"Rrs_{wvl-1}" for wvl in wavelengths_diff})
 
+    # Calculate statistics
     prisma_rrs_cols = [f"Rrs_{wvl}" for wvl in pnn.c.wavelengths_prisma]
-    matchups_rrs, matchups_values_rrs = matchups[prisma_rrs_cols], matchups_values_rrs[prisma_rrs_cols]
-    mdsa_rrs = pnn.metrics.mdsa(matchups_rrs, matchups_values_rrs)
-    print(mdsa_rrs)
 
-    # Compare IOPs
-    matchups_iops, matchups_values_iops = matchups[pnn.c.iops], matchups_values_iops[pnn.c.iops]
-    mdsa_iops = pnn.metrics.mdsa(matchups_iops, matchups_values_iops)
-    print(mdsa_iops)
+    # MdSA
+    for cols, label in zip([prisma_rrs_cols, pnn.c.iops], ["Rrs", "IOPs"]):
+        values_insitu, values_scene = matchups[cols], matchups_scene[cols]
+
+        mdsa = pnn.metrics.mdsa(values_insitu, values_scene)
+        print(mdsa)
+        mdsa_overall = pnn.metrics.mdsa(values_insitu.unstack(), values_scene.unstack())
+        print(f"{label} MdSA overall: {mdsa_overall:.1f}%")
+
+    # Coverage (IOPs only)
+    values_insitu, values_scene = matchups[pnn.c.iops], matchups_scene[pnn.c.iops]
+    uncertainties_scene = matchups_scene[[f"{iop}_std" for iop in pnn.c.iops]].rename(columns={f"{iop}_std": iop for iop in pnn.c.iops})
+    coverage = pnn.metrics.coverage(values_insitu, values_scene, uncertainties_scene)
+    print("IOP coverage:")
+    print(coverage)
+
+
 
 
 ### Figure 1: Prisma_2023_05_24_10_17_20_converted L2C, 443 nm, ens-nn and mdn
@@ -112,11 +125,10 @@ scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1
 
 # Compare matchups
 print(filename_template)
-print(f"{pnn1.label} match-ups:")
-matchup_pixels(matchups_here, scene, iop1)
-
-print(f"{pnn2.label} match-ups:")
-matchup_pixels(matchups_here, scene, iop2)
+for pnnx, iopx in zip([pnn1, pnn2], [iop1, iop2]):
+    print(f"{pnnx.label} match-ups:")
+    matchup_pixels(matchups_here, scene, iopx)
+    print()
 
 # Plot
 fig, axs = create_figure()
@@ -147,6 +159,14 @@ print("Saved Map1.pdf\n\n\n")
 ### Figure 1.5: uncertainties of map 1: without and with recalibration just from the two models, without the IOP maps
 *_, iop1_recal, iop2_recal = load_data(filename_template, pnn1, pnn2, use_recalibrated_data=True)
 
+# Compare matchups
+print("RECALIBRATED", filename_template)
+for pnnx, iopx in zip([pnn1, pnn2], [iop1_recal, iop2_recal]):
+    print(f"{pnnx.label} match-ups:")
+    matchup_pixels(matchups_here, scene, iopx)
+    print()
+
+# Plot
 fig, axs = pnn.maps._create_map_figure(nrows=4, ncols=3, projected=True, figsize=(6.6, 9), gridspec_kw={"wspace": 0.02})
 
 norm_unc = pnn.maps.Normalize(vmin=0, vmax=300)
@@ -180,11 +200,10 @@ scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1
 
 # Compare matchups
 print(filename_template)
-print(f"{pnn1.label} match-ups:")
-matchup_pixels(matchups_here, scene, iop1)
-
-print(f"{pnn2.label} match-ups:")
-matchup_pixels(matchups_here, scene, iop2)
+for pnnx, iopx in zip([pnn1, pnn2], [iop1, iop2]):
+    print(f"{pnnx.label} match-ups:")
+    matchup_pixels(matchups_here, scene, iopx)
+    print()
 
 # Plot
 fig, axs = create_figure()
