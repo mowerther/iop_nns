@@ -90,6 +90,7 @@ def matchup_pixels(matchups: pd.DataFrame, scene: pnn.maps.xr.Dataset, iops: pnn
     # Filter entries with only land pixels
     water_filter = (matchups_scene["water"] > 0)
     matchups, matchups_scene = matchups.loc[water_filter], matchups_scene.loc[water_filter]
+    print(f"Number of matchups: {len(matchups)} in situ  ;  {len(matchups_scene)} scene")
 
     # Rename Rrs columns to match (different rounding between in situ data and scenes)
     wavelengths_diff = [int(col[4:]) for col in matchups_scene.columns.difference(matchups.columns) if "Rrs" in col]
@@ -156,42 +157,6 @@ print("Saved Map1.pdf\n\n\n")
 
 
 
-### Figure 1.5: uncertainties of map 1: without and with recalibration just from the two models, without the IOP maps
-*_, iop1_recal, iop2_recal = load_data(filename_template, pnn1, pnn2, use_recalibrated_data=True)
-
-# Compare matchups
-print("RECALIBRATED", filename_template)
-for pnnx, iopx in zip([pnn1, pnn2], [iop1_recal, iop2_recal]):
-    print(f"{pnnx.label} match-ups:")
-    matchup_pixels(matchups_here, scene, iopx)
-    print()
-
-# Plot
-fig, axs = pnn.maps._create_map_figure(nrows=4, ncols=3, projected=True, figsize=(6.6, 9), gridspec_kw={"wspace": 0.02})
-
-norm_unc = pnn.maps.Normalize(vmin=0, vmax=300)
-
-for j, (data, pnn_type, is_recal, ax_row) in enumerate(zip([iop1, iop1_recal, iop2, iop2_recal], [pnn1, pnn1, pnn2, pnn2], [False, True, False, True], axs)):
-    for iop, ax in zip(pnn.c.iops_443, ax_row):
-        # Setup cmaps and norms
-        unc = f"{iop}_std_pct"
-        cbar_kwargs = {"label": f"Uncertainty in {iop.label} [%]" if j == len(axs)-1 else None} | pnn.maps.kw_cbar
-
-        pnn.maps._plot_with_background(data, unc, ax=ax,
-                                       norm=norm_unc, cmap=pnn.maps.cmap_unc, mask_land=False, projected=True, background=background, cbar_kwargs=cbar_kwargs)
-
-        # Label
-        pnn.maps.o.label_topleft(ax, f"{pnn_type.label}{' (rec.)' if is_recal else ''}")
-
-pnn.maps.o.label_axes_sequentially(axs)
-
-plt.savefig("Map1_recal.pdf", dpi=600)
-plt.show()
-plt.close()
-print("Saved Map1_recal.pdf\n\n\n")
-
-
-
 ### Figure 2: Prisma_2023_09_11_10_13_53_L2W, 675 nm, bnn-mcd and rnn
 # Map 2: replace BNN-MCD with MDN
 filename_template = "PRISMA_2023_09_11_10_13_53_L2W-{pnn_type}-prisma_gen_l2_iops.nc"
@@ -228,3 +193,40 @@ plt.savefig("Map2.pdf", dpi=600)
 plt.show()
 plt.close()
 print("Saved Map2.pdf\n\n\n")
+
+
+
+
+### Figure 2.5: uncertainties of map 2: without and with recalibration just from the two models, without the IOP maps
+*_, iop1_recal, iop2_recal = load_data(filename_template, pnn1, pnn2, use_recalibrated_data=True)
+
+# Compare matchups
+print("RECALIBRATED", filename_template)
+for pnnx, iopx in zip([pnn1, pnn2], [iop1_recal, iop2_recal]):
+    print(f"{pnnx.label} match-ups:")
+    matchup_pixels(matchups_here, scene, iopx)
+    print()
+
+# Plot
+fig, axs = pnn.maps._create_map_figure(nrows=4, ncols=3, projected=True, figsize=(6.6, 9), gridspec_kw={"wspace": 0.02})
+
+norm_unc = pnn.maps.Normalize(vmin=0, vmax=300)
+
+for j, (data, pnn_type, is_recal, ax_row) in enumerate(zip([iop1, iop1_recal, iop2, iop2_recal], [pnn1, pnn1, pnn2, pnn2], [False, True, False, True], axs)):
+    for iop, ax in zip(pnn.c.iops_675, ax_row):
+        # Setup cmaps and norms
+        unc = f"{iop}_std_pct"
+        cbar_kwargs = {"label": f"Uncertainty in {iop.label} [%]" if j == len(axs)-1 else None} | pnn.maps.kw_cbar
+
+        pnn.maps._plot_with_background(data, unc, ax=ax,
+                                       norm=norm_unc, cmap=pnn.maps.cmap_unc, mask_land=False, projected=True, background=background, cbar_kwargs=cbar_kwargs)
+
+        # Label
+        pnn.maps.o.label_topleft(ax, f"{pnn_type.label}{' (rec.)' if is_recal else ''}")
+
+pnn.maps.o.label_axes_sequentially(axs)
+
+plt.savefig("Map2_recal.pdf", dpi=600)
+plt.show()
+plt.close()
+print("Saved Map2_recal.pdf\n\n\n")
