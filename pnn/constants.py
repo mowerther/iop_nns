@@ -83,7 +83,7 @@ networks = [bnn_mcd, bnn_dc, mdn, ensemble, rnn]
 insitu = Parameter("in_situ", "in situ")
 prisma = Parameter("prisma", "PRISMA")
 
-# Scenarios 1, 2, 3 (GLORIA+)
+# Random split, WD, OOD scenarios (in situ data)
 random_split = Parameter("random_split", "Random split", label_2lines="Random\nsplit")
 wd = Parameter("wd_split", "Within-distribution", label_2lines="Within-\ndistribution")
 ood = Parameter("ood_split", "Out-of-distribution", label_2lines="Out-of-\ndistribution")
@@ -99,16 +99,16 @@ _insitu = r"$\it{in}$ $\it{situ}$"
 prisma_insitu = Parameter("prisma_insitu", f"{_insitu} vs. {_insitu}", label_2lines=f"{_insitu} vs.\n{_insitu}")
 
 prisma_gen = Parameter("prisma_gen", "General")
-prisma_gen_L2 = Parameter("prisma_gen_l2", "General: L2", label_2lines="General\nL2")
+prisma_gen_L2 = Parameter("prisma_gen_l2", "General: L2C", label_2lines="General\nL2C")
 prisma_gen_ACOLITE = Parameter("prisma_gen_aco", "General: ACOLITE", label_2lines="General\nACOLITE")
 prisma_gen_all = [prisma_gen_L2, prisma_gen_ACOLITE]
 
 prisma_lk = Parameter("prisma_lk", "Local knowledge", label_2lines="Local\nknowledge")
-prisma_lk_L2 = Parameter("prisma_lk_l2", "Local knowledge: L2", label_2lines="Local knowledge\nL2")
+prisma_lk_L2 = Parameter("prisma_lk_l2", "Local knowledge: L2C", label_2lines="Local knowledge\nL2C")
 prisma_lk_ACOLITE = Parameter("prisma_lk_aco", "Local knowledge: ACOLITE", label_2lines="Local knowledge\nACOLITE")
 prisma_lk_all = [prisma_lk_L2, prisma_lk_ACOLITE]
 
-_prisma_L2 = Parameter("prisma_l2", "L2")
+_prisma_L2 = Parameter("prisma_l2", "L2C")
 _prisma_ACOLITE = Parameter("prisma_aco", "ACOLITE")
 _scenarios_prisma_sub = [_prisma_L2, _prisma_ACOLITE]
 
