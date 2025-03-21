@@ -19,10 +19,8 @@ parser = pnn.ArgumentParser(description=__doc__)
 parser.add_argument("-f", "--folder", help="folder to load processed scenes from", type=pnn.c.Path, default=pnn.c.map_output_path)
 args = parser.parse_args()
 
-
 ### Set up match-ups
 matchups = pnn.data.read_prisma_insitu(filter_invalid_dates=True)
-
 
 ### Setup
 def load_data(template: str, *pnn_types, use_recalibrated_data=False) -> tuple[pnn.maps.xr.Dataset, pd.DataFrame]:
@@ -116,6 +114,185 @@ def matchup_pixels(matchups: pd.DataFrame, scene: pnn.maps.xr.Dataset, iops: pnn
     print(coverage)
 
 
+def matchup_pixels_map2(matchups: pd.DataFrame, scene: pnn.maps.xr.Dataset, iops: pnn.maps.xr.Dataset, model_name: str) -> None:
+    """
+    Extended matchup analysis for Map 2 with additional metrics and station-specific analysis.
+    """
+    # Find coordinates closest to matchups
+    matchups_xy = matchups.apply(_matchup_pixels_single, axis=1, args=(scene,))
+    matchups_scene = [matchups_xy.apply(_matchup_get_value, axis=1, args=(data,)) for data in [scene, iops]]
+    matchups_scene = pd.concat(matchups_scene, axis=1)
+
+    # Filter entries with only land pixels
+    water_filter = (matchups_scene["water"] > 0)
+    matchups, matchups_scene = matchups.loc[water_filter], matchups_scene.loc[water_filter]
+    print(f"\n===== {model_name} MODEL METRICS =====")
+    print(f"Number of matchups: {len(matchups)} in situ  ;  {len(matchups_scene)} scene")
+
+    # Rename Rrs columns to match (different rounding between in situ data and scenes)
+    wavelengths_diff = [int(col[4:]) for col in matchups_scene.columns.difference(matchups.columns) if "Rrs" in col]
+    matchups_scene = matchups_scene.rename(columns={f"Rrs_{wvl}": f"Rrs_{wvl-1}" for wvl in wavelengths_diff})
+
+    # Identify shallow and deep stations
+    shallow_stations = ['st2.1', 'st2.2', 'st2.3', 'st2.4']
+    has_station_info = 'station' in matchups.columns
+    
+    # Create masks for shallow and deep stations
+    if has_station_info:
+        shallow_mask = matchups['station'].isin(shallow_stations)
+        deep_mask = ~shallow_mask
+        
+        shallow_count = shallow_mask.sum()
+        deep_count = deep_mask.sum()
+        print(f"Found {shallow_count} optically shallow stations and {deep_count} optically deep stations")
+    
+    # Get values for IOPs only
+    values_insitu, values_scene = matchups[pnn.c.iops], matchups_scene[pnn.c.iops]
+    
+    # 1. COMBINED METRICS (all stations)
+    print("\n----- COMBINED (ALL STATIONS) -----")
+    
+    # MdSA for IOPs
+    mdsa = pnn.metrics.mdsa(values_insitu, values_scene)
+    print(f"IOPs MdSA:")
+    print(mdsa)
+    
+    mdsa_overall = pnn.metrics.mdsa(values_insitu.unstack(), values_scene.unstack())
+    print(f"IOPs MdSA overall: {mdsa_overall:.1f}%")
+    
+    # Calculate SSPB
+    sspb = pnn.metrics.sspb(values_insitu, values_scene)
+    print(f"IOPs SSPB:")
+    print(sspb)
+    
+    # Calculate MAE
+    print(f"IOPs MAE:")
+    for iop in pnn.c.iops:
+        insitu_vals = values_insitu[iop].values
+        scene_vals = values_scene[iop].values
+        # Filter out NaN values
+        valid_mask = ~np.isnan(insitu_vals) & ~np.isnan(scene_vals)
+        if np.any(valid_mask):
+            mae = np.median(np.abs(scene_vals[valid_mask] - insitu_vals[valid_mask]))
+            print(f"{iop}: {mae:.3f} m^-1")
+    
+    # Calculate station-specific metrics if station info is available
+    if has_station_info:
+        # 2. SHALLOW STATIONS METRICS
+        if shallow_count > 0:
+            print("\n----- OPTICALLY SHALLOW STATIONS -----")
+            shallow_insitu, shallow_scene = values_insitu.loc[shallow_mask], values_scene.loc[shallow_mask]
+            
+            # MdSA
+            shallow_mdsa = pnn.metrics.mdsa(shallow_insitu, shallow_scene)
+            print(f"IOPs MdSA (shallow stations):")
+            print(shallow_mdsa)
+            
+            shallow_mdsa_overall = pnn.metrics.mdsa(shallow_insitu.unstack(), shallow_scene.unstack())
+            print(f"IOPs MdSA overall (shallow stations): {shallow_mdsa_overall:.1f}%")
+            
+            # SSPB
+            shallow_sspb = pnn.metrics.sspb(shallow_insitu, shallow_scene)
+            print(f"IOPs SSPB (shallow stations):")
+            print(shallow_sspb)
+            
+            # MAE
+            print(f"IOPs MAE (shallow stations):")
+            for iop in pnn.c.iops:
+                insitu_vals = shallow_insitu[iop].values
+                scene_vals = shallow_scene[iop].values
+                # Filter out NaN values
+                valid_mask = ~np.isnan(insitu_vals) & ~np.isnan(scene_vals)
+                if np.any(valid_mask):
+                    mae = np.median(np.abs(scene_vals[valid_mask] - insitu_vals[valid_mask]))
+                    print(f"{iop}: {mae:.3f} m^-1")
+        
+        # 3. DEEP STATIONS METRICS
+        if deep_count > 0:
+            print("\n----- OPTICALLY DEEP STATIONS -----")
+            deep_insitu, deep_scene = values_insitu.loc[deep_mask], values_scene.loc[deep_mask]
+            
+            # MdSA
+            deep_mdsa = pnn.metrics.mdsa(deep_insitu, deep_scene)
+            print(f"IOPs MdSA (deep stations):")
+            print(deep_mdsa)
+            
+            deep_mdsa_overall = pnn.metrics.mdsa(deep_insitu.unstack(), deep_scene.unstack())
+            print(f"IOPs MdSA overall (deep stations): {deep_mdsa_overall:.1f}%")
+            
+            # SSPB
+            deep_sspb = pnn.metrics.sspb(deep_insitu, deep_scene)
+            print(f"IOPs SSPB (deep stations):")
+            print(deep_sspb)
+            
+            # MAE
+            print(f"IOPs MAE (deep stations):")
+            for iop in pnn.c.iops:
+                insitu_vals = deep_insitu[iop].values
+                scene_vals = deep_scene[iop].values
+                # Filter out NaN values
+                valid_mask = ~np.isnan(insitu_vals) & ~np.isnan(scene_vals)
+                if np.any(valid_mask):
+                    mae = np.median(np.abs(scene_vals[valid_mask] - insitu_vals[valid_mask]))
+                    print(f"{iop}: {mae:.3f} m^-1")
+
+    # Coverage (IOPs only)
+    uncertainties_scene = matchups_scene[[f"{iop}_std" for iop in pnn.c.iops]].rename(columns={f"{iop}_std": iop for iop in pnn.c.iops})
+    coverage = pnn.metrics.coverage(values_insitu, values_scene, uncertainties_scene)
+    print("\n----- COVERAGE -----")
+    print(f"IOP coverage:")
+    print(coverage)
+
+# Custom function to plot matchups with specific colors for Map 2
+def plot_custom_matchups_map2(matchups, ax, **kwargs):
+    """
+    Plot match-ups as scatter points with custom colors for specific stations in Map 2.
+    """
+    if matchups is None or len(matchups) == 0:
+        return
+    
+    # Create a copy to avoid modifying the original
+    matchups = matchups.copy()
+    
+    # Define special stations
+    special_stations = ['st2.1', 'st2.2', 'st2.3', 'st2.4']
+    
+    # Check if 'station' column exists
+    if 'station' not in matchups.columns:
+        print("Warning: 'station' column not found in matchups data")
+        # Use default plotting
+        pnn.maps._plot_matchups(matchups, ax, **kwargs)
+        return
+    
+    # Split into special and regular stations
+    is_special = matchups['station'].isin(special_stations)
+    special_matchups = matchups[is_special]
+    regular_matchups = matchups[~is_special]
+    
+    # Handle color parameter if provided
+    c = kwargs.pop('c', None)
+    
+    # Plot regular matchups with black outline
+    if len(regular_matchups) > 0:
+        regular_kwargs = kwargs.copy()
+        if c is not None and hasattr(c, '__len__') and len(c) == len(matchups):
+            # Extract colors only for regular matchups using the same boolean mask
+            regular_kwargs['c'] = c[~is_special]
+        
+        ax.scatter(regular_matchups["lon"], regular_matchups["lat"], 
+                  transform=pnn.maps.projection,
+                  s=25, edgecolor="black", marker="D", **regular_kwargs)
+    
+    # Plot shallow matchups with orange outline
+    if len(special_matchups) > 0:
+        special_kwargs = kwargs.copy()
+        if c is not None and hasattr(c, '__len__') and len(c) == len(matchups):
+            # Extract colors only for special matchups using the same boolean mask
+            special_kwargs['c'] = c[is_special]
+            
+        ax.scatter(special_matchups["lon"], special_matchups["lat"], 
+                  transform=pnn.maps.projection,
+                  s=25, edgecolor="orange", marker="D", **special_kwargs)
 
 
 ### Figure 1: Prisma_2023_05_24_10_17_20_converted L2C, 443 nm, ens-nn and mdn
@@ -156,7 +333,6 @@ plt.close()
 print("Saved Map1.pdf\n\n\n")
 
 
-
 ### Figure 2: Prisma_2023_09_11_10_13_53_L2W, 675 nm, bnn-mcd and rnn
 # Map 2: replace BNN-MCD with MDN
 filename_template = "PRISMA_2023_09_11_10_13_53_L2W-{pnn_type}-prisma_gen_l2_iops.nc"
@@ -167,11 +343,21 @@ scene, background, matchups_here, iop1, iop2 = load_data(filename_template, pnn1
 print(filename_template)
 for pnnx, iopx in zip([pnn1, pnn2], [iop1, iop2]):
     print(f"{pnnx.label} match-ups:")
-    matchup_pixels(matchups_here, scene, iopx)
+    matchup_pixels_map2(matchups_here, scene, iopx, pnnx.label)
     print()
+
+# Print matchup stations for verification
+if matchups_here is not None and 'station' in matchups_here.columns:
+    print("Matchup stations found:", matchups_here['station'].tolist())
 
 # Plot
 fig, axs = create_figure()
+
+# Store the original _plot_matchups function
+original_plot_matchups = pnn.maps._plot_matchups
+
+# Custom function for Map 2
+pnn.maps._plot_matchups = plot_custom_matchups_map2
 
 shared_kw = {"projected": True, "background": background, "matchups": matchups_here}
 plot_Rrs(axs, scene, 674, **shared_kw)
@@ -189,12 +375,12 @@ for data, pnn_type, axs_here in zip([iop1, iop2], [pnn1, pnn2], [axs1, axs2]):
 
 pnn.maps.o.label_axes_sequentially([ax for ax in axs.ravel() if ax.collections])
 
+pnn.maps._plot_matchups = original_plot_matchups
+
 plt.savefig("Map2.pdf", dpi=600)
 plt.show()
 plt.close()
 print("Saved Map2.pdf\n\n\n")
-
-
 
 
 ### Figure 2.5: uncertainties of map 2: without and with recalibration just from the two models, without the IOP maps
