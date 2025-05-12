@@ -127,7 +127,7 @@ Example:
 random_split, wd_split, ood_split = pnn.read_insitu_data()
 ```
 
-The data are loaded into `pnn.data.DataScenario` objects, which are dataclasses containing:
+The data are loaded into [`DataScenario`](pnn/data.py#L43) objects, which are dataclasses containing:
 * the training scenario label – e.g. `random_split.train_scenario` is `pnn.constants.random_split`.
 * the training data – e.g. `random_split.train_data` is a Pandas DataFrame with 1159 rows and 132 columns including Rrs and IOPs.
 * a `dict` of testing scenarios and testing data – e.g. `random_split.test_scenarios_and_data` is a dict of one item, with key `pnn.constants.random_split` and value a Pandas DataFrame with 1160 rows and 132 columns including Rrs and IOPs.
