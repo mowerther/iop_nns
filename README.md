@@ -117,16 +117,28 @@ The dataset_split.py script will save the resulting dataframes to your chosen lo
 ### Loading split datasets
 All other steps in the model training, estimation, and analysis for the *in situ* scenarios use the resulting split data files (random, within-distribution, out-of-distribution).
 The split data files used in the paper are available from [Zenodo](https://doi.org/10.5281/zenodo.14893798).
+
 These files are read using the [`pnn.data.read_insitu_data`](pnn/data.py#L82) function.
 This function can load files from any folder on your computer; it will try to load the aforementioned 6 CSV files from the given folder.
 By default, it uses the [datasets_train_test](datasets_train_test) folder within the repository folder; this setting can be changed at [`pnn.constants.insitu_data_path`](pnn/constants.py#L14).
 
 Example:
 ```python
-train_data, test_data = pnn.read_insitu_data()
+random_split, wd_split, ood_split = pnn.read_insitu_data()
 ```
 
-*Explain data format in Python.*
+The data are loaded into `pnn.data.DataScenario` objects, which are dataclasses containing:
+* the training scenario label – e.g. `random_split.train_scenario` is `pnn.constants.random_split`.
+* training data – e.g. `random_split.train_data` is a Pandas DataFrame with 1159 rows and 132 columns including Rrs and IOPs.
+* a `dict` of testing scenarios and testing data – e.g. `random_split.test_scenarios_and_data` is a dict of one item, with key `pnn.constants.random_split` and value a Pandas DataFrame with 1160 rows and 132 columns including Rrs and IOPs.
+
+The `DataScenario` object can be unpacked if wanted, e.g. `scenario_train, data_train, scenarios_and_data_test = random_split`.
+This makes it easy to iterate over them, as in the [train_nn.py](train_nn.py) script:
+```python
+datascenarios = pnn.read_insitu_data()
+for scenario_train, data_train, scenarios_and_data_test in datascenarios:
+    ...
+```
 
 ### Plotting data
 [plot_data.py](plot_data.py) - Generates figures showing the IOP distributions in the input data and train/test sets in each split scenario.
