@@ -129,7 +129,7 @@ random_split, wd_split, ood_split = pnn.read_insitu_data()
 
 The data are loaded into `pnn.data.DataScenario` objects, which are dataclasses containing:
 * the training scenario label – e.g. `random_split.train_scenario` is `pnn.constants.random_split`.
-* training data – e.g. `random_split.train_data` is a Pandas DataFrame with 1159 rows and 132 columns including Rrs and IOPs.
+* the training data – e.g. `random_split.train_data` is a Pandas DataFrame with 1159 rows and 132 columns including Rrs and IOPs.
 * a `dict` of testing scenarios and testing data – e.g. `random_split.test_scenarios_and_data` is a dict of one item, with key `pnn.constants.random_split` and value a Pandas DataFrame with 1160 rows and 132 columns including Rrs and IOPs.
 
 The `DataScenario` object can be unpacked if wanted, e.g. `scenario_train, data_train, scenarios_and_data_test = random_split`.
@@ -141,14 +141,39 @@ for scenario_train, data_train, scenarios_and_data_test in datascenarios:
 ```
 
 ### Plotting data
-[plot_data.py](plot_data.py) - Generates figures showing the IOP distributions in the input data and train/test sets in each split scenario.
-as follows,
-which will save the resulting figures to
-[manuscript_figures/full_dataset.pdf](manuscript_figures)
-and
-[manuscript_figures/scenarios.pdf](manuscript_figures).
+The input data can be plotted using [plot_data.py](plot_data.py),
+which generates figures showing the IOP distributions in the input data and train/test sets in each split scenario.
+The figures will be saved to the [manuscript_figures](manuscript_figures) folder.
+
+The script can be run without any arguments to use the default file locations:
 ```console
 python plot_data.py
+```
+
+Alternative file locations can be provided with keyword arguments, as shown below:
+```console
+python plot_data.py -h
+
+usage: plot_data.py [-h] [-i INSITU_FOLDER] [-p PRISMA_FOLDER]
+                    [--system_column SYSTEM_COLUMN]
+
+Script for loading and plotting input data.
+Data are assumed to be in default locations, but different folders can be specified:
+    in situ: use the -i flag
+    PRISMA match-ups: use the -p flag
+
+Example:
+    python plot_data.py
+    python plot_data.py -i path/to/insitudata/ -p path/to/prismadata/
+
+options:
+  -h, --help            show this help message and exit
+  -i INSITU_FOLDER, --insitu_folder INSITU_FOLDER
+                        Folder containing in situ data.
+  -p PRISMA_FOLDER, --prisma_folder PRISMA_FOLDER
+                        Folder containing PRISMA match-up data.
+  --system_column SYSTEM_COLUMN
+                        Column containing system names.
 ```
 
 
