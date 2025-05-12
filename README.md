@@ -60,7 +60,7 @@ options:
 ## *In situ* data
 The core *in situ* datasets used in our study originate from [GLORIA](https://doi.org/10.1038/s41597-023-01973-y) and [SeaBASS](https://seabass.gsfc.nasa.gov/).
 The combined *in situ* dataset is available from
-*zenodo link*
+[Zenodo: 10.5281/zenodo.14893798](https://doi.org/10.5281/zenodo.14893798).
 
 The *in situ* dataset is located at [datasets_train_test/insitu_data.csv](datasets_train_test) by default.
 Also available is the same dataset resampled to the PRISMA spectral bands, at [datasets_train_test/insitu_data_resampled.csv](datasets_train_test)
@@ -116,6 +116,7 @@ The dataset_split.py script will save the resulting dataframes to your chosen lo
 
 ### Loading split datasets
 All other steps in the model training, estimation, and analysis for the *in situ* scenarios use the resulting split data files (random, within-distribution, out-of-distribution).
+The split data files used in the paper are available from [Zenodo](https://doi.org/10.5281/zenodo.14893798).
 These files are read using the [`pnn.data.read_insitu_data`](pnn/data.py#L82) function.
 This function can load files from any folder on your computer; it will try to load the aforementioned 6 CSV files from the given folder.
 By default, it uses the [datasets_train_test](datasets_train_test) folder within the repository folder; this setting can be changed at [`pnn.constants.insitu_data_path`](pnn/constants.py#L14).
@@ -227,6 +228,8 @@ Recalibrated models are saved and loaded with their corresponding recalibration 
 ## Reproducing the paper
 
 ### Setup
+Download the input data from [Zenodo](https://doi.org/10.5281/zenodo.14893798).
+
 *Run [dataset_split.py](dataset_split.py) as follows:*
 
 *Run [train_nn.py](train_nn.py) as follows (with/without flags):*
