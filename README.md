@@ -18,6 +18,7 @@ analysing and visualising the model estimates;
 generating outputs for the paper.
 A more detailed overview is provided in [its documentation](pnn/README.md).
 
+
 ### Scripts
 The code used to (re-)produce the results in the paper is organised into multiple scripts within the top-level folder.
 Detailed descriptions of the various scripts are provided in the following sections.
@@ -57,6 +58,7 @@ options:
                         Number of models to train per scenario (default: 25).
 ```
 
+
 ## *In situ* data
 The core *in situ* datasets used in our study originate from [GLORIA](https://doi.org/10.1038/s41597-023-01973-y) and [SeaBASS](https://seabass.gsfc.nasa.gov/).
 The combined *in situ* dataset is available from
@@ -64,6 +66,7 @@ The combined *in situ* dataset is available from
 
 The *in situ* dataset is located at [datasets_train_test/insitu_data.csv](datasets_train_test) by default.
 Also available is the same dataset resampled to the PRISMA spectral bands, at [datasets_train_test/insitu_data_resampled.csv](datasets_train_test)
+
 
 ## Dataset splitting
 A data file in CSV format with column headers can be split using the [dataset_split.py](dataset_split.py) script.
@@ -140,6 +143,7 @@ for scenario_train, data_train, scenarios_and_data_test in datascenarios:
     ...
 ```
 
+
 ### Plotting data
 The input data can be plotted using [plot_data.py](plot_data.py),
 which generates figures showing the IOP distributions in the input data and train/test sets in each split scenario.
@@ -177,9 +181,7 @@ options:
 ```
 
 
-## PRISMA data
-
-### Match-up data
+## PRISMA match-up data
 *In situ* match-up data from PRISMA validation campaigns are used to evaluate the performance of PNN models in realistic scenarios.
 The *in situ* match-up data are read using the [`pnn.data.read_prisma_insitu`](pnn/data.py#L111) function;
 by default, this reads [datasets_train_test/prisma_insitu_data.csv](datasets_train_test).
@@ -194,20 +196,8 @@ This function will return two [`DataScenario`](pnn/data.py#L43) objects,
 the first representing the general case (train on the resampled *in situ* dataset; test on the PRISMA *in situ* data or the ACOLITE/L2C-processed satellite data),
 the second representing the local knowledge case (train on the resampled *in situ* and PRISMA *in situ* match-up data together; test on the ACOLITE/L2C-processed satellite data).
 
-### Scenes
-Trained models can be applied to PRISMA scenes using the [`apply_to_prisma.py`](apply_to_prisma.py) script.
-This script takes all atmospherically corrected (L2C or ACOLITE) NetCDF4 (`.nc`) files in a given folder ([`prisma_map_data`](prisma_map_data) by default) and applies a given model type (`bnn_mcd`, `bnn_dc`, etc.) to each.
-By default, the average-performing instance of that architecture is found in [`pnn_tf_models`](pnn_tf_models);
-a custom model file can be used through the `-m` flag.
-A water mask will be generated using a normalised differential water index (NDWI).
-If available, level-1 HDF5 (`.h5`) data for the same scene will be used to generate a greyscale background, using an approximated luminance function.
-The script will save the results to a new NetCDF4 file so they can be re-used without having to re-run the analysis.
-It will also save a figure showing the Rrs and IOPs at 443-446 nm.
-Please note that due to the number of pixels (up to a million), PNN application can be very slow, especially for RNNs.
 
-*Plot script*
-
-## Model training
+## PNN training & application
 Neural network models are trained using the [train_nn.py](train_nn.py) script.
 This script uses the architectures [defined in the `pnn.nn`](pnn/README.md) submodule, currently
 `bnn_dc` (Bayesian Neural Network with DropConnect),
@@ -246,6 +236,7 @@ Say you want to train only 5 models, use:
 python train_nn.py bnn_dc -n 5
 ```
 
+
 ### Output format
 Trained models are saved to the [`pnn.model_path`](pnn/constants.py#L18) constant;
 by default, this is the [pnn_tf_models folder](pnn_tf_models).
@@ -256,10 +247,55 @@ the [`Ensemble.save`](pnn/nn/ens.py#L98) and [`Ensemble.load`](pnn/nn/ens.py#L12
 Recalibrated models are saved and loaded with their corresponding recalibration functions.
 
 
+### Application to PRISMA scenes
+Trained models can be applied to PRISMA scenes using the [`apply_to_prisma.py`](apply_to_prisma.py) script.
+This script takes all atmospherically corrected (L2C or ACOLITE; specified with the `-a` flag) NetCDF4 (`.nc`) files in a given folder ([`prisma_map_data`](prisma_map_data) by default) and applies a given model type (`bnn_mcd`, `bnn_dc`, etc.) to each.
+By default, the average-performing instance of that architecture is found in [`pnn_tf_models`](pnn_tf_models);
+a custom model file can be used through the `-m` flag.
+The script takes the following arguments:
+```console
+python apply_to_prisma.py -h
+
+usage: apply_to_prisma.py [-h] [-f FOLDER] [-a] [-c] [-m MODEL_FILE] pnn_type
+
+Script for loading PRISMA scenes and applying PNN estimation pixel-wise.
+- Loads (atmospherically corrected) reflectance data.
+- Generates a water mask and RGB/greyscale background image.
+- Finds and applies the average-performing model (by median MdSA; custom model can be used instead).
+
+Data are loaded from pnn.c.map_data_path by default, but a custom folder can be supplied using the -f flag (e.g. `python apply_to_prisma.py -f /path/to/my/folder`).
+Please note that figures will still be saved to the same location.
+The average-performing model is used by default, but a specific model file can be used with the -m flag.
+
+Recalibrated models are not currently supported.
+
+Example:
+    python apply_to_prisma.py bnn_mcd
+    python apply_to_prisma.py bnn_mcd -a -m pnn_tf_models/0/ens_nn_ood_split.zip
+
+positional arguments:
+  pnn_type              PNN architecture to use
+
+options:
+  -h, --help            show this help message and exit
+  -f FOLDER, --folder FOLDER
+                        folder to load data from
+  -a, --acolite         use acolite data (if False: use L2C)
+  -c, --recalibrate     use recalibrated model
+  -m MODEL_FILE, --model_file MODEL_FILE
+                        specific file to load model from
+```
+
+A water mask will be generated using a normalised differential water index (NDWI).
+If available, level-1 HDF5 (`.h5`) data for the same scene will be used to generate a greyscale background, using an approximated luminance function.
+The script will save the results (IOP estimates, water mask, greyscale background) to a new NetCDF4 file so they can be re-used without having to re-run the analysis.
+Please note that due to the number of pixels (up to a million), PNN application can be very slow, especially for RNNs.
+
+
 ## Analysis
 *[analyze_estimates.py](analyze_estimates.py) - Analyze PNN model outputs to generate figures and statistics.*
 
-*[apply_to_prisma.py](apply_to_prisma.py) - Apply PNNs to PRISMA scenes, plot the results.*
+*[plot_prisma_scenes.py](plot_prisma_scenes.py) - Apply PNNs to PRISMA scenes, plot the results.*
 
 
 ## Reproducing the paper
