@@ -1,12 +1,13 @@
 # On the generalization of probabilistic neural networks for hyperspectral remote sensing of absorption properties in optically complex waters
-
 This repository contains the Python code used in our paper in *Remote Sensing of Environment*, [DOI 10.1016/j.rse.2025.114820](https://doi.org/10.1016/j.rse.2025.114820).
 The following sections describe the repository and codebase in detail.
 Text *written in italics* is work-in-progress.
 The [last section](#reproducing-the-paper) provides a summary containing just the information necessary to reproduce the paper.
 
-**Abstract**    
+### Abstract
+<p align="justify">
 Machine learning models have steadily improved in estimating inherent optical properties (IOPs) from remote sensing observations. Yet, their generalization ability when applied to new water bodies, beyond those they were trained on, is not well understood. We present a novel approach for assessing model generalization across various scenarios, including interpolation within *in situ*  observation datasets, extrapolation beyond the training scope, and application to hyperspectral observations from the PRecursore IperSpettrale della Missione Applicativa (PRISMA) satellite involving atmospheric correction. We evaluate five probabilistic neural networks (PNNs), including novel architectures like recurrent neural networks, for their ability to estimate absorption at 443 and 675 nm from hyperspectral reflectance. The median symmetric accuracy (MdSA) worsens from ≥25% in interpolation scenarios to ≥50% in extrapolation scenarios, and reaches ≥80% when applied to PRISMA satellite imagery. Across all scenarios, models produce uncertainty estimates exceeding 40%, often reflecting systematic underconfidence. PNNs show better calibration during extrapolation, suggesting an intrinsic awareness of retrieval constraints. To address this miscalibration, we introduce an uncertainty recalibration method that only withholds 10% of the training dataset, but improves model calibration in 86% of PRISMA evaluations with minimal accuracy trade-offs. Resulting well-calibrated uncertainty estimates enable reliable uncertainty propagation for downstream applications. IOP retrieval uncertainty is predominantly aleatoric (inherent to the observations). Therefore, increasing the number of measurements from the same distribution or selecting a different neural network architecture trained on the same dataset does not enhance model accuracy. Our findings indicate that we have reached a predictability limit in retrieving IOPs using purely data-driven approaches. We therefore advocate embedding physical principles of IOPs into model architectures, creating physics-informed neural networks capable of surpassing current limitations.
+</p>
 
 ## Overview
 
@@ -17,7 +18,6 @@ constructing, training, testing, recalibrating, and applying the neural network 
 analysing and visualising the model estimates; 
 generating outputs for the paper.
 A more detailed overview is provided in [its documentation](pnn/README.md).
-
 
 ### Scripts
 The code used to (re-)produce the results in the paper is organised into multiple scripts within the top-level folder.
