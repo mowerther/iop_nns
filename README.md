@@ -1,6 +1,6 @@
 # On the generalization of probabilistic neural networks for hyperspectral remote sensing of absorption properties in optically complex waters
 
-This repository contains the Python code used in our paper, accepted in *Remote Sensing of Environment* (12.05.2025).
+This repository contains the Python code used in our paper in *Remote Sensing of Environment*, [DOI 10.1016/j.rse.2025.114820](https://doi.org/10.1016/j.rse.2025.114820).
 The following sections describe the repository and codebase in detail.
 Text *written in italics* is work-in-progress.
 The [last section](#reproducing-the-paper) provides a summary containing just the information necessary to reproduce the paper.
