@@ -265,7 +265,7 @@ This folder will contain N subfolders corresponding to the N trained model insta
 each containing a CSV file for every combination of model architecture and scenario,
 tabulating the reference and estimated values and uncertainties (total / aleatoric / epistemic) for every point in the testing dataset.
 The main folder also contains a CSV file for each combination of model architecture and scenario tabulating the performance metrics
-(MdSA, SSPB, MAD, MAPE, $R^2$, coverage, miscalibration area)
+(MdSA, SSPB, MAD, MAPE, R², coverage, miscalibration area)
 for each of the N model instances.
 
 
