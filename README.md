@@ -211,13 +211,13 @@ the second representing the local knowledge case (train on the resampled *in sit
 
 ## PNN training & application
 Neural network models are trained using the [train_nn.py](train_nn.py) script.
-This script uses the architectures [defined in the `pnn.nn`](pnn/README.md) submodule, currently
-`bnn_dc` (Bayesian Neural Network with DropConnect),
-`bnn_mcd` (Bayesian Neural Network with Monte Carlo Dropout),
-`ens_nn` (Ensemble Neural Network),
-`mdn` (Mixture Density Network),
-and
-`rnn` (Recurrent Neural Network).
+This script uses the architectures [defined in the `pnn.nn`](pnn/README.md) submodule, currently:
+* `bnn_dc` (Bayesian Neural Network with DropConnect)
+* `bnn_mcd` (Bayesian Neural Network with Monte Carlo Dropout)
+* `ens_nn` (Ensemble Neural Network)
+* `mdn` (Mixture Density Network)
+* `rnn` (Recurrent Neural Network)
+
 These architectures use the same backbone, namely the [`BasePNN` class](pnn/nn/pnn_base.py), ensuring consistency and making it very simple to add new architectures in the future.
 The base class and its descendants are all implemented using TensorFlow/Keras.
 
