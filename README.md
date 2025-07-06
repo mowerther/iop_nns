@@ -349,7 +349,7 @@ The data are read into a Pandas DataFrame with a column for each IOP and a four-
 - `category`: reference value, estimated value, estimated variance, etc.
 - `scenario`: random split, within-distribution, out-of-distribution, etc.
 - `network`: BNN-DC, BNN-MCD, MDN, etc.
-- `instance`: Match-ups in sequential order (not to be confused with model istance number!).
+- `instance`: Match-ups in sequential order (not to be confused with model instance number!).
 
 ```python
                                        aph_443    aph_675  ...   aNAP_443   aNAP_675
