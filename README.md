@@ -259,7 +259,7 @@ the [`Ensemble.save`](pnn/nn/ens.py#L98) and [`Ensemble.load`](pnn/nn/ens.py#L12
 Recalibrated models are saved and loaded with their corresponding recalibration functions.
 
 In addition to the models, [train_nn.py](train_nn.py) also saves the IOP estimates from each model in each scenario to file.
-These are saved into the [`model_estimates_path`](pnn/constrants.py#L18) variable,
+These are saved into the [`model_estimates_path`](pnn/constants.py#L18) variable,
 which defaults to the [pnn_model_estimates](pnn_model_estimates/) folder.
 This folder will contain N subfolders corresponding to the N trained model instances (25 by default, see above),
 each containing a CSV file for every combination of model architecture and scenario,
