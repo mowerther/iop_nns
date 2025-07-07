@@ -368,8 +368,40 @@ y_true   wd_split  rnn     1028       0.504809   0.307788  ...   0.420340   0.09
 ```
 
 ### PRISMA scenes
-*[plot_prisma_scenes.py](plot_prisma_scenes.py) - Apply PNNs to PRISMA scenes, plot the results.*
+[Processed PRISMA scenes](#application-to-prisma-scenes) can be plotted using the [plot_prisma_scenes.py](plot_prisma_scenes.py) script.
+This script will load scenes from a specified folder ([`pnn.c.map_output_path`](pnn/constants.py#L19) by default),
+as well as match-up pixels,
+and plot them on a map with the appropriate water mask and land background (if available).
 
+```console
+python plot_prisma_scenes.py -h
+
+usage: plot_prisma_scenes.py [-h] [-f FOLDER]
+
+Script for loading processed PRISMA scenes and creating specific figures.
+- Loads IOP estimate scenes.
+- Creates specified figures.
+
+Data are loaded from pnn.c.map_output_path by default, but a custom folder can be supplied using the -f flag (e.g. `python plot_prisma_scenes.py -f /path/to/my/folder`).
+Please note that figures will still be saved to the same location.
+
+Example:
+    python plot_prisma_scenes.py bnn_mcd
+
+options:
+  -h, --help            show this help message and exit
+  -f FOLDER, --folder FOLDER
+                        folder to load processed scenes from
+```
+
+Note that this script is much more hard-coded than the others, having been tailored for the figures in our paper.
+It can be easily adapted for a different dataset.
+Generic functions for plotting PRISMA scene outputs are available in the `pnn` module:
+* [`pnn.maps.plot_Rrs`](pnn/maps.py#L322)
+* [`pnn.maps.plot_IOP_single`](pnn/maps.py#L363)
+* [`pnn.maps.plot_IOP_all`](pnn/maps.py#L414)
+* [`pnn.maps.plot_Rrs_and_IOP`](pnn/maps.py#L440)
+* [`pnn.maps.plot_Rrs_and_IOP_overview`](pnn/maps.py#L467)
 
 ## Reproducing the paper
 
