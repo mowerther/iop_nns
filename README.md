@@ -475,7 +475,11 @@ Generic functions for plotting PRISMA scene outputs are available in the `pnn` m
 
 ### Analysis
 7. *(If desired)*: Generate Figure 4 (recalibration example) using the [plot_calibration_example.py](plot_calibration_example.py) script as follows: `python plot_calibration_example.py`.
+8. [Perform the match-up analysis](#match-up-analysis) using the [analyze_estimates.py](analyze_estimates.py) script as follows:  
+    a. *In situ*: `python analyze_estimates.py`  
+    b. *In situ* with recalibration: `python analyze_estimates.py -c`  
+    c. PRISMA match-ups: `python analyze_estimates.py -p`  
+    d. PRISMA match-ups with recalibration: `python analyze_estimates.py -pc`  
+9. *(If desired)*: [Generate the PRISMA scene figures](#prisma-scenes) using the [plot_prisma_scenes.py](plot_prisma_scenes.py) script as follows: `python plot_prisma_scenes.py`.
 
-*Run [analyze_estimates.py](analyze_estimates.py) as follows (with/without flags):*
-
-*Run [apply_to_prisma.py](apply_to_prisma.py) as follows (with/without flags):*
+Note that some additional manual analysis of the DataFrames loaded / generated in step 8 (analyze_estimates.py) is necessary to reproduce all of the statistics used in the paper.
