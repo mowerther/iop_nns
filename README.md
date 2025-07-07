@@ -272,6 +272,7 @@ for each of the N model instances.
 ### Application to PRISMA scenes
 Trained models can be applied to PRISMA scenes using the [`apply_to_prisma.py`](apply_to_prisma.py) script.
 This script takes all atmospherically corrected (L2C or ACOLITE; specified with the `-a` flag) NetCDF4 (`.nc`) files in a given folder ([`prisma_map_data`](prisma_map_data) by default) and applies a given model type (`bnn_mcd`, `bnn_dc`, etc.) to each.
+**Note that there is currently a bug in the implementation causing L2C and ACOLITE to be switched around.**
 By default, the average-performing instance of that architecture is found in [`pnn_tf_models`](pnn_tf_models);
 a custom model file can be used through the `-m` flag.
 The script takes the following arguments:
@@ -406,19 +407,74 @@ Generic functions for plotting PRISMA scene outputs are available in the `pnn` m
 ## Reproducing the paper
 
 ### Setup
-Download the input data from [Zenodo](https://doi.org/10.5281/zenodo.14893798).
+1. [Download the input data](#in-situ-data) from [Zenodo](https://doi.org/10.5281/zenodo.14893798).
+2. Clone or download this repository, navigate into the folder on your computer, and install the `pnn` module using `pip install .` on the command line.
 
-*Run [dataset_split.py](dataset_split.py) as follows:*
+### Dataset splitting
+3. [Split the dataset](#dataset-splitting) using [dataset_split.py](dataset_split.py) as follows: `python dataset_split.py datasets_train_test/insitu_data.csv`.
+4. *(If desired)* [Plot the input data and split datasets](#plotting-data) using [plot_data.py](plot_data.py) as follows: `python plot_data.py`.
 
-*Run [train_nn.py](train_nn.py) as follows (with/without flags):*
+### Model training and application
+5. [Train your model instances](#pnn-training--application) using [train_nn.py](train_nn.py) as follows (all separate commands, in any order):  
+    a. *In situ*:
+   * `python train_nn.py bnn_mcd`
+   * `python train_nn.py bnn_dc`
+   * `python train_nn.py ens_nn`
+   * `python train_nn.py mdn`
+   * `python train_nn.py rnn`
 
+    b. *In situ* with recalibration:
+   * `python train_nn.py bnn_mcd -c`
+   * `python train_nn.py bnn_dc -c`
+   * `python train_nn.py ens_nn -c`
+   * `python train_nn.py mdn -c`
+   * `python train_nn.py rnn -c`
 
-### Figures
-Figures 1 and 2 were generated using [plot_data.py](plot_data.py), with no command-line arguments.
+    c. PRISMA:
+   * `python train_nn.py bnn_mcd -p`
+   * `python train_nn.py bnn_dc -p`
+   * `python train_nn.py ens_nn -p`
+   * `python train_nn.py mdn -p`
+   * `python train_nn.py rnn -p`
 
-Figure 3 was made by hand.
+    d. PRISMA with recalibration:
+   * `python train_nn.py bnn_mcd -pc`
+   * `python train_nn.py bnn_dc -pc`
+   * `python train_nn.py ens_nn -pc`
+   * `python train_nn.py mdn -pc`
+   * `python train_nn.py rnn -pc`
 
-Figure 4 was generated using [plot_calibration_example.py](plot_calibration_example.py), with no command-line arguments.
+6. *(If desired)*: [Apply the trained models to PRISMA data](#application-to-prisma-scenes) using the [apply_to_prisma.py](apply_to_prisma.py) script as follows:  
+    a. L2C:
+   * `python apply_to_prisma.py bnn_mcd`
+   * `python apply_to_prisma.py bnn_dc`
+   * `python apply_to_prisma.py ens_nn`
+   * `python apply_to_prisma.py mdn`
+   * `python apply_to_prisma.py rnn`
+
+    b. L2C with recalibration:
+   * `python apply_to_prisma.py bnn_mcd -c`
+   * `python apply_to_prisma.py bnn_dc -c`
+   * `python apply_to_prisma.py ens_nn -c`
+   * `python apply_to_prisma.py mdn -c`
+   * `python apply_to_prisma.py rnn -c`
+
+    c. ACOLITE:
+   * `python apply_to_prisma.py bnn_mcd -a`
+   * `python apply_to_prisma.py bnn_dc -a`
+   * `python apply_to_prisma.py ens_nn -a`
+   * `python apply_to_prisma.py mdn -a`
+   * `python apply_to_prisma.py rnn -a`
+
+    d. ACOLITE with recalibration:
+   * `python apply_to_prisma.py bnn_mcd -ac`
+   * `python apply_to_prisma.py bnn_dc -ac`
+   * `python apply_to_prisma.py ens_nn -ac`
+   * `python apply_to_prisma.py mdn -ac`
+   * `python apply_to_prisma.py rnn -ac`
+
+### Analysis
+7. *(If desired)*: Generate Figure 4 (recalibration example) using the [plot_calibration_example.py](plot_calibration_example.py) script as follows: `python plot_calibration_example.py`.
 
 *Run [analyze_estimates.py](analyze_estimates.py) as follows (with/without flags):*
 
