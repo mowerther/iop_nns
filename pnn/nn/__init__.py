@@ -1,3 +1,6 @@
+import os
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+
 from .common import *
 
 from .bnn_dc import BNN_DC
