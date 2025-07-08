@@ -15,6 +15,7 @@ from tensorflow.keras.models import Model, load_model
 from sklearn.preprocessing import MinMaxScaler, RobustScaler
 
 from .. import constants as c, data as d
+from .loss import nll_loss
 
 XSCALER_FILENAME = "X.scaler"
 YSCALER_FILENAME = "y.scaler"
@@ -44,22 +45,6 @@ def load_dump(filename: Path | str) -> Any:
     with open(filename, mode="rb") as file:
         data = pickle.load(file)
     return data
-
-
-### LOSS FUNCTIONS
-@tf.keras.utils.register_keras_serializable()  # Enables saving/loading models with this custom loss function
-def nll_loss(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
-    """
-    Negative Log Likelihood (NLL) loss function.
-    `y_true` contains N reference values per row.
-    `y_pred` contains N predicted mean values, followed by N predicted variances, per row:
-        [mean1, mean2, ..., meanN, var1, var2, ..., varN]
-    """
-    N = y_true.shape[1]
-    mean = y_pred[:, :N]
-    var = tf.nn.softplus(y_pred[:, N:])
-
-    return tf.reduce_mean(0.5 * (tf.math.log(var) + (tf.square(y_true - mean) / var) + tf.math.log(2 * np.pi)))
 
 
 ### MAIN PNN CLASS
