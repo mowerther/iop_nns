@@ -19,7 +19,7 @@ parser.add_argument("-o", "--output_folder", help="Folder to save models to.", t
 parser.add_argument("-e", "--estimates_folder", help="Folder to save model estimates to.", type=pnn.c.Path, default=pnn.model_estimates_path)
 parser.add_argument("-p", "--prisma", help="Use PRISMA data.", action="store_true")
 parser.add_argument("-c", "--recalibrate", help="Apply recalibration.", action="store_true")
-parser.add_argument("-n", "--n_models", help="Number of models to train per scenario (default: 25).", type=int, default=25)
+parser.add_argument("-n", "--n_models", help="Number of models to train per scenario (default: 25).", type=int, default=2)
 args = parser.parse_args()
 
 # Select PNN class
