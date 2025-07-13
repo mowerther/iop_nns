@@ -8,7 +8,7 @@ The [last section](#reproducing-the-paper) provides a summary containing just th
 <p align="justify">
 Machine learning models have steadily improved in estimating inherent optical properties (IOPs) from remote sensing observations.
 Yet, their generalization ability when applied to new water bodies, beyond those they were trained on, is not well understood.
-We present a novel approach for assessing model generalization across various scenarios, including interpolation within *in situ* observation datasets, extrapolation beyond the training scope, and application to hyperspectral observations from the PRecursore IperSpettrale della Missione Applicativa (PRISMA) satellite involving atmospheric correction.
+We present a novel approach for assessing model generalization across various scenarios, including interpolation within <i>in situ</i> observation datasets, extrapolation beyond the training scope, and application to hyperspectral observations from the PRecursore IperSpettrale della Missione Applicativa (PRISMA) satellite involving atmospheric correction.
 We evaluate five probabilistic neural networks (PNNs), including novel architectures like recurrent neural networks, for their ability to estimate absorption at 443 and 675 nm from hyperspectral reflectance.
 The median symmetric accuracy (MdSA) worsens from ≥25% in interpolation scenarios to ≥50% in extrapolation scenarios, and reaches ≥80% when applied to PRISMA satellite imagery.
 Across all scenarios, models produce uncertainty estimates exceeding 40%, often reflecting systematic underconfidence.
