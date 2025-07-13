@@ -8,3 +8,5 @@ tensorflow-probability>=0.24.0
 tf-keras>=2.16.0
 dill>=0.3.9
 uncertainty-toolbox>=0.1.1
+xarray>=2025.1.2
+cartopy>=0.24

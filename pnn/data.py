@@ -14,7 +14,7 @@ from . import constants as c
 
 
 ### HELPER FUNCTIONS
-read_csv = partial(pd.read_csv, low_memory=False)
+read_csv = partial(pd.read_csv, sep=";", low_memory=False)
 
 def _find_rrs_columns(data: pd.DataFrame) -> list[str]:
     """
