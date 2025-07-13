@@ -1,6 +1,5 @@
-recal/
-
 # Folders for input/output
+backup/
 pnn_model_estimates/
 pnn_tf_models/
 prisma_map_data/

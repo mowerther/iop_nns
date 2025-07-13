@@ -60,6 +60,8 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
+  -d DATA_FOLDER, --data_folder DATA_FOLDER
+                        Folder to load data from.
   -o OUTPUT_FOLDER, --output_folder OUTPUT_FOLDER
                         Folder to save models to.
   -e ESTIMATES_FOLDER, --estimates_folder ESTIMATES_FOLDER

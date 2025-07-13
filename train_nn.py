@@ -15,6 +15,7 @@ import pnn
 ### Parse command line arguments
 parser = pnn.ArgumentParser(description=__doc__)
 parser.add_argument("pnn_type", help="PNN architecture to use")
+parser.add_argument("-d", "--data_folder", help="Folder to load data from.", type=pnn.c.Path, default=pnn.insitu_data_path)
 parser.add_argument("-o", "--output_folder", help="Folder to save models to.", type=pnn.c.Path, default=pnn.model_path)
 parser.add_argument("-e", "--estimates_folder", help="Folder to save model estimates to.", type=pnn.c.Path, default=pnn.model_estimates_path)
 parser.add_argument("-p", "--prisma", help="Use PRISMA data.", action="store_true")
@@ -28,7 +29,7 @@ PNN = pnn.nn.select_nn(args.pnn_type)
 ### LOAD DATA
 # Load from file
 label, *_, load_data = pnn.data.select_scenarios(prisma=args.prisma)
-datascenarios = load_data()
+datascenarios = load_data(args.data_folder)
 print("Loaded data.")
 
 
