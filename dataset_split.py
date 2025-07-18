@@ -297,6 +297,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--system_column", help="Column with system names, on which to split the data.", default="Waterbody_name")
     parser.add_argument("-t", "--timeout", help="Maximum time [min] to spend on each split.", type=int, default=_DEFAULT_TIMEOUT)
     parser.add_argument("-r", "--rng", help="Seed for random number generator (RNG).", type=int, default=_DEFAULT_RNG)
+    parser.add_argument("-a", "--save_all", help="Save all local minima (video mode).", action="store_true")
     args = parser.parse_args()
 
     # Load file
